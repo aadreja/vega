@@ -1,2 +1,2 @@
 # vega
-Fastest ORM for .net with enterprise grade features
+Fastest ORM for .net with Enterprise grade features
