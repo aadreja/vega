@@ -1,16 +1,15 @@
 ﻿using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Vega Fastest ORM")]
+[assembly: AssemblyDescription("Vega Fastest ORM with enterprise features")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("aadreja")]
 [assembly: AssemblyProduct("Vega")]
-[assembly: AssemblyCopyright("Copyright Vega ©  2017")]
+[assembly: AssemblyCopyright("Copyright Vega 2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

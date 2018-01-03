@@ -243,3 +243,5 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+/unused
+/Vega/Vega/PrimaryKey.cs
