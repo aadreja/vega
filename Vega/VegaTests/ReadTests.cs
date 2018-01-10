@@ -139,5 +139,50 @@ namespace VegaTests
             cityRepo.Query<long>("SELECT id FROM City");
         }
 
+        [Fact]
+        public void ReadAllSort()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            for (int i = 0; i < 10; i++) {
+                City city = new City()
+                {
+                    Name = "ReadTests.ReadAllSort" + i,
+                    State = "RS",
+                    CountryId = i,
+                    Longitude = 1m,
+                    Latitude = 1m
+                };
+                city.Id = (long)cityRepo.Add(city);
+            }
+
+            var cityList = cityRepo.ReadAll(null,"State=@State", new { State = "RS" }, "countryid");
+
+            Assert.Equal((int)cityRepo.Count("State=@State", new { State = "RS" }), cityList.Count());
+        }
+
+        [Fact]
+        public void ReadAllQuery()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            for (int i = 0; i < 10; i++)
+            {
+                City city = new City()
+                {
+                    Name = "ReadTests.ReadAllQuery" + i,
+                    State = "RQ",
+                    CountryId = i,
+                    Longitude = 1m,
+                    Latitude = 1m
+                };
+                city.Id = (long)cityRepo.Add(city);
+            }
+
+            var cityList = cityRepo.ReadAllQuery("SELECT * FROM city WHERE state=@state", new { State = "RQ" } );
+
+            Assert.Equal((int)cityRepo.Count("state=@state", new { State = "RQ" }), cityList.Count());
+        }
+
     }
 }

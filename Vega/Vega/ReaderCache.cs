@@ -129,7 +129,7 @@ namespace Vega
 
         private static Func<IDataReader, T> ReaderToObject(IDataReader rdr) 
         {
-            MethodInfo GetValueMethod = rdr.GetType().GetMethod("get_Item", new Type[] { typeof(int) });
+            MethodInfo rdrGetValueMethod = rdr.GetType().GetMethod("get_Item", new Type[] { typeof(int) });
 
             Type[] args = { typeof(IDataReader) };
             DynamicMethod method = new DynamicMethod("DynamicRead" + Guid.NewGuid().ToString(), typeof(T), args, typeof(Repository<T>).Module, true);
@@ -163,7 +163,7 @@ namespace Vega
                     il.Emit(OpCodes.Ldc_I4, i); //push field index as int32 to the stack. Pushes a supplied value of type int32 onto the evaluation stack as an int32.
                     il.Emit(OpCodes.Dup);//copy value
                     il.Emit(OpCodes.Stloc_2);//pop and save value to loc 2
-                    il.Emit(OpCodes.Callvirt, GetValueMethod); //Call rdr[i] method - Calls a late - bound method on an object, pushing the return value onto the evaluation stack.
+                    il.Emit(OpCodes.Callvirt, rdrGetValueMethod); //Call rdr[i] method - Calls a late - bound method on an object, pushing the return value onto the evaluation stack.
 
                     //TODO: dynamic location using valueCopyLocal
                     il.Emit(OpCodes.Stloc_1); //pop the value and push in stack location 1
@@ -240,7 +240,6 @@ namespace Vega
         }
     }
 
-
     public class ParameterCache
     {
         static Dictionary<Type, Action<object, IDbCommand>> dynamicParameters = new Dictionary<Type, Action<object, IDbCommand>>();
@@ -302,7 +301,5 @@ namespace Vega
             var actionType = System.Linq.Expressions.Expression.GetActionType(typeof(object), typeof(IDbCommand));
             return (Action<object, IDbCommand>)method.CreateDelegate(actionType);
         }
-
     }
-
 }

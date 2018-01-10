@@ -78,13 +78,12 @@ namespace Vega
             return true;
         }
 
-        internal List<T> ReadAll<T>(string tableName, object id) where T : EntityBase, new()
+        internal IEnumerable<T> ReadAll<T>(string tableName, object id) where T : EntityBase, new()
         {
             TableAttribute tableInfo = EntityCache.Get(typeof(T));
 
             var lstAudit = ReadAll(null, $"{Config.AUDIT_TABLENAMECOLUMNNAME}=@TableName AND {Config.AUDIT_RECORDIDCOLUMNNAME}=@RecordId", new { TableName = tableName, RecordId = id.ToString() }, Config.CREATEDON_COLUMNNAME + " ASC");
 
-            List<T> result = new List<T>();
             T current = null;
 
             foreach (AuditTrial audit in lstAudit)
@@ -112,7 +111,7 @@ namespace Vega
                     //find column
                     tableInfo.Columns.TryGetValue(detail.Column, out ColumnAttribute col);
                     if (col == null) continue;
-                    
+
                     object convertedValue = null;
 
                     if (col.Property.PropertyType == typeof(bool))
@@ -129,10 +128,8 @@ namespace Vega
                 current.UpdatedOn = audit.CreatedOn;
                 current.UpdatedBy = audit.CreatedBy;
 
-                result.Add(current);
+                yield return current;
             }
-
-            return result;
         }
     }
 }

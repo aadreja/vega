@@ -105,6 +105,7 @@
   <ItemGroup>
     <Compile Include="City\City.cs" />
     <Compile Include="City\CityADO.cs" />
+    <Compile Include="City\CityDapper.cs" />
     <Compile Include="City\CityRepo.cs" />
     <Compile Include="City\EmitCode.cs" />
     <Compile Include="Program.cs" />

@@ -46,17 +46,17 @@ namespace VegaTests
             cityRepo.Update(city);
 
             //read history
-            List<City> cityHistory = cityRepo.ReadHistory(id);
+            var cityHistory = cityRepo.ReadHistory(id);
 
-            Assert.Equal(3, cityHistory.Count);
-            Assert.Equal(0, cityHistory[0].CountryId);
-            Assert.Equal("GU", cityHistory[0].State);
+            Assert.Equal(3, cityHistory.Count());
+            Assert.Equal(0, cityHistory.First().CountryId);
+            Assert.Equal("GU", cityHistory.First().State);
 
-            Assert.Equal(0, cityHistory[1].CountryId);
-            Assert.Equal("MH", cityHistory[1].State);
+            Assert.Equal(0, cityHistory.ElementAt(1).CountryId);
+            Assert.Equal("MH", cityHistory.ElementAt(1).State);
 
-            Assert.Equal(1, cityHistory[2].CountryId);
-            Assert.Equal("MH", cityHistory[2].State);
+            Assert.Equal(1, cityHistory.Last().CountryId);
+            Assert.Equal("MH", cityHistory.Last().State);
         }
 
         [Fact]
@@ -80,7 +80,6 @@ namespace VegaTests
                 Longitude = 16.50m,
             };
 
-            
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             //cleanup audit table
@@ -90,11 +89,11 @@ namespace VegaTests
             var id = cityRepo.Add(city);
 
             //read history
-            List<City> cityHistory = cityRepo.ReadHistory(id);
+            var cityHistory = cityRepo.ReadHistory(id);
 
             Assert.Single(cityHistory);
-            Assert.Equal(strComplex, cityHistory[0].Name);
-            Assert.Equal("RJ", cityHistory[0].State);
+            Assert.Equal(strComplex, cityHistory.First().Name);
+            Assert.Equal("RJ", cityHistory.First().State);
         }
     }
 }

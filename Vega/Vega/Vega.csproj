@@ -91,6 +91,7 @@
     <Compile Include="Database\PgSqlDatabase.cs" />
     <Compile Include="EntityBase.cs" />
     <Compile Include="Attributes.cs" />
+    <Compile Include="EntityCache.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="PagedListParameters.cs" />

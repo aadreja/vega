@@ -273,10 +273,15 @@ namespace Vega
         /// </summary>
         public DbSearchOperatorEnum SearchOperator { get; set; }
 
+        #endregion
+
+        #region Internal Properties
+
         internal PropertyInfo Property { get; set; }
         internal MethodInfo SetMethod { get; set; }
         internal MethodInfo GetMethod { get; set; }
         internal IgnoreColumnAttribute IgnoreInfo { get; set; }
+
 
         #endregion
 

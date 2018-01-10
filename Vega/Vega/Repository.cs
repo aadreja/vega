@@ -551,54 +551,6 @@ namespace Vega
             }
         }
 
-        /// <summary>
-        /// Read all records
-        /// </summary>
-        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
-        /// <returns>List of entities</returns>
-        public List<T> ReadAllList(RecordStatusEnum status)
-        {
-            return ReadAllList(null, null, null, null, status);
-        }
-
-        /// <summary>
-        /// Read all records: fastest
-        /// </summary>
-        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
-        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
-        /// <returns>List of entities</returns>
-        public List<T> ReadAllList(string columns = null, RecordStatusEnum status = RecordStatusEnum.All)
-        {
-            return ReadAll(columns, null, null, null, status).ToList();
-        }
-
-        /// <summary>
-        /// Read all records: fastest
-        /// </summary>
-        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
-        /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
-        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
-        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
-        /// <returns>List of entities</returns>
-        public List<T> ReadAllList(string columns = null, string criteria = null, object parameters = null, RecordStatusEnum status = RecordStatusEnum.All)
-        {
-            return ReadAll(columns, criteria, parameters, null, status).ToList();
-        }
-
-        /// <summary>
-        /// Read all records: fastest
-        /// </summary>
-        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
-        /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
-        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
-        /// <param name="orderBy">optional order by e.g. "department ASC"</param>
-        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
-        /// <returns>List of entities</returns>
-        public List<T> ReadAllList(string columns = null, string criteria = null, object parameters = null, string orderBy = null, RecordStatusEnum status = RecordStatusEnum.All)
-        {
-            return ReadAll(columns, criteria, parameters, orderBy, status).ToList();
-        }
-
         #endregion
 
         #region Record count
@@ -648,7 +600,7 @@ namespace Vega
         /// </summary>
         /// <param name="id">Record Id</param>
         /// <returns>List of audit for this record</returns>
-        public List<T> ReadHistory(object id)
+        public IEnumerable<T> ReadHistory(object id)
         {
             AuditTrialRepository auditRepo = new AuditTrialRepository(Connection);
 
@@ -659,7 +611,33 @@ namespace Vega
 
         #region Read with Query
 
+        /// <summary>
+        /// Read All with Query
+        /// </summary>
+        /// <param name="query">SQL Query or procedure with parameters.e.g. SELECT * FROM Employee WHERE department=@Department</param>
+        /// <param name="parameters">Dynamic parameter object e.g. new {Department = "IT"}</param>
+        /// <param name="commandType">Text or Procedure or Table Direct</param>
+        /// <returns>IEnumerable List of entities</returns>
+        public IEnumerable<T> ReadAllQuery(string query, object parameters, CommandType commandType = CommandType.Text)
+        {
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandType = commandType;
+            cmd.CommandText = DB.CreateSelectCommand(cmd, query, parameters).ToString();
 
+            bool isConOpen = IsConnectionOpen();
+            if (!isConOpen) Connection.Open();
+            using (IDataReader rdr = ExecuteReader(cmd))
+            {
+                var func = ReaderCache<T>.GetFromCache(rdr);
+                if (rdr != null)
+                {
+                    while (rdr.Read()) yield return func(rdr);
+                }
+                rdr.Close();
+                rdr.Dispose();
+                if (!isConOpen) Connection.Close();
+            }
+        }
 
         #endregion
 

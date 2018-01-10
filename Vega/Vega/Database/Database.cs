@@ -324,6 +324,11 @@ namespace Vega
             return isUpdateNeeded;
         }
 
+        internal virtual StringBuilder CreateSelectCommand(IDbCommand command, string query, object parameters = null)
+        {
+            return CreateSelectCommand(command, query, null, parameters);
+        }
+
         internal virtual StringBuilder CreateSelectCommand(IDbCommand command, string query, string criteria = null, object parameters = null)
         {
             bool hasWhere = query.ToLowerInvariant().Contains("where");
@@ -337,10 +342,11 @@ namespace Vega
                     commandText.Append(" WHERE ");
 
                 commandText.Append(criteria);
+            }
+
+            if(parameters != null)
                 ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
 
-                hasWhere = true;
-            }
             return commandText;
         }
 
