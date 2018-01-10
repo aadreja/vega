@@ -16,6 +16,7 @@ namespace Vega
 {
     public static class Config
     {
+
         #region 1. Framework Configuration
 
         /// <summary>
@@ -36,93 +37,20 @@ namespace Vega
 
         #endregion
 
-        #region 2. Common Fields configuration
+        #region 2. Common Fields Configuration
 
-        /// <summary>
-        /// Version No database column
-        /// </summary>
-        public static readonly ColumnAttribute VERSIONNO_COLUMN = 
-            new ColumnAttribute()
-            {
-                ColumnDbType = DbType.Int32,
-                Name = "versionno",
-                Title = "Version"
-            };
-
-        /// <summary>
-        /// Created By database column
-        /// </summary>
-        public static readonly ColumnAttribute CREATEDBY_COLUMN = 
-            new ColumnAttribute()
-            {
-                ColumnDbType = DbType.Int32,
-                Name = "createdby"
-            };
-
-        public static readonly ColumnAttribute CREATEDBYNAME_COLUMN = 
-            new ColumnAttribute()
-            {
-                ColumnDbType = DbType.String,
-                Name = "createdbyname",
-                Title = "Created By"
-            };
-
-        /// <summary>
-        /// Created On database column
-        /// </summary>
-        public static readonly ColumnAttribute CREATEDON_COLUMN =
-            new ColumnAttribute()
-            {
-                ColumnDbType = DbType.DateTime,
-                Name = "createdon",
-                Title = "Created On",
-                IsAllowSorting = true
-            };
-
-        /// <summary>
-        /// Updated By database column
-        /// </summary>
-        public static readonly ColumnAttribute UPDATEDBY_COLUMN =
-            new ColumnAttribute()
-            {
-                ColumnDbType = DbType.Int32,
-                Name = "updatedby"
-            };
-
-        public static readonly ColumnAttribute UPDATEDBYNAME_COLUMN =
-           new ColumnAttribute()
-           {
-               ColumnDbType = DbType.String,
-               Name = "updatedbyname",
-               Title = "Updated By"
-           };
-
-        /// <summary>
-        /// Updated On database column
-        /// </summary>
-        public static readonly ColumnAttribute UPDATEDON_COLUMN =
-            new ColumnAttribute()
-            {
-                ColumnDbType = DbType.DateTime,
-                Name = "updatedon",
-                Title = "Updated On",
-                IsAllowSorting = true
-            };
-
-        /// <summary>
-        /// Is Active database column
-        /// </summary>
-        public static readonly ColumnAttribute ISACTIVE_COLUMN =
-            new ColumnAttribute()
-            {
-                ColumnDbType = DbType.Boolean,
-                Name = "isactive",
-                Title = "Is Active",
-            };
+        public const string VERSIONNO_COLUMNNAME = "versionno";
+        public const string CREATEDBY_COLUMNNAME = "createdby";
+        public const string CREATEDBYNAME_COLUMNNAME = "createdbyname";
+        public const string CREATEDON_COLUMNNAME = "createdon";
+        public const string UPDATEDBY_COLUMNNAME = "updatedby";
+        public const string UPDATEDBYNAME_COLUMNNAME = "updatedbyname";
+        public const string UPDATEDON_COLUMNNAME = "updatedon";
+        public const string ISACTIVE_COLUMNNAME = "isactive";
 
         #endregion
 
-        #region 3. User table configuration
+        #region 3. User Table Configuration
 
         /// <summary>
         /// User Table database schema
@@ -140,6 +68,45 @@ namespace Vega
         /// User Fullname database column
         /// </summary>
         public const string USER_FULLNAME_DBCOLUMN = "fullname";
+
+        #endregion
+
+        #region 4. Audit Table Configuration
+
+        public const string AUDIT_TABLENAME = "audittrial";
+        public const string AUDIT_KEYCOLUMNNAME = "audittrialid";
+        public const string AUDIT_OPERATIONTYPECOLUMNNAME = "operationtype";
+        public const string AUDIT_TABLENAMECOLUMNNAME = "tablename";
+        public const string AUDIT_RECORDIDCOLUMNNAME = "recordid";
+        public const string AUDIT_RECORDVERSIONCOLUMNNAME = "recordversionno";
+        public const string AUDIT_DETAILSCOLUMNNAME = "details";
+        public const string AUDIT_RECORDIDINDEXNAME = "idx_recordid";
+
+
+        #endregion
+
+        #region Static Constructor & Properties
+
+        static Config()
+        {
+            VERSIONNO_COLUMN = EntityCache.Get(typeof(EntityBase)).Columns[VERSIONNO_COLUMNNAME];
+            CREATEDBY_COLUMN = EntityCache.Get(typeof(EntityBase)).Columns[CREATEDBY_COLUMNNAME];
+            CREATEDBYNAME_COLUMN = EntityCache.Get(typeof(EntityBase)).Columns[CREATEDBYNAME_COLUMNNAME];
+            CREATEDON_COLUMN = EntityCache.Get(typeof(EntityBase)).Columns[CREATEDON_COLUMNNAME];
+            UPDATEDBY_COLUMN = EntityCache.Get(typeof(EntityBase)).Columns[UPDATEDBY_COLUMNNAME];
+            UPDATEDBYNAME_COLUMN = EntityCache.Get(typeof(EntityBase)).Columns[UPDATEDBYNAME_COLUMNNAME];
+            UPDATEDON_COLUMN = EntityCache.Get(typeof(EntityBase)).Columns[UPDATEDON_COLUMNNAME];
+            ISACTIVE_COLUMN = EntityCache.Get(typeof(EntityBase)).Columns[ISACTIVE_COLUMNNAME];
+        }
+
+        internal static ColumnAttribute VERSIONNO_COLUMN { get; set; }
+        internal static ColumnAttribute CREATEDBY_COLUMN { get; set; }
+        internal static ColumnAttribute CREATEDBYNAME_COLUMN { get; set; }
+        internal static ColumnAttribute CREATEDON_COLUMN { get; set; }
+        internal static ColumnAttribute UPDATEDBY_COLUMN { get; set; }
+        internal static ColumnAttribute UPDATEDBYNAME_COLUMN { get; set; }
+        internal static ColumnAttribute UPDATEDON_COLUMN { get; set; }
+        internal static ColumnAttribute ISACTIVE_COLUMN { get; set; }
 
         #endregion
     }

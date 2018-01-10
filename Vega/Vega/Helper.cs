@@ -6,6 +6,7 @@
             http://www.vegaorm.com
 */
 using System;
+using System.ComponentModel;
 using System.Configuration;
 using System.Data;
 using System.Text;
@@ -98,7 +99,7 @@ namespace Vega
             if (value == null) return string.Empty;
 
             string strValue = (dbType == DbType.DateTime || 
-                dbType == DbType.Date) ? strValue = ((DateTime)value).ToSQLFormat() : value.ToString();            
+                dbType == DbType.Date) ? strValue = ((DateTime)value).ToSQLDateTime() : value.ToString();            
 
             //replace special characters in XML //" ' & < >
             strValue = strValue.Replace("'", "&apos;").Replace("\"", "&quot;").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
@@ -125,15 +126,38 @@ namespace Vega
 
         #region datetime extension
 
-        public static string ToSQLFormat(this DateTime pDate)
+        public static DateTime FromSQLDateTime(this string pDate)
+        {
+            DateTime.TryParse(pDate, out DateTime result);
+            return result;
+        }
+
+        public static string ToSQLDateTime(this DateTime pDate)
         {
             return pDate.ToString("yyyy-MM-dd HH:mm:ss");
         }
 
-        public static string ToSQLFormat(this DateTime? pDate)
+        public static string ToSQLDateTime(this DateTime? pDate)
         {
             if (pDate == null) return string.Empty;
-            else return ToSQLFormat((DateTime)pDate);
+            else return ToSQLDateTime((DateTime)pDate);
+        }
+
+        public static DateTime FromSQLDate(this string pDate)
+        {
+            DateTime.TryParse(pDate, out DateTime result);
+            return result;
+        }
+
+        public static string ToSQLDate(this DateTime pDate)
+        {
+            return pDate.ToString("yyyy-MM-dd");
+        }
+
+        public static string ToSQLDate(this DateTime? pDate)
+        {
+            if (pDate == null) return string.Empty;
+            else return ToSQLDate((DateTime)pDate);
         }
 
         #endregion
@@ -159,6 +183,24 @@ namespace Vega
         }
 
         #endregion
+
+        #endregion
+
+        #region converters
+
+        public static object ConvertTo(this object value, Type type)
+        {
+            var converter = TypeDescriptor.GetConverter(type);
+
+            return converter.ConvertFrom(value);
+        }
+
+        public static object ConvertTo(this string value, Type type)
+        {
+            var converter = TypeDescriptor.GetConverter(type);
+
+            return converter.ConvertFromString(value);
+        }
 
         #endregion
 

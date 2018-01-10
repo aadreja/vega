@@ -7,7 +7,10 @@
 */
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
+using System.Data.Common;
+using System.Linq;
 using System.Text;
 
 namespace Vega
@@ -120,36 +123,33 @@ namespace Vega
         public object Add(T entity, string columns)
         {
             bool isTransactHere = false;
-
             try
             {
+                if (!entity.IsActive) entity.IsActive = true; //bydefault record will be active
+
+                AuditTrial audit = null; //to save audit details
                 if (TableInfo.NeedsHistory)
                 {
                     //begin transaction
                     isTransactHere = BeginTransaction();
+                    audit = new AuditTrial();
                 }
 
                 IDbCommand command = Connection.CreateCommand();
-
-                DB.CreateAddCommand(command, entity, out StringBuilder auditXML, columns);
-
+                DB.CreateAddCommand(command, entity, audit, columns);
                 var keyId = ExecuteScalar(command);
-
                 //get identity
-                if (TableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsPrimaryKeyEmpty())
+                if (TableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsKeyIdEmpty())
                 {
                     //ExecuteScalar with Identity will always return long, hence converting it to type of Primary Key
                     entity.KeyId = Convert.ChangeType(keyId, entity.KeyId.GetType());
                 }
-
                 if (TableInfo.NeedsHistory)
                 {
                     //Save Audit Trial
                     AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
-
-                    auditTrialRepo.Add(entity, RecordOperationEnum.Add, TableInfo, auditXML);
-
-                    if(isTransactHere) Commit();
+                    auditTrialRepo.Add(entity, RecordOperationEnum.Add, TableInfo, audit);
+                    if (isTransactHere) Commit();
                 }
                 return entity.KeyId;
             }
@@ -175,8 +175,10 @@ namespace Vega
 
             try
             {
+                AuditTrial audit = null;
                 if (TableInfo.NeedsHistory)
                 {
+                    audit = new AuditTrial();
                     isTransactHere = BeginTransaction();
 
                     if(oldEntity == null)
@@ -187,7 +189,7 @@ namespace Vega
 
                 IDbCommand command = Connection.CreateCommand();
 
-                bool isUpdateNeeded = DB.CreateUpdateCommand(command, entity, oldEntity, out StringBuilder auditXML, columns);
+                bool isUpdateNeeded = DB.CreateUpdateCommand(command, entity, oldEntity, audit, columns);
 
                 if (isUpdateNeeded)
                 {
@@ -198,19 +200,16 @@ namespace Vega
                         //record not found or concurrency violation
                         throw new VersionNotFoundException("Record doesn't exists or modified by another user");
                     }
+                    entity.VersionNo++; //increment versionno when save is successful
 
                     if (TableInfo.NeedsHistory)
                     {
                         //Save History
                         AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
-
-                        auditTrialRepo.Add(entity, RecordOperationEnum.Update, TableInfo, auditXML);
-
+                        auditTrialRepo.Add(entity, RecordOperationEnum.Update, TableInfo, audit);
                         if(isTransactHere) Commit();
                     }
-                    entity.VersionNo++; //increment versionno when save is successful
                 }
-
                 return true;
             }
             catch
@@ -415,12 +414,26 @@ namespace Vega
         #region Read
 
         /// <summary>
+        /// To check record exists 
+        /// </summary>
+        /// <param name="id">Record Id</param>
+        /// <returns></returns>
+        public bool Exists(object id)
+        {
+            IDbCommand command = Connection.CreateCommand();
+            command.CommandType = CommandType.Text;
+            command.CommandText = $"SELECT 1 FROM {TableInfo.FullName} WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}";
+            command.AddInParameter(TableInfo.PrimaryKeyColumn.Name, TableInfo.PrimaryKeyColumn.ColumnDbType, id);
+            return ExecuteScalar(command) != null;
+        }
+
+        /// <summary>
         /// Read one record with specific ID
         /// </summary>
         /// <param name="id">record id</param>
         /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
         /// <returns></returns>
-        public T ReadOne(object id, string columns=null)
+        public T ReadOne(object id, string columns = null)
         {
             //Get columns from Entity attributes loaded in TableInfo
             if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
@@ -449,60 +462,91 @@ namespace Vega
             return null;
         }
 
-
+        /// <summary>
+        /// Read value of one column for a given record
+        /// </summary>
+        /// <typeparam name="R">Type of value</typeparam>
+        /// <param name="id">record id</param>
+        /// <param name="column">column name</param>
+        /// <returns></returns>
         public R ReadOne<R>(object id, string column)
         {
             IDbCommand cmd = Connection.CreateCommand();
-
             cmd.CommandText = $"SELECT {column} FROM {TableInfo.FullName} WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}";
             cmd.AddInParameter(TableInfo.PrimaryKeyColumn.Name, TableInfo.PrimaryKeyColumn.ColumnDbType, id);
-
             return Query<R>(cmd);
         }
 
         /// <summary>
         /// Read all records: fastest
         /// </summary>
-        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
         /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
-        /// <returns></returns>
-        public IEnumerable<T> ReadAll(string columns = null, RecordStatusEnum status = RecordStatusEnum.All)
+        /// <returns>IEnumerable list of entities</returns>
+        public IEnumerable<T> ReadAll(RecordStatusEnum status)
+        {
+            return ReadAll(null, null, null, null, status);
+        }
+
+        /// <summary>
+        /// Read all records: fastest
+        /// </summary>
+        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <returns>IEnumerable list of entities</returns>
+        public IEnumerable<T> ReadAll(string columns, RecordStatusEnum status)
+        {
+            return ReadAll(columns, null, null, null, status);
+        }
+
+        /// <summary>
+        /// Read all records: fastest
+        /// </summary>
+        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
+        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <returns>IEnumerable list of entities</returns>
+        public IEnumerable<T> ReadAll(string columns, string criteria, object parameters, RecordStatusEnum status)
+        {
+            return ReadAll(columns, criteria, parameters, null, status);
+        }
+
+        /// <summary>
+        /// Read all records: fastest
+        /// </summary>
+        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
+        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <param name="orderBy">optional order by e.g. "department ASC"</param>
+        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
+        /// <returns>IEnumerable list of entities</returns>
+        public IEnumerable<T> ReadAll(string columns = null, string criteria = null, object parameters = null, string orderBy=null, RecordStatusEnum status = RecordStatusEnum.All)
         {
             //Get columns from Entity attributes loaded in TableInfo
             if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
 
-            StringBuilder commandText = new StringBuilder();
-            
-            commandText.Append($"SELECT {columns} FROM {TableInfo.FullName} ");
-
-            if (!TableInfo.NoIsActive)
-            {
-                if (status == RecordStatusEnum.Active)
-                    commandText.Append($" WHERE {Config.ISACTIVE_COLUMN.Name}={DB.BITTRUEVALUE}");
-                else if (status == RecordStatusEnum.InActive)
-                    commandText.Append($" WHERE {Config.ISACTIVE_COLUMN.Name}={DB.BITFALSEVALUE}");
-            }
-
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandType = CommandType.Text;
+
+            string query = $"SELECT {columns} FROM {TableInfo.FullName} ";
+            StringBuilder commandText = DB.CreateSelectCommand(cmd, query, criteria, parameters);
+            if (!TableInfo.NoIsActive) DB.AppendStatusCriteria(commandText, status);
+            if (orderBy != null)
+            {
+                if (!orderBy.ToLowerInvariant().Contains("orderby")) commandText.Append(" ORDER BY ");
+                commandText.Append(orderBy);
+            }
             cmd.CommandText = commandText.ToString();
 
             bool isConOpen = IsConnectionOpen();
-
             if (!isConOpen) Connection.Open();
-
             using (IDataReader rdr = ExecuteReader(cmd))
             {
                 var func = ReaderCache<T>.GetFromCache(rdr);
-
                 if (rdr != null)
                 {
                     while (rdr.Read()) yield return func(rdr);
                 }
-
                 rdr.Close();
                 rdr.Dispose();
-
                 if (!isConOpen) Connection.Close();
             }
         }
@@ -510,55 +554,116 @@ namespace Vega
         /// <summary>
         /// Read all records
         /// </summary>
+        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
+        /// <returns>List of entities</returns>
+        public List<T> ReadAllList(RecordStatusEnum status)
+        {
+            return ReadAllList(null, null, null, null, status);
+        }
+
+        /// <summary>
+        /// Read all records: fastest
+        /// </summary>
         /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
         /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
-        /// <returns></returns>
+        /// <returns>List of entities</returns>
         public List<T> ReadAllList(string columns = null, RecordStatusEnum status = RecordStatusEnum.All)
         {
-            IDbCommand cmd = Connection.CreateCommand();
+            return ReadAll(columns, null, null, null, status).ToList();
+        }
 
-            if (string.IsNullOrEmpty(columns))
-            {
-                //Get columns from Entity attributes loaded in TableInfo
-                columns = String.Join(",", TableInfo.DefaultReadColumns);
-            }
+        /// <summary>
+        /// Read all records: fastest
+        /// </summary>
+        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
+        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
+        /// <returns>List of entities</returns>
+        public List<T> ReadAllList(string columns = null, string criteria = null, object parameters = null, RecordStatusEnum status = RecordStatusEnum.All)
+        {
+            return ReadAll(columns, criteria, parameters, null, status).ToList();
+        }
 
-            cmd.CommandType = CommandType.Text;
-            cmd.CommandText = $"SELECT {columns} FROM {TableInfo.FullName} ";
-
-            if (!TableInfo.NoIsActive)
-            {
-                if (status == RecordStatusEnum.Active)
-                    cmd.CommandText += $" WHERE {Config.ISACTIVE_COLUMN.Name}={DB.BITTRUEVALUE}";
-                else if (status == RecordStatusEnum.InActive)
-                    cmd.CommandText += $" WHERE {Config.ISACTIVE_COLUMN.Name}={DB.BITFALSEVALUE}";
-            }
-
-            bool isConOpen = IsConnectionOpen();
-
-            if (!isConOpen) Connection.Open();
-
-            using (IDataReader rdr = ExecuteReader(cmd))
-            {
-                List<T> result = new List<T>();
-                var func = ReaderCache<T>.GetFromCache(rdr);
-                if (rdr != null)
-                {
-                    while (rdr.Read()) result.Add(func(rdr));
-                }
-                rdr.Close();
-                if (!isConOpen) Connection.Close();
-                return result;
-            }
+        /// <summary>
+        /// Read all records: fastest
+        /// </summary>
+        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
+        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <param name="orderBy">optional order by e.g. "department ASC"</param>
+        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
+        /// <returns>List of entities</returns>
+        public List<T> ReadAllList(string columns = null, string criteria = null, object parameters = null, string orderBy = null, RecordStatusEnum status = RecordStatusEnum.All)
+        {
+            return ReadAll(columns, criteria, parameters, orderBy, status).ToList();
         }
 
         #endregion
 
-        #region Read with paging
+        #region Record count
+
+        /// <summary>
+        /// Count Number of records in table
+        /// </summary>
+        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
+        /// <returns></returns>
+        public long Count(RecordStatusEnum status)
+        {
+            return Count(null, null, status);
+        }
+
+        /// <summary>
+        /// Count Number of records in table with criteria
+        /// </summary>
+        /// <param name="criteria">Criteria as AnonymousType. e.g. new { Parameter1 = value } </param>
+        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
+        /// <returns></returns>
+        public long Count(string criteria = null, object parameters = null, RecordStatusEnum status = RecordStatusEnum.All)
+        {
+            IDbCommand cmd = Connection.CreateCommand();
+
+            string query = $"SELECT COUNT({(TableInfo.PrimaryKeyColumn != null ? TableInfo.PrimaryKeyColumn.Name : "0")}) FROM {TableInfo.FullName}";
+
+            StringBuilder commandText = DB.CreateSelectCommand(cmd, query, criteria, parameters);
+
+            if (!TableInfo.NoIsActive)DB.AppendStatusCriteria(commandText, status);
+
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandText = commandText.ToString();
+
+            bool isConOpen = IsConnectionOpen();
+            if (!isConOpen) Connection.Open();
+            long result = (long)cmd.ExecuteScalar();
+            if (!isConOpen) Connection.Close();
+            return result;
+        }
 
         #endregion
 
         #region Read History
+
+        /// <summary>
+        /// Read all history of a given record
+        /// </summary>
+        /// <param name="id">Record Id</param>
+        /// <returns>List of audit for this record</returns>
+        public List<T> ReadHistory(object id)
+        {
+            AuditTrialRepository auditRepo = new AuditTrialRepository(Connection);
+
+            return auditRepo.ReadAll<T>(TableInfo.Name, id);
+        }
+
+        #endregion
+
+        #region Read with Query
+
+
+
+        #endregion
+
+        #region Read with paging
 
         #endregion
 
@@ -586,6 +691,61 @@ namespace Vega
                 return default(R);
         }
 
+        public DbDataAdapter CreateDataAdapter(IDbCommand command)
+        {
+            DbProviderFactory factory = DbProviderFactories.GetFactory((DbConnection)command.Connection);
+            DbDataAdapter adapter = factory.CreateDataAdapter();
+            adapter.SelectCommand = (DbCommand)command;
+            return adapter;
+        }
+
+        public DataSet ExecuteDataSet(string query, string tableNames = null)
+        {
+            IDbCommand command = Connection.CreateCommand();
+            command.CommandText = query;
+            command.CommandType = CommandType.Text;
+
+            return ExecuteDataSet(command, tableNames);
+        }
+
+        public DataSet ExecuteDataSet(IDbCommand command, string tableNames = null)
+        {
+            if (string.IsNullOrEmpty(tableNames)) tableNames = "Table";
+
+            bool isConOpen = IsConnectionOpen();
+
+            try
+            {
+                if (!isConOpen) Connection.Open();
+
+                if (Transaction != null) command.Transaction = Transaction;
+
+                DataSet result = new DataSet();
+
+                using (DbDataAdapter adapter = CreateDataAdapter(command))
+                {
+                    string[] tables = tableNames.Split(',');
+                    string systemCreatedTableNameRoot = "Table";
+                    for (int i = 0; i < tables.Length; i++)
+                    {
+                        string systemCreatedTableName = (i == 0)
+                                                            ? systemCreatedTableNameRoot
+                                                            : systemCreatedTableNameRoot + i;
+
+                        adapter.TableMappings.Add(systemCreatedTableName, tables[i]);
+                    }
+
+                    adapter.Fill(result);
+                }
+
+                return result;
+            }
+            finally
+            {
+                if (!isConOpen) Connection.Close(); //close if connection was opened here
+            }
+        }
+
         public IDataReader ExecuteReader(string query)
         {
             IDbCommand command = Connection.CreateCommand();
@@ -607,7 +767,6 @@ namespace Vega
 
             //can't close connection when executing datareader
         }
-
 
         public int ExecuteNonQuery(string query)
         {
@@ -672,12 +831,20 @@ namespace Vega
 
         public bool IsTableExists()
         {
-            return Exists(TableInfo.Name, DBObjectTypeEnum.Table, TableInfo.Schema);
+            return DBObjectExists(TableInfo.Name, DBObjectTypeEnum.Table, TableInfo.Schema);
         }
 
-        public bool Exists(string name, DBObjectTypeEnum objectType, string schema = null)
+        public bool IsIndexExists(string indexName)
         {
-            if (ExecuteScalar(DB.ExistsQuery(name, objectType, schema)) != null)
+            if (ExecuteScalar(DB.IndexExistsQuery(TableInfo.Name, indexName)) != null)
+                return true;
+            else
+                return false;
+        }
+
+        public bool DBObjectExists(string name, DBObjectTypeEnum objectType, string schema = null)
+        {
+            if (ExecuteScalar(DB.DBObjectExistsQuery(name, objectType, schema)) != null)
                 return true;
             else
                 return false;
@@ -693,6 +860,13 @@ namespace Vega
         public bool DropTable()
         {
             if (IsTableExists()) ExecuteNonQuery(DB.DropTableQuery(typeof(T)));
+
+            return true;
+        }
+
+        public bool CreateIndex(string indexName, string columns, bool isUnique)
+        {
+            if (!IsIndexExists(indexName)) ExecuteNonQuery(DB.CreateIndexQuery(TableInfo.Name, indexName, columns, isUnique));
 
             return true;
         }

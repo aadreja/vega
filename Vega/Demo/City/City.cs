@@ -35,4 +35,27 @@ namespace Demo.City
         public EnumContinent Continent { get; set; }
 
     }
+
+    [Table("prompt", "citynew", NeedsHistory = true)]
+    public class CityNew : EntityBase
+    {
+
+        [PrimaryKey]
+        public Guid CityId { get; set; }
+
+        public string CityName { get; set; }
+
+        public string Country { get; set; }
+
+        public string AccentCity { get; set; }
+
+        public string Region { get; set; }
+
+        public decimal Latitude { get; set; }
+
+        public decimal Longitude { get; set; }
+
+        public EnumContinent Continent { get; set; }
+
+    }
 }

@@ -7,6 +7,7 @@ using Vega;
 
 namespace VegaTests
 {
+
     [Table(NeedsHistory = false)]
     public class Country : EntityBase
     {
@@ -17,7 +18,7 @@ namespace VegaTests
         public DateTime? Independence { get; set; }
     }
 
-    [Table]
+    [Table(NeedsHistory = true)]
     public class City : EntityBase
     {
         [PrimaryKey(true)]

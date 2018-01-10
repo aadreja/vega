@@ -1,23 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Vega;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace VegaTests
 {
-
-    [TestClass]
-    public class InsertTests
+    [Collection("DMLTest")]
+    public class InsertTests : IClassFixture<DbConnectionFixuture>
     {
-        static InsertTests()
+        DbConnectionFixuture Fixture;
+
+        public InsertTests(DbConnectionFixuture fixture)
         {
-            Common.DropAndCreateTables();
+            Fixture = fixture;
         }
 
-        [TestMethod]
+        [Fact]
         public void InsertNoIdentity()
         {
             User usr = new User
@@ -26,14 +23,16 @@ namespace VegaTests
                 Username = "admin",
             };
 
-            Repository<User> usrRepo = new Repository<User>(Common.GetConnection());
+            Repository<User> usrRepo = new Repository<User>(Fixture.Connection);
+
+            if (usrRepo.Exists(usr.Id)) usrRepo.HardDelete(usr.Id);
 
             usrRepo.Add(usr);
 
-            Assert.AreEqual(1, usrRepo.ReadOne<short>(1, "id"));
+            Assert.Equal(1, usrRepo.ReadOne<short>(1, "id"));
         }
 
-        [TestMethod]
+        [Fact]
         public void InsertIdentity()
         {
             City city = new City
@@ -44,13 +43,13 @@ namespace VegaTests
                 Longitude = 11.50m,
             };
 
-            Repository<City> cityRepo = new Repository<City>(Common.GetConnection());
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             var id = cityRepo.Add(city);
 
-            Assert.AreEqual("Ahmedabad", cityRepo.ReadOne<string>(id, "Name"));
+            Assert.Equal("Ahmedabad", cityRepo.ReadOne<string>(id, "Name"));
         }
 
-        [TestMethod]
+        [Fact]
         public void InsertWithNullable()
         {
             Country country = new Country
@@ -60,11 +59,13 @@ namespace VegaTests
                 Independence = new DateTime(1947, 8, 15)//15th August, 1947
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Common.GetConnection());
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             var id = countryRepo.Add(country);
 
-            Assert.AreEqual("India", countryRepo.ReadOne<string>(id, "Name"));
+            Assert.Equal("India", countryRepo.ReadOne<string>(id, "Name"));
         }
+
+        
 
     }
 }

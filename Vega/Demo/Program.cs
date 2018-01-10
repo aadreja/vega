@@ -2,10 +2,15 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.Serialization.Json;
+using System.Text;
 using System.Threading;
+using System.Text.RegularExpressions;
+using Vega;
 
 namespace Demo
 {
@@ -16,8 +21,17 @@ namespace Demo
 
         static void Main(string[] args)
         {
-            Vega.Session.CurrentUserId = 1;
+            Session.CurrentUserId = 1;
 
+            string datetime = "2018-01-1a 23:07:10";
+            DateTime dt = datetime.FromSQLDateTime();
+
+            datetime = "2018-01-10";
+            dt = datetime.FromSQLDate();
+
+            StringSplit();
+
+            //KeyIdPerfTestReflectionVsEmit();
             //LoadTestInsert();
 
             Vega.Repository<City.City> cityRepo = new Vega.Repository<City.City>(con);
@@ -28,6 +42,89 @@ namespace Demo
             city.CityName = "Vega Update 7";
             cityRepo.Update(city);
           
+        }
+
+        public static void StringSplit()
+        {
+            string historyString = "isactive=1,Name=\"So far, =we've been writing regular expressions that partially match pieces across all the text. Sometimes this isn't desirable, imagine for example we wanted to match the word &quot;success&quot;in a log file.We certainly don't want that pattern to match a line that says &quot;Error: unsuccessful operation&quot;! That is why it is often best practice to write as specific regular expressions as possible to ensure that we don't get false positives when matching against real world text.One way to tighten our patterns is to define a pattern that describes both thestart and the end of the line using the special ^ (hat)and $ (dollar sign) metacharacters.In the example above, we can use the pattern ^ success to match only a line that begins with the word &quot;success&quot;, but not the line Error: unsuccessful operation&quot;. And if you combine both the hat and the dollar sign, you create a pattern that matches the whole line completely at the beginning and end.\",State=\"GU\",Longitude=11.50,Latitude=10.65,CountryId=0";
+
+            string regEx = ",(?=(?:(?:[^\"]*\"){2})*[^\"]*$)";
+            string regEx1 = "=(?=(?:(?:[^\"]*\"){2})*[^\"]*$)";
+
+
+            string[] cols = Regex.Split(historyString, regEx);
+
+            foreach (string s in cols)
+            {
+                string[] val = Regex.Split(s, regEx1);
+
+                Console.WriteLine("{0}={1}", val[0], val[1]);
+            }
+            Console.ReadLine();
+        }
+
+        public static void JsonTest()
+        {
+            string jsonData = "{ \"CityName\":\"Ahmedabad\",\"Country\":\"India\" }";
+
+            DataContractJsonSerializer jsonSerializer = new DataContractJsonSerializer(typeof(City.City));
+            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(jsonData));
+
+            stream.Position = 0;
+            City.City city = (City.City)jsonSerializer.ReadObject(stream);
+
+            Console.WriteLine(string.Concat("Hi ", city.CityName, " " + city.Country));
+
+            Console.ReadLine();
+        }
+
+        public static void KeyIdPerfTestReflectionVsEmit()
+        {
+            int counter = 1000000;
+
+            City.CityNew city = new City.CityNew();
+            city.CityId = Guid.NewGuid();
+
+            //Reflection
+            //Get
+            Stopwatch w = new Stopwatch();
+            w.Start();
+            for (int i=0; i < counter; i++)
+            {
+                //var x = city.KeyIdRef;
+            }
+            Console.WriteLine("Reflection Get: {0} ", w.Elapsed.TotalMilliseconds);
+            w.Reset();
+
+            //Set
+            w.Start();
+            for (int i = 0; i < counter; i++)
+            {
+                //city.KeyIdRef = Guid.NewGuid();
+            }
+            Console.WriteLine("Reflection Set: {0}", w.Elapsed.TotalMilliseconds);
+            w.Reset();
+
+            //Emit
+            //Get
+            w.Start();
+            for (int i = 0; i < counter; i++)
+            {
+                var x = city.CityId;
+            }
+            Console.WriteLine("Emit Get:{0} ", w.Elapsed.TotalMilliseconds);
+            w.Reset();
+
+            //Set
+            w.Start();
+            for (int i = 0; i < counter; i++)
+            {
+                city.CityId = Guid.NewGuid();
+            }
+            Console.WriteLine("Emit Set:{0} ", w.Elapsed.TotalMilliseconds);
+            w.Reset();
+
+            Console.ReadLine();
         }
 
         public static void LoadTestInsert()

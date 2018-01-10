@@ -47,8 +47,10 @@ namespace Vega
 
         #region abstract methods
 
-        public abstract string ExistsQuery(string name, DBObjectTypeEnum objectType, string schema = null);
+        public abstract string DBObjectExistsQuery(string name, DBObjectTypeEnum objectType, string schema = null);
+        public abstract string IndexExistsQuery(string tableName, string indexName);
         public abstract string CreateTableQuery(Type entity);
+        public abstract string CreateIndexQuery(string tableName, string indexName, string columns, bool isUnique);
 
         #endregion
 
@@ -81,11 +83,9 @@ namespace Vega
 
         #region Create CRUD commands
 
-        internal virtual void CreateAddCommand(IDbCommand command, EntityBase entity, out StringBuilder auditXML, string columnNames = null, bool doNotAppendCommonFields = false)
+        internal virtual void CreateAddCommand(IDbCommand command, EntityBase entity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false)
         {
             TableAttribute tableInfo = EntityCache.Get(entity.GetType());
-
-            auditXML = new StringBuilder();
 
             List<string> columns = new List<string>();
 
@@ -96,13 +96,13 @@ namespace Vega
             entity.UpdatedBy = Session.CurrentUserId;
 
             bool isPrimaryKeyEmpty = false;
-            if (tableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsPrimaryKeyEmpty())
+            if (tableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsKeyIdEmpty())
             {
                 isPrimaryKeyEmpty = true;
                 //if identity remove keyfield if added in field list
                 columns.Remove(tableInfo.PrimaryKeyColumn.Name);
             }
-            else if (entity.KeyId is Guid && entity.IsPrimaryKeyEmpty())
+            else if (entity.KeyId is Guid && entity.IsKeyIdEmpty())
             {
                 isPrimaryKeyEmpty = true;
                 //if not identity and key not generated, generate before save
@@ -120,8 +120,7 @@ namespace Vega
 
                     command.AddInParameter("@" + Config.ISACTIVE_COLUMN.Name, Config.ISACTIVE_COLUMN.ColumnDbType, true);
 
-                    if (tableInfo.NeedsHistory)
-                        auditXML.AppendFormat("<{0}>{1}</{0}>", Config.ISACTIVE_COLUMN.Name, true);
+                    if (tableInfo.NeedsHistory) audit.AppendDetail(Config.ISACTIVE_COLUMN.Name, true, DbType.Boolean);
                 }
 
                 if (!tableInfo.NoVersionNo)
@@ -164,11 +163,11 @@ namespace Vega
             //append @ before each fields to add as parameter
             List<string> parameters = columns.Select(c => "@" + c).ToList();
 
-            int pIndex = parameters.FindIndex(c => c == "@" + Config.CREATEDON_COLUMN);
+            int pIndex = parameters.FindIndex(c => c == "@" + Config.CREATEDON_COLUMN.Name);
             if (pIndex >= 0)
                 parameters[pIndex] = CURRENTDATETIMESQL;
 
-            pIndex = parameters.FindIndex(c => c == "@" + Config.UPDATEDON_COLUMN);
+            pIndex = parameters.FindIndex(c => c == "@" + Config.UPDATEDON_COLUMN.Name);
             if (pIndex >= 0)
                 parameters[pIndex] = CURRENTDATETIMESQL;
 
@@ -201,27 +200,21 @@ namespace Vega
                     dbType = columnInfo.ColumnDbType;
                     columnValue = columnInfo.GetMethod.Invoke(entity, null);
 
-                    if (tableInfo.NeedsHistory)
-                    {
-                        auditXML.AppendFormat("<{0}>{1}</{0}>", columns[i], columnValue.ToXMLValue(dbType));
-                    }
+                    if (tableInfo.NeedsHistory) audit.AppendDetail(columns[i], columnValue, dbType);
                 }
                 command.AddInParameter("@" + columns[i], dbType, columnValue);
             }
         }
 
-
-        internal virtual bool CreateUpdateCommand(IDbCommand command, EntityBase entity, EntityBase oldEntity, out StringBuilder auditXML, string columnNames = null, bool doNotAppendCommonFields = false)
+        internal virtual bool CreateUpdateCommand(IDbCommand command, EntityBase entity, EntityBase oldEntity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false)
         {
             bool isUpdateNeeded = false;
 
             TableAttribute tableInfo = EntityCache.Get(entity.GetType());
 
-            auditXML = new StringBuilder();
-
             List<string> columns = new List<string>();
 
-            if (!string.IsNullOrEmpty(columnNames)) columns.AddRange(columnNames.Split(',')); 
+            if (!string.IsNullOrEmpty(columnNames)) columns.AddRange(columnNames.Split(','));
             else columns.AddRange(tableInfo.DefaultUpdateColumns);//Get columns from Entity attributes loaded in TableInfo
 
             entity.UpdatedBy = Session.CurrentUserId;
@@ -301,10 +294,7 @@ namespace Vega
                             }
                         }
 
-                        if (tableInfo.NeedsHistory && includeInUpdate)
-                        {
-                            auditXML.AppendFormat("<{0}>{1}</{0}>", columns[i], columnValue.ToXMLValue(dbType));
-                        }
+                        if (tableInfo.NeedsHistory && includeInUpdate) audit.AppendDetail(columns[i], columnValue, dbType);
                     }
 
                     if (includeInUpdate)
@@ -324,14 +314,48 @@ namespace Vega
 
             if (Config.DB_CONCURRENCY_CHECK)
             {
-                commandText.Append($" AND {Config.VERSIONNO_COLUMN}=@{Config.VERSIONNO_COLUMN}");
-                command.AddInParameter("@" + Config.VERSIONNO_COLUMN, DbType.Int32, entity.VersionNo);
+                commandText.Append($" AND {Config.VERSIONNO_COLUMN.Name}=@{Config.VERSIONNO_COLUMN.Name}");
+                command.AddInParameter("@" + Config.VERSIONNO_COLUMN.Name, Config.VERSIONNO_COLUMN.ColumnDbType, entity.VersionNo);
             }
 
             command.CommandType = CommandType.Text;
             command.CommandText = commandText.ToString();
 
             return isUpdateNeeded;
+        }
+
+        internal virtual StringBuilder CreateSelectCommand(IDbCommand command, string query, string criteria = null, object parameters = null)
+        {
+            bool hasWhere = query.ToLowerInvariant().Contains("where");
+
+            StringBuilder commandText = new StringBuilder(query);
+
+            if (!string.IsNullOrEmpty(criteria))
+            {
+                //add WHERE statement if not exists in query or criteria
+                if (!hasWhere && !criteria.ToLowerInvariant().Contains("where"))
+                    commandText.Append(" WHERE ");
+
+                commandText.Append(criteria);
+                ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
+
+                hasWhere = true;
+            }
+            return commandText;
+        }
+
+        internal void AppendStatusCriteria(StringBuilder commandText, RecordStatusEnum status = RecordStatusEnum.All)
+        {
+            if (status == RecordStatusEnum.All) return; //nothing to do
+
+            //add missing where clause
+            if (!commandText.ToString().ToLowerInvariant().Contains("where"))
+                commandText.Append(" WHERE ");
+
+            if (status == RecordStatusEnum.Active)
+                commandText.Append($" {Config.ISACTIVE_COLUMN.Name}={BITTRUEVALUE}");
+            else if (status == RecordStatusEnum.InActive)
+                commandText.Append($" {Config.ISACTIVE_COLUMN.Name}={BITFALSEVALUE}");
         }
 
         #endregion

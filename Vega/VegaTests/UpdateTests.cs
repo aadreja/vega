@@ -1,19 +1,20 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using Vega;
+using Xunit;
 
 namespace VegaTests
 {
-
-    [TestClass]
-    public class UpdateTests
+    [Collection("DMLTest")]
+    public class UpdateTests : IClassFixture<DbConnectionFixuture>
     {
-        static UpdateTests()
+        DbConnectionFixuture Fixture;
+
+        public UpdateTests(DbConnectionFixuture fixture)
         {
-            Common.DropAndCreateTables();
+            Fixture = fixture;
         }
 
-        [TestMethod]
+        [Fact]
         public void UpdateAllColumns()
         {
             City city = new City
@@ -24,7 +25,7 @@ namespace VegaTests
                 Longitude = 11.50m,
             };
 
-            Repository<City> cityRepo = new Repository<City>(Common.GetConnection());
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             var id = cityRepo.Add(city);
 
             city = cityRepo.ReadOne(id);
@@ -34,11 +35,11 @@ namespace VegaTests
 
             cityRepo.Update(city);
 
-            Assert.AreEqual(12m, cityRepo.ReadOne<decimal>(id, "Longitude"));
-            Assert.AreEqual(13m, cityRepo.ReadOne<decimal>(id, "Latitude"));
+            Assert.Equal(12m, cityRepo.ReadOne<decimal>(id, "Longitude"));
+            Assert.Equal(13m, cityRepo.ReadOne<decimal>(id, "Latitude"));
         }
 
-        [TestMethod]
+        [Fact]
         public void UpdateFewColumns()
         {
             City city = new City
@@ -49,7 +50,7 @@ namespace VegaTests
                 Longitude = 11.50m,
             };
 
-            Repository<City> cityRepo = new Repository<City>(Common.GetConnection());
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             var id = cityRepo.Add(city);
 
             city = cityRepo.ReadOne(id);
@@ -58,10 +59,10 @@ namespace VegaTests
 
             cityRepo.Update(city, "countryid");
 
-            Assert.AreEqual(1, cityRepo.ReadOne<int>(id, "countryid"));
+            Assert.Equal(1, cityRepo.ReadOne<int>(id, "countryid"));
         }
 
-        [TestMethod]
+        [Fact]
         public void UpdateNullableColumn()
         {
             Country country = new Country
@@ -71,7 +72,7 @@ namespace VegaTests
                 Independence = new DateTime(1947, 8, 15)
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Common.GetConnection());
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             var id = countryRepo.Add(country);
 
             country = countryRepo.ReadOne(id);
@@ -80,7 +81,7 @@ namespace VegaTests
 
             countryRepo.Update(country, "independence");
 
-            Assert.AreEqual(null, countryRepo.ReadOne<DateTime?>(id, "independence"));
+            Assert.Null(countryRepo.ReadOne<DateTime?>(id, "independence"));
         }
 
     }

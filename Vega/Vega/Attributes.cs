@@ -296,21 +296,9 @@ namespace Vega
             return base.GetHashCode();
         }
 
-        public static bool operator ==(ColumnAttribute obj1, ColumnAttribute obj2)
-        {
-            //TODO: check this operator
-            return Equals(obj1, obj2);
-        }
-
-        public static bool operator !=(ColumnAttribute obj1, ColumnAttribute obj2)
-        {
-            //TODO: check this operator
-            return !Equals(obj1, obj2);
-        }
-
         public override bool Equals(object obj)
         {
-            return Equals(obj);
+            return obj is ColumnAttribute && Equals((ColumnAttribute)obj);
         }
 
         public bool Equals(ColumnAttribute other)

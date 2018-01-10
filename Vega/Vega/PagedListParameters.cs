@@ -318,30 +318,30 @@ namespace Vega
 
         public FilterParameter(string columnName, DbSearchOperatorEnum filterOperator, object parameterValue)
         {
-            this.ColumnName = columnName;
-            this.FilterOperator = filterOperator;
-            this.ParameterValue = parameterValue;
+            ColumnName = columnName;
+            FilterOperator = filterOperator;
+            ParameterValue = parameterValue;
         }
 
         public FilterParameter(string columnName, string filterOperator, object parameterValue)
         {
-            this.ColumnName = columnName;
-            this.FilterOperatorString = filterOperator;
-            this.ParameterValue = parameterValue;
+            ColumnName = columnName;
+            FilterOperatorString = filterOperator;
+            ParameterValue = parameterValue;
         }
 
         public FilterParameter(string columnName, DbSearchOperatorEnum filterOperator, object parameterValue, DbType columnType)
         {
-            this.ColumnName = columnName;
-            this.ColumnType = columnType;
-            this.FilterOperator = filterOperator;
-            this.ParameterValue = parameterValue;
+            ColumnName = columnName;
+            ColumnType = columnType;
+            FilterOperator = filterOperator;
+            ParameterValue = parameterValue;
         }
 
         public FilterParameter(string columnName, DbSearchOperatorEnum filterOperator, object parameterValue, DbType columnType, bool isCustomparameter) 
             : this(columnName, filterOperator, parameterValue, columnType)
         {
-            this.IsCustomParameter = isCustomparameter;
+            IsCustomParameter = isCustomparameter;
         }
 
         #endregion
@@ -353,7 +353,7 @@ namespace Vega
         {
             get
             {
-                string[] col = this.columnName.Split('.');
+                string[] col = columnName.Split('.');
 
                 if (col.Length > 1)
                     return col[1];

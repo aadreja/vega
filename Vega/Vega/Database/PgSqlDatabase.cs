@@ -54,7 +54,7 @@ namespace Vega.Data
             }
         }
 
-        public override string ExistsQuery(string name, DBObjectTypeEnum objectType, string schema = null)
+        public override string DBObjectExistsQuery(string name, DBObjectTypeEnum objectType, string schema = null)
         {
             if (schema == null)
                 schema = DEFAULTSCHEMA;
@@ -132,6 +132,25 @@ namespace Vega.Data
 
             return createSQL.ToString();
 
+        }
+
+        public override string CreateIndexQuery(string tableName, string indexName, string columns, bool isUnique)
+        {
+            return $@"CREATE {(isUnique ? "UNIQUE" : "")} INDEX {indexName} ON {tableName} ({columns})";
+        }
+
+        public override string IndexExistsQuery(string tableName, string indexName)
+        {
+            /*t.relname as table_name, i.relname as index_name, a.attname as column_name*/
+
+            return $@"SELECT 1 FROM 
+                        pg_class t, pg_class i, pg_index ix, pg_attribute a
+                        WHERE t.oid = ix.indrelid
+                            AND i.oid = ix.indexrelid
+                            AND a.attrelid = t.oid
+                            AND a.attnum = ANY(ix.indkey)
+                            AND t.relkind = 'r'
+                            AND t.relname ILIKE '{tableName}' AND i.relname ILIKE '{indexName}';";
         }
     }
 }

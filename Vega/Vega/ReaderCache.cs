@@ -63,18 +63,6 @@ namespace Vega
             return base.ToString();
         }
 
-        public static bool operator ==(ReaderKey obj1, ReaderKey obj2)
-        {
-            //TODO: check this operator
-            return Equals(obj1, obj2);
-        }
-
-        public static bool operator !=(ReaderKey obj1, ReaderKey obj2)
-        {
-            //TODO: check this operator
-            return !Equals(obj1, obj2);
-        }
-
         public override bool Equals(object obj)
         {
             return obj is ReaderKey && Equals((ReaderKey)obj);
@@ -188,19 +176,14 @@ namespace Vega
                     il.Emit(OpCodes.Ldloc_1); //TODO: dynamic location using valueCopyLocal
 
                     il.Emit(OpCodes.Unbox_Any, rdr.GetFieldType(i)); //type cast
-                    //if (columnInfo.Property.PropertyType.FullName == typeof(PrimaryKey).FullName)
-                    //{
-                    //    il.Emit(OpCodes.Newobj, typeof(PrimaryKey).GetConstructor(new Type[] { typeof(int) })); //Create new Primary Key object in stack
-                    //}
+                    
                     // for nullable type fields
                     if (columnInfo.Property.PropertyType.IsGenericType && columnInfo.Property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                     {
                         var underlyingType = Nullable.GetUnderlyingType(columnInfo.Property.PropertyType);
                         il.Emit(OpCodes.Newobj, columnInfo.Property.PropertyType.GetConstructor(new Type[] { underlyingType }));
                     }
-                    //else
-                    //{
-                    //}
+                    
                     il.Emit(OpCodes.Callvirt, columnInfo.SetMethod);
                     il.Emit(OpCodes.Nop);
 
@@ -255,6 +238,71 @@ namespace Vega
             }
             throw toThrow;
         }
+    }
+
+
+    public class ParameterCache
+    {
+        static Dictionary<Type, Action<object, IDbCommand>> dynamicParameters = new Dictionary<Type, Action<object, IDbCommand>>();
+        static MethodInfo addInParameter;
+
+        static ParameterCache()
+        {
+            //init addInParameter
+            Type[] mParam = new Type[] { typeof(IDbCommand), typeof(string), typeof(DbType), typeof(object) };
+            addInParameter = typeof(Helper).GetMethod("AddInParameter");
+        }
+
+        public static Action<object, IDbCommand> GetFromCache(object param, IDbCommand cmd)
+        {
+            Type pType = param.GetType();
+            Action<object, IDbCommand> action;
+            lock (dynamicParameters)
+            {
+                if (dynamicParameters.TryGetValue(pType, out action)) return action;
+            }
+            action = AddParameters(param, cmd);
+            lock (dynamicParameters)
+            {
+                return dynamicParameters[pType] = action;
+            }
+        }
+
+        private static Action<object, IDbCommand> AddParameters(object param, IDbCommand cmd)
+        {
+            Type pType = param.GetType();
+            Type[] args = { typeof(object), typeof(IDbCommand) };
+
+            DynamicMethod method = new DynamicMethod("DynamicAddParam" + Guid.NewGuid().ToString(), null, args, typeof(ParameterCache).Module, true);
+            ILGenerator il = method.GetILGenerator();
+
+            foreach (PropertyInfo property in pType.GetProperties())
+            {
+                il.Emit(OpCodes.Ldarg_1);//load the idbcommand. Loads the argument at index 0 onto the evaluation stack.
+
+                //name
+                il.Emit(OpCodes.Ldstr, property.Name);
+                //dbtype
+                il.Emit(OpCodes.Ldc_I4_S, (byte)TypeCache.TypeToDbType[property.PropertyType]);
+
+                //value
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Callvirt, property.GetMethod);
+
+                //box if value type
+                if (property.PropertyType.IsValueType)
+                    il.Emit(OpCodes.Box, property.PropertyType);
+
+                il.Emit(OpCodes.Call, addInParameter);
+
+                il.Emit(OpCodes.Nop);
+            }
+            il.Emit(OpCodes.Ret);
+
+            var actionType = System.Linq.Expressions.Expression.GetActionType(typeof(object), typeof(IDbCommand));
+            return (Action<object, IDbCommand>)method.CreateDelegate(actionType);
+        }
+
     }
 
 }

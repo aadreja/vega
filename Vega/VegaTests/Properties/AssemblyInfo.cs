@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [assembly: AssemblyTitle("VegaTests")]
 [assembly: AssemblyDescription("")]
@@ -18,3 +19,6 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
+
+//https://xunit.github.io/docs/running-tests-in-parallel.html
+[assembly: CollectionBehavior(DisableTestParallelization = true)]

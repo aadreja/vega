@@ -1,57 +1,97 @@
 ﻿using Npgsql;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Data.SQLite;
+using System.Linq;
+using System.Reflection;
 using Vega;
+using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
+
+//https://xunit.github.io/docs/comparisons.html
 
 namespace VegaTests
 {
+
     public class Common
     {
-        public static IDbConnection GetConnection()
+
+    }
+
+    public class DbConnectionFixuture : IDisposable
+    {
+        public DbConnectionFixuture()
         {
 #if PGSQL
-            return cons["pgsql"];
+            Connection = new NpgsqlConnection("server=localhost;port=5432;Database=postgres;User Id=postgres;Password=postgres;timeout=1024;");
 #elif SQLITE
-            return cons["sqlite"];
+            Connection = new SQLiteConnection("Data Source=.\\test.db;Version=3;");
 #else
-            return cons["mssql"];
+            Connection = new SqlConnection("Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
 #endif
-        }
-
-        static Common()
-        {
-            cons = new Dictionary<string, IDbConnection>
-            {
-                ["mssql"] = new SqlConnection("Data Source=.;Initial Catalog=tempdb;Integrated Security=True"),
-                ["pgsql"] = new NpgsqlConnection("server=localhost;port=5432;Database=postgres;User Id=postgres;Password=postgres;timeout=1024;"),
-                ["sqlite"] = new SQLiteConnection("Data Source=.\\test.db;Version=3;")
-            };
-
-            //Set session
             Session.CurrentUserId = 1;
-        }
 
-        public static Dictionary<string, IDbConnection> cons;
-
-        public static void DropAndCreateTables()
-        {
-            Repository<City> cityRepo = new Repository<City>(GetConnection());
-            cityRepo.DropTable();
-            cityRepo.CreateTable();
-
-            Repository<Country> countryRepo = new Repository<Country>(GetConnection());
-            countryRepo.DropTable();
+            //Create Required Tables
+            Repository<Country> countryRepo = new Repository<Country>(Connection);
             countryRepo.CreateTable();
 
-            Repository<User> userRepo = new Repository<User>(GetConnection());
-            userRepo.DropTable();
+            Repository<City> cityRepo = new Repository<City>(Connection);
+            cityRepo.CreateTable();
+
+            Repository<User> userRepo = new Repository<User>(Connection);
             userRepo.CreateTable();
+
+        }
+
+        public IDbConnection Connection { get; set; }
+
+        public void Dispose()
+        {
+            //Drop created tables
+            Repository<Country> countryRepo = new Repository<Country>(Connection);
+            countryRepo.DropTable();
+
+            Repository<City> cityRepo = new Repository<City>(Connection);
+            cityRepo.DropTable();
+
+            Repository<User> userRepo = new Repository<User>(Connection);
+            userRepo.DropTable();
+
+            Connection?.Dispose();
         }
     }
+
+    public class TestPriorityAttribute : Attribute
+    {
+        public int Priority { get; set; }
+        public TestPriorityAttribute(int Priority)
+        {
+            this.Priority = Priority;
+        }
+    }
+
+    public class TestCollectionOrderer : ITestCaseOrderer
+    {
+        public IEnumerable<TTestCase> OrderTestCases<TTestCase>(IEnumerable<TTestCase> testCases) where TTestCase : ITestCase
+        {
+            var sortedMethods = new SortedDictionary<int, TTestCase>();
+
+            foreach (TTestCase testCase in testCases)
+            {
+                IAttributeInfo attribute = testCase.TestMethod.Method.
+                GetCustomAttributes((typeof(TestPriorityAttribute)
+                .AssemblyQualifiedName)).FirstOrDefault();
+
+                var priority = attribute.GetNamedArgument<int>("Priority");
+                sortedMethods.Add(priority, testCase);
+            }
+
+            return sortedMethods.Values;
+        }
+    }
+
 }

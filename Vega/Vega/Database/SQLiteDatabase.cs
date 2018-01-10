@@ -55,7 +55,7 @@ namespace Vega.Data
             }
         }
 
-        public override string ExistsQuery(string name, DBObjectTypeEnum objectType, string schema = null)
+        public override string DBObjectExistsQuery(string name, DBObjectTypeEnum objectType, string schema = null)
         {
             if (schema == null)
                 schema = DEFAULTSCHEMA;
@@ -134,5 +134,16 @@ namespace Vega.Data
             return createSQL.ToString();
 
         }
+
+        public override string CreateIndexQuery(string tableName, string indexName, string columns, bool isUnique)
+        {
+            return $@"CREATE {(isUnique ? "UNIQUE" : "")} INDEX {indexName} ON {tableName} ({columns})";
+        }
+
+        public override string IndexExistsQuery(string tableName, string indexName)
+        {
+            return $@"SELECT 1 FROM sqlite_master WHERE type='index' AND name='{indexName}' AND tbl_name='{tableName}'";
+        }
+
     }
 }

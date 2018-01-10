@@ -54,7 +54,7 @@ namespace Vega.Data
             }
         }
 
-        public override string ExistsQuery(string name, DBObjectTypeEnum objectType, string schema = null)
+        public override string DBObjectExistsQuery(string name, DBObjectTypeEnum objectType, string schema = null)
         {
             if (schema == null)
                 schema = DEFAULTSCHEMA;
@@ -129,6 +129,22 @@ namespace Vega.Data
             createSQL.Append(");");
 
             return createSQL.ToString();
+        }
+
+        public override string CreateIndexQuery(string tableName, string indexName, string columns, bool isUnique)
+        {
+            return $@"CREATE {(isUnique ? "UNIQUE" : "")} INDEX {indexName} ON {tableName} ({columns})";
+        }
+
+        public override string IndexExistsQuery(string tableName, string indexName)
+        {
+            /*si.object_id AS ObjectId, si.index_id AS IndexId, 
+            si.name AS IndexName, si.type AS IndexType, si.type_desc AS IndexTypeDesc, 
+            si.is_unique AS IndexIsUnique, si.is_primary_key AS IndexIsPrimarykey, 
+            si.fill_factor AS IndexFillFactor, sic.column_id, sc.name*/
+
+            return $@"SELECT 1 FROM sys.indexes AS si
+                        WHERE type<> 0 AND name='{indexName}' AND si.object_id IN(SELECT object_id from sys.tables WHERE name='{tableName}')";
         }
 
     }
