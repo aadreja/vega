@@ -300,7 +300,7 @@ namespace Demo
 
             //init 1st time
             City.CityADO cityAdo = new City.CityADO();
-            City.CityDapper cityDapper = new City.CityDapper();
+            //City.CityDapper cityDapper = new City.CityDapper();
             City.CityRepo cityRepo = new City.CityRepo(con);
 
             List<double> adoTiming = new List<double>();
@@ -324,7 +324,7 @@ namespace Demo
                 w.Reset();
 
                 w.Start();
-                List<City.City> city2 = cityDapper.ReadAll(-1);
+                //List<City.City> city2 = cityDapper.ReadAll(-1);
                 dapperTiming.Add(w.Elapsed.TotalMilliseconds);
                 w.Reset();
             }

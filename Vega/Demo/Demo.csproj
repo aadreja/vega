@@ -75,9 +75,6 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dapper">
-      <HintPath>..\..\..\..\Users\ritesh\Desktop\work\Dapper-master\Dapper\bin\Debug\net451\Dapper.dll</HintPath>
-    </Reference>
     <Reference Include="Npgsql, Version=3.2.6.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
       <HintPath>..\packages\Npgsql.3.2.6\lib\net451\Npgsql.dll</HintPath>
     </Reference>
@@ -105,7 +102,6 @@
   <ItemGroup>
     <Compile Include="City\City.cs" />
     <Compile Include="City\CityADO.cs" />
-    <Compile Include="City\CityDapper.cs" />
     <Compile Include="City\CityRepo.cs" />
     <Compile Include="City\EmitCode.cs" />
     <Compile Include="Program.cs" />
