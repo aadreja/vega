@@ -25,12 +25,16 @@ namespace VegaTests
     {
         public DbConnectionFixuture()
         {
+
 #if PGSQL
             Connection = new NpgsqlConnection("server=localhost;port=5432;Database=postgres;User Id=postgres;Password=postgres;timeout=1024;");
 #elif SQLITE
             Connection = new SQLiteConnection("Data Source=.\\test.db;Version=3;");
 #else
-            Connection = new SqlConnection("Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
+            if(IsAppVeyor)
+                Connection = new SqlConnection("Server=(local)\\SQL2016;Database=master;User ID=sa;Password=Password12!");
+            else
+                Connection = new SqlConnection("Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
 #endif
             Session.CurrentUserId = 1;
 
@@ -61,6 +65,17 @@ namespace VegaTests
             userRepo.DropTable();
 
             Connection?.Dispose();
+        }
+
+        public static bool IsAppVeyor
+        {
+            get
+            {
+                if (Environment.GetEnvironmentVariable("isappveyor") != null && Environment.GetEnvironmentVariable("isappveyor") == "1")
+                    return true;
+                else
+                    return false;
+            }
         }
     }
 
