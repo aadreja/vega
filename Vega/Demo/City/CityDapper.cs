@@ -15,7 +15,7 @@ namespace Demo.City
         {
             using (IDbConnection db = new SqlConnection(ConfigurationManager.ConnectionStrings["test"].ConnectionString))
             {
-                return db.Query<City>($"SELECT TOP {count} cityid, cityname, country, region, longitude, latitude, continent FROM City").ToList();
+                return db.Query<City>($"SELECT {(count > 0 ? "TOP " + count : "")} cityid, cityname, country, region, longitude, latitude, continent FROM City").ToList();
             }
         }
     }

@@ -41,28 +41,13 @@ namespace Vega
         {
             get
             {
-                return KeyIdGetSetCache.GetKeyId(GetType()).Invoke(this);
-
+                return EntityCache.Get(GetType()).PrimaryKeyColumn.GetAction(this);
             }
             set
             {
-                KeyIdGetSetCache.SetKeyId(GetType()).Invoke(this, value);
+                EntityCache.Get(GetType()).PrimaryKeyColumn.SetAction(this, value);
             }
         }
-
-        //TODO: Remove this property
-        //[IgnoreColumn(true)]
-        //public object KeyIdRef
-        //{
-        //    get
-        //    {
-        //        return EntityCache.Get(this.GetType()).PrimaryKeyColumn.Property.GetValue(this);
-        //    }
-        //    set
-        //    {
-        //        EntityCache.Get(this.GetType()).PrimaryKeyColumn.Property.SetValue(this, value);
-        //    }
-        //}
 
         [Column(Name = Config.CREATEDBY_COLUMNNAME, Title = "Created By")]
         public Int32 CreatedBy { get; set; }

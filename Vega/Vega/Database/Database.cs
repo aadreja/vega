@@ -198,7 +198,7 @@ namespace Vega
                 if (columnInfo != null && columnInfo.GetMethod != null)
                 {
                     dbType = columnInfo.ColumnDbType;
-                    columnValue = columnInfo.GetMethod.Invoke(entity, null);
+                    columnValue = columnInfo.GetAction(entity);
 
                     if (tableInfo.NeedsHistory) audit.AppendDetail(columns[i], columnValue, dbType);
                 }
@@ -268,14 +268,14 @@ namespace Vega
                     if (columnInfo != null && columnInfo.GetMethod != null)
                     {
                         dbType = columnInfo.ColumnDbType;
-                        columnValue = columnInfo.GetMethod.Invoke(entity, null);
+                        columnValue = columnInfo.GetAction(entity);
 
                         includeInUpdate = oldEntity == null; //include in update when oldEntity not available
 
                         //compare with old object to check whether update is needed or not
                         if (oldEntity != null)
                         {
-                            object oldObjectValue = columnInfo.GetMethod.Invoke(oldEntity, null);
+                            object oldObjectValue = columnInfo.GetAction(oldEntity);
 
                             if (oldObjectValue != null && columnValue != null)
                             {
@@ -362,6 +362,36 @@ namespace Vega
                 commandText.Append($" {Config.ISACTIVE_COLUMN.Name}={BITTRUEVALUE}");
             else if (status == RecordStatusEnum.InActive)
                 commandText.Append($" {Config.ISACTIVE_COLUMN.Name}={BITFALSEVALUE}");
+        }
+
+
+        internal virtual string GetDBTypeWithSize(DbType type, int size, int scale=0)
+        {
+            if(type == DbType.String || type == DbType.StringFixedLength)
+            {
+                if (size > 0)
+                    return DbTypeString[DbType.StringFixedLength] + "(" + size + ")";
+                else
+                    return DbTypeString[DbType.String];
+            }
+            else if (type == DbType.AnsiString || type == DbType.AnsiStringFixedLength)
+            {
+                if (size > 0)
+                    return DbTypeString[DbType.AnsiStringFixedLength] + "(" + size + ")";
+                else
+                    return DbTypeString[DbType.AnsiString];
+            }
+            else if (type == DbType.Decimal)
+            {
+                if (size > 0 && scale > 0)
+                    return DbTypeString[DbType.Decimal] + $"({size},{scale})";
+                else if (size > 0)
+                    return DbTypeString[DbType.Decimal] + $"({size})";
+                else
+                    return DbTypeString[DbType.Decimal];
+            }
+            else
+                return DbTypeString[type];
         }
 
         #endregion

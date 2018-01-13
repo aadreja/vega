@@ -13,11 +13,11 @@ namespace Demo.City
         ad=3
     }
 
-    [Table("prompt","citynew", NeedsHistory = true)]
+    [Table("prompt","citynew", NeedsHistory = false)]
     public class City : EntityBase
     {
 
-        [PrimaryKey]
+        [PrimaryKey(true)]
         public long CityId { get; set; }
 
         public string CityName { get; set; }

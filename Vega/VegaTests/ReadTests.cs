@@ -63,7 +63,7 @@ namespace VegaTests
                 city.Id = (long)cityRepo.Add(city);
             }
 
-            Assert.Equal(counter, cityRepo.Count("State=@state AND CountryId=@countryid", new { State = "RC", CountryId = 1 }));
+            Assert.Equal(counter, cityRepo.Count("State=@State AND CountryId=@Countryid", new { State = "RC", CountryId = 1 }));
             Assert.Equal(counter, cityRepo.Count("State=@state", new { State = "RC" }));
         }
 
@@ -98,7 +98,7 @@ namespace VegaTests
 
             var cityList = cityRepo.ReadAll();
 
-            Assert.Equal(cityList.Count(), (int)cityRepo.Count());
+            Assert.Equal(cityList.Count(), cityRepo.Count());
         }
 
         [Fact]
@@ -182,6 +182,30 @@ namespace VegaTests
             var cityList = cityRepo.ReadAllQuery("SELECT * FROM city WHERE state=@state", new { State = "RQ" } );
 
             Assert.Equal((int)cityRepo.Count("state=@state", new { State = "RQ" }), cityList.Count());
+        }
+
+        [Fact]
+        public void ReadAllEnumCriteria()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            for (int i = 0; i < 10; i++)
+            {
+                City city = new City()
+                {
+                    Name = "ReadTests.ReadAllQuery" + i,
+                    State = "RQ",
+                    CountryId = i,
+                    Longitude = 1m,
+                    Latitude = 1m,
+                    CityType = EnumCityType.Metro
+                };
+                city.Id = (long)cityRepo.Add(city);
+            }
+
+            var cityList = cityRepo.ReadAllQuery("SELECT * FROM city WHERE CityType=@CityType", new { CityType = EnumCityType.Metro });
+
+            Assert.Equal((int)cityRepo.Count("CityType=@CityType", new { CityType = EnumCityType.Metro }), cityList.Count());
         }
 
     }

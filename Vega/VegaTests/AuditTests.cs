@@ -31,11 +31,13 @@ namespace VegaTests
 
             //cleanup audittrial table
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            var id = cityRepo.Add(city);
             cityRepo.ExecuteNonQuery("DELETE FROM " + Config.AUDIT_TABLENAME);
 
             //add record
-
-            var id = cityRepo.Add(city);
+            city.Id = 0;
+            id = cityRepo.Add(city);
 
             //now update record
             city.State = "MH";
@@ -82,11 +84,14 @@ namespace VegaTests
 
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
+            var id = cityRepo.Add(city);
+
             //cleanup audit table
             cityRepo.ExecuteNonQuery("DELETE FROM " + Config.AUDIT_TABLENAME);
 
             //add record
-            var id = cityRepo.Add(city);
+            city.Id = 0;
+            id = cityRepo.Add(city);
 
             //read history
             var cityHistory = cityRepo.ReadHistory(id);

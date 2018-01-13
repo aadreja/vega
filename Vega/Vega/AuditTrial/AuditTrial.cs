@@ -24,10 +24,10 @@ namespace Vega
         [Column(Name = Config.AUDIT_OPERATIONTYPECOLUMNNAME)]
         public RecordOperationEnum OperationType { get; set; }
 
-        [Column(Name = Config.AUDIT_TABLENAMECOLUMNNAME)]
+        [Column(Name = Config.AUDIT_TABLENAMECOLUMNNAME, ColumnDbType = DbType.String, NumericPrecision = 255)]
         public string TableName { get; set; }
 
-        [Column(Name = Config.AUDIT_RECORDIDCOLUMNNAME, ColumnDbType = DbType.String)]
+        [Column(Name = Config.AUDIT_RECORDIDCOLUMNNAME, ColumnDbType = DbType.String, NumericPrecision = 50)]
         public string RecordId { get; set; }
 
         [Column(Name = Config.AUDIT_DETAILSCOLUMNNAME)]

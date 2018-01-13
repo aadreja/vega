@@ -2,14 +2,11 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.Serialization.Json;
-using System.Text;
-using System.Threading;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Vega;
 
 namespace Demo
@@ -23,25 +20,149 @@ namespace Demo
         {
             Session.CurrentUserId = 1;
 
-            string datetime = "2018-01-1a 23:07:10";
-            DateTime dt = datetime.FromSQLDateTime();
-
-            datetime = "2018-01-10";
-            dt = datetime.FromSQLDate();
-
-            StringSplit();
-
+            TestRefVsEmit();
+            //LoadTestInsertRefVsEmit();
+            //StringSplit();
             //KeyIdPerfTestReflectionVsEmit();
             //LoadTestInsert();
+        }
 
-            Vega.Repository<City.City> cityRepo = new Vega.Repository<City.City>(con);
+        public static void TestRefVsEmit()
+        {
+            City.City city = new City.City
+            {
+                CityName = "Ahmedabad",
+                Country = "IN",
+                Region = "AS",
+                Latitude = 10.30m,
+                Longitude = 10.30m,
+                Continent = City.EnumContinent.ad
+            };
+            city.AccentCity = city.CityName;
 
-            bool result = cityRepo.Delete(29192);
+            MethodInfo[] methodInfos = new MethodInfo[] {
+                city.GetType().GetProperty("CityName").GetMethod,
+                city.GetType().GetProperty("Country").GetMethod,
+                city.GetType().GetProperty("Region").GetMethod,
+                city.GetType().GetProperty("Latitude").GetMethod,
+                city.GetType().GetProperty("Longitude").GetMethod,
+                city.GetType().GetProperty("Continent").GetMethod,
+                city.GetType().GetProperty("AccentCity").GetMethod,
+            };
 
-            City.City city = cityRepo.ReadOne(29192);
-            city.CityName = "Vega Update 7";
-            cityRepo.Update(city);
-          
+            Func<object, object>[] emits = new Func<object, object>[]
+            {
+                Helper.CreateGetProperty(city.GetType(), "CityName"),
+                Helper.CreateGetProperty(city.GetType(), "Country"),
+                Helper.CreateGetProperty(city.GetType(), "Region"),
+                Helper.CreateGetProperty(city.GetType(), "Latitude"),
+                Helper.CreateGetProperty(city.GetType(), "Longitude"),
+                Helper.CreateGetProperty(city.GetType(), "Continent"),
+                Helper.CreateGetProperty(city.GetType(), "AccentCity"),
+            };
+
+            List<double> refTiming = new List<double>();
+            List<double> emitTiming = new List<double>();
+            Stopwatch w = new Stopwatch();
+            for (int i=0; i < 1000000; i++)
+            {
+                w.Start();
+                foreach(MethodInfo mi in methodInfos)
+                {
+                    var result = mi.Invoke(city, null);
+                }
+                refTiming.Add(w.Elapsed.TotalMilliseconds);
+                w.Reset();
+
+                w.Start();
+                foreach (Func<object, object> func in emits)
+                {
+                    var result = func(city);
+                }
+                emitTiming.Add(w.Elapsed.TotalMilliseconds);
+                w.Reset();
+            }
+            ShowResults(new string[] { "Emit", "Ref" }, new List<double>[] { emitTiming, refTiming });
+
+        }
+
+        public static void LoadTestInsertRefVsEmit()
+        {
+            City.City city = new City.City
+            {
+                CityName = "Ahmedabad",
+                Country = "IN",
+                Region = "AS",
+                Latitude = 10.30m,
+                Longitude = 10.30m,
+                Continent = City.EnumContinent.ad
+            };
+            city.AccentCity = city.CityName;
+
+            int iteration = 10000;
+            List<double> refTiming = new List<double>();
+            List<double> emitTiming = new List<double>();
+
+            City.CityRepo cityRepo = new City.CityRepo(con);
+
+            for (int i = 0; i < 5; i++)
+            {
+                city.CityId = 0;
+                cityRepo.Add(city, null);
+                city.CityId = 0;
+                cityRepo.Add(city);
+            }
+
+            Stopwatch w = new Stopwatch();
+            Console.WriteLine("Inserting...");
+            w = new Stopwatch();
+            for (int i = 0; i < iteration; i++)
+            {
+                city.CityId = 0;
+                city.CityName = "Emit" + i;
+                city.AccentCity = city.CityName;
+
+                w.Start();
+                cityRepo.Add(city);
+                emitTiming.Add(w.Elapsed.TotalMilliseconds);
+                w.Reset();
+
+                city.CityId = 0;
+                city.CityName = "Refl" + i;
+                city.AccentCity = city.CityName;
+
+                w.Start();
+                cityRepo.Add(city);
+                refTiming.Add(w.Elapsed.TotalMilliseconds);
+                w.Reset();
+            }
+
+            ShowResults(new string[] { "Emit", "Ref" }, new List<double>[] { emitTiming, refTiming });
+        }
+
+        static void ShowResults(string[] texts, List<double>[] results)
+        {
+            Console.Clear();
+            Console.WriteLine("------------------------------");
+            foreach(string s in texts) Console.Write("\t{0}", s);
+            Console.WriteLine();
+
+            //Console.WriteLine("------------------------------");
+            //for (int i = 0; i < iteration; i++)
+            //{
+            //    Console.WriteLine("{0:0}\t {1:00}\t {2:00}", i, refTiming[i], emitTiming[i]);
+            //}
+            Console.WriteLine("------------------------------");
+            Console.Write("Tot:");
+            foreach (List<double> res in results) Console.Write("\t {0:0.00}", res.Sum());
+            Console.WriteLine();
+
+            Console.Write("Avg:");
+            foreach (List<double> res in results) Console.Write("\t {0:0.00}", res.Average());
+            Console.WriteLine();
+            Console.WriteLine("------------------------------");
+
+            Console.Read();
         }
 
         public static void StringSplit()
@@ -60,21 +181,6 @@ namespace Demo
 
                 Console.WriteLine("{0}={1}", val[0], val[1]);
             }
-            Console.ReadLine();
-        }
-
-        public static void JsonTest()
-        {
-            string jsonData = "{ \"CityName\":\"Ahmedabad\",\"Country\":\"India\" }";
-
-            DataContractJsonSerializer jsonSerializer = new DataContractJsonSerializer(typeof(City.City));
-            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(jsonData));
-
-            stream.Position = 0;
-            City.City city = (City.City)jsonSerializer.ReadObject(stream);
-
-            Console.WriteLine(string.Concat("Hi ", city.CityName, " " + city.Country));
-
             Console.ReadLine();
         }
 
@@ -144,39 +250,28 @@ namespace Demo
             List<double> adoTiming = new List<double>();
             List<double> vegaTiming = new List<double>();
 
-
-
             City.CityADO cityAdo = new City.CityADO();
             City.CityRepo cityRepo = new City.CityRepo(con);
 
             Stopwatch w = new Stopwatch();
 
-            Console.WriteLine("Vega...");
+            Console.WriteLine("Inserting...");
             w = new Stopwatch();
             for (int i = 0; i < iteration; i++)
             {
                 city.CityId = 0;
                 city.CityName = "Vega" + i;
                 city.AccentCity = city.CityName;
-
-                Console.WriteLine("Iteration " + i);
+                
                 w.Start();
-
                 cityRepo.Add(city);
-
                 vegaTiming.Add(w.Elapsed.TotalMilliseconds);
                 w.Reset();
-            }
 
-            Console.WriteLine("ADO...");
-            w = new Stopwatch();
-            for (int i = 0; i < iteration; i++)
-            {
                 city.CityId = 0;
                 city.CityName = "ADO" + i;
                 city.AccentCity = city.CityName;
 
-                Console.WriteLine("Iteration " + i);
                 w.Start();
                 cityAdo.Add(city);
                 adoTiming.Add(w.Elapsed.TotalMilliseconds);
@@ -192,8 +287,8 @@ namespace Demo
                 Console.WriteLine("{0:0}\t {1:00}\t {2:00}", i, adoTiming[i], vegaTiming[i]);
             }
             Console.WriteLine("------------------------------");
-            Console.WriteLine("T\t {0:00}\t {1:00}", adoTiming.Skip(1).Sum(), vegaTiming.Skip(1).Sum());
-            Console.WriteLine("A\t {0:00}\t {1:00}", adoTiming.Skip(1).Average(), vegaTiming.Skip(1).Average());
+            Console.WriteLine("T\t {0:0.00}\t {1:0.00}", adoTiming.Skip(1).Sum(), vegaTiming.Skip(1).Sum());
+            Console.WriteLine("A\t {0:0.00}\t {1:0.00}", adoTiming.Skip(1).Average(), vegaTiming.Skip(1).Average());
             Console.WriteLine("------------------------------");
 
             Console.Read();
@@ -201,18 +296,12 @@ namespace Demo
 
         public static void LoadTestGet()
         {
-            int recCount = 100000;
-            int iteration = 10;
+            int iteration = 1000;
 
             //init 1st time
             City.CityADO cityAdo = new City.CityADO();
-            //cityAdo.ReadAll(recCount);
-            //City.CityDapper cityDapper = new City.CityDapper();
-            //cityDapper.ReadAll(recCount);
+            City.CityDapper cityDapper = new City.CityDapper();
             City.CityRepo cityRepo = new City.CityRepo(con);
-            List<City.City> cities = new List<City.City>();// cityRepo.ReadAll(recCount).ToList();
-
-            City.CityRepo cityRepo1 = new City.CityRepo(con);
 
             List<double> adoTiming = new List<double>();
             List<double> vegaTiming = new List<double>();
@@ -220,35 +309,22 @@ namespace Demo
 
             Stopwatch w = new Stopwatch();
 
-            Console.WriteLine("ADO...");
+            Console.WriteLine("Get...");
             w = new Stopwatch();
             for (int i = 0; i < iteration; i++)
             {
-                Console.WriteLine("Iteration " + i);
                 w.Start();
-                cityAdo.ReadAll(recCount);
+                cityAdo.ReadAll(-1);
                 adoTiming.Add(w.Elapsed.TotalMilliseconds);
                 w.Reset();
-            }
 
-            Console.WriteLine("Vega...");
-            w = new Stopwatch();
-            for (int i = 0; i < iteration; i++)
-            {
-                Console.WriteLine("Iteration " + i);
                 w.Start();
-                List<City.City> city1 = new List<City.City>(); //cityRepo.ReadAll(recCount).ToList();
+                List<City.City> city1 = cityRepo.ReadAll().ToList();
                 vegaTiming.Add(w.Elapsed.TotalMilliseconds);
                 w.Reset();
-            }
 
-            Console.WriteLine("Dapper...");
-            w = new Stopwatch();
-            for (int i = 0; i < iteration; i++)
-            {
-                Console.WriteLine("Iteration " + i);
                 w.Start();
-                //List<City.City> city1 = cityDapper.ReadAll(recCount);
+                List<City.City> city2 = cityDapper.ReadAll(-1);
                 dapperTiming.Add(w.Elapsed.TotalMilliseconds);
                 w.Reset();
             }
@@ -262,8 +338,8 @@ namespace Demo
                 Console.WriteLine("{0:0}\t {1:00}\t {2:00}\t {3:00}", i, adoTiming[i], vegaTiming[i], dapperTiming[i]);
             }
             Console.WriteLine("------------------------------");
-            Console.WriteLine("T\t {0:00}\t {1:00}\t {2:00}", adoTiming.Skip(1).Sum(), vegaTiming.Skip(1).Sum(), dapperTiming.Skip(1).Sum());
-            Console.WriteLine("A\t {0:00}\t {1:00}\t {2:00}", adoTiming.Skip(1).Average(), vegaTiming.Skip(1).Average(), dapperTiming.Skip(1).Average());
+            Console.WriteLine("T\t {0:0.00}\t {1:0.00}\t {2:0.00}", adoTiming.Skip(1).Sum(), vegaTiming.Skip(1).Sum(), dapperTiming.Skip(1).Sum());
+            Console.WriteLine("A\t {0:0.00}\t {1:0.00}\t {2:0.00}", adoTiming.Skip(1).Average(), vegaTiming.Skip(1).Average(), dapperTiming.Skip(1).Average());
             Console.WriteLine("------------------------------");
 
             Console.Read();

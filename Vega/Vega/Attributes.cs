@@ -282,6 +282,8 @@ namespace Vega
         internal MethodInfo GetMethod { get; set; }
         internal IgnoreColumnAttribute IgnoreInfo { get; set; }
 
+        internal Action<object, object> SetAction { get; set; }
+        internal Func<object, object> GetAction { get; set; }
 
         #endregion
 

@@ -52,7 +52,7 @@ namespace Demo.City
                 con.Open();
 
                 SqlCommand cmd = con.CreateCommand();
-                cmd.CommandText = $"SELECT top {count} cityid, cityname, country, region, longitude, latitude,continent from city";
+                cmd.CommandText = $"SELECT {(count > 0 ? "TOP " + count : "")} cityid, cityname, country, region, longitude, latitude,continent from city";
                 SqlDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                 {

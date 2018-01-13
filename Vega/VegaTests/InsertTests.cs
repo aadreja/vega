@@ -41,12 +41,14 @@ namespace VegaTests
                 State = "GU",
                 Latitude = 10.65m,
                 Longitude = 11.50m,
+                CityType = EnumCityType.Metro
             };
 
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             var id = cityRepo.Add(city);
 
             Assert.Equal("Ahmedabad", cityRepo.ReadOne<string>(id, "Name"));
+            Assert.Equal(EnumCityType.Metro, cityRepo.ReadOne<EnumCityType>(id, "CityType"));
         }
 
         [Fact]
@@ -65,7 +67,23 @@ namespace VegaTests
             Assert.Equal("India", countryRepo.ReadOne<string>(id, "Name"));
         }
 
-        
+        [Fact]
+        public void InsertNonNumericEnum()
+        {
+            Country country = new Country
+            {
+                Name = "India",
+                ShortCode = "IN",
+                Independence = new DateTime(1947, 8, 15),
+                Continent = EnumContinent.America
+            };
+
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
+            var id = countryRepo.Add(country);
+
+            Assert.Equal("India", countryRepo.ReadOne<string>(id, "Name"));
+            Assert.Equal(EnumContinent.America, countryRepo.ReadOne<EnumContinent>(id, "Continent"));
+        }
 
     }
 }

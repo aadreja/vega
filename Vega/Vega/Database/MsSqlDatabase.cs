@@ -35,14 +35,15 @@ namespace Vega.Data
                 dbTypeString = new Dictionary<DbType, String>
                 {
                     [DbType.String] = "nvarchar(MAX)",
+                    [DbType.StringFixedLength] = "nvarchar",
                     [DbType.AnsiString] = "varchar(MAX)",
+                    [DbType.AnsiStringFixedLength] = "varchar",
                     [DbType.Guid] = "uniqueidentifier",
                     [DbType.Byte] = "tinyint",
                     [DbType.Int16] = "smallint",
                     [DbType.Int32] = "int",
                     [DbType.Int64] = "bigint",
                     [DbType.Boolean] = "bit",
-                    [DbType.StringFixedLength] = "char",
                     [DbType.Decimal] = "decimal",
                     [DbType.Single] = "single",
                     [DbType.Double] = "double",
@@ -115,7 +116,7 @@ namespace Vega.Data
                 }
                 else
                 {
-                    createSQL.Append($"{col.Name} {DbTypeString[col.ColumnDbType]}");
+                    createSQL.Append($"{col.Name} {GetDBTypeWithSize(col.ColumnDbType, col.NumericPrecision, col.NumericScale)}");
 
                     if (col.Name == Config.CREATEDON_COLUMN.Name || col.Name == Config.UPDATEDON_COLUMN.Name)
                     {

@@ -85,11 +85,10 @@ namespace Vega
                 primaryKeyColumn.Property = primaryKeyProperty;
                 primaryKeyColumn.SetMethod = primaryKeyProperty.GetSetMethod();
                 primaryKeyColumn.GetMethod = primaryKeyProperty.GetGetMethod();
+                primaryKeyColumn.SetAction = Helper.CreateSetProperty(entity, primaryKeyProperty.Name);
+                primaryKeyColumn.GetAction = Helper.CreateGetProperty(entity, primaryKeyProperty.Name);
 
                 result.PrimaryKeyColumn = primaryKeyColumn;
-
-                //KeyId get/set delegates
-
             }
 
             foreach (PropertyInfo property in properties)
@@ -123,6 +122,9 @@ namespace Vega
                 column.Property = property;
                 column.SetMethod = property.GetSetMethod();
                 column.GetMethod = property.GetGetMethod();
+                column.SetAction = Helper.CreateSetProperty(entity, property.Name);
+                column.GetAction = Helper.CreateGetProperty(entity, property.Name);
+
                 column.IgnoreInfo = ignoreInfo ?? new IgnoreColumnAttribute(false);
 
                 if (result.NoCreatedBy && (column.Name.Equals(Config.CREATEDBY_COLUMNNAME, StringComparison.OrdinalIgnoreCase)
@@ -164,152 +166,6 @@ namespace Vega
     }
 
 
-    //https://www.codeproject.com/Articles/9927/Fast-Dynamic-Property-Access-with-C
-    public static class KeyIdGetSetCache
-    {
-        static Hashtable mTypeHash;
-        static Dictionary<Type, Func<object, object>> EntityKeyIdGetFunc;
-        static Dictionary<Type, Action<object, object>> EntityKeyIdSetFunc;
-
-        static KeyIdGetSetCache()
-        {
-            EntityKeyIdGetFunc = new Dictionary<Type, Func<object, object>>();
-            EntityKeyIdSetFunc = new Dictionary<Type, Action<object, object>>();
-
-            mTypeHash = new Hashtable
-            {
-                [typeof(sbyte)] = OpCodes.Ldind_I1,
-                [typeof(byte)] = OpCodes.Ldind_U1,
-                [typeof(char)] = OpCodes.Ldind_U2,
-                [typeof(short)] = OpCodes.Ldind_I2,
-                [typeof(ushort)] = OpCodes.Ldind_U2,
-                [typeof(int)] = OpCodes.Ldind_I4,
-                [typeof(uint)] = OpCodes.Ldind_U4,
-                [typeof(long)] = OpCodes.Ldind_I8,
-                [typeof(ulong)] = OpCodes.Ldind_I8,
-                [typeof(bool)] = OpCodes.Ldind_I1,
-                [typeof(double)] = OpCodes.Ldind_R8,
-                [typeof(float)] = OpCodes.Ldind_R4
-            };
-        }
-
-        public static void Clear()
-        {
-            EntityKeyIdGetFunc.Clear();
-            EntityKeyIdSetFunc.Clear();
-        }
-
-        public static Func<object, object> GetKeyId(Type entityType)
-        {
-            Func<object, object> result;
-
-            lock (EntityKeyIdGetFunc)
-            {
-                if (EntityKeyIdGetFunc.TryGetValue(entityType, out result)) return result;
-            }
-
-            result = CreateGetProperty(entityType);
-            //save in cache
-            lock (EntityKeyIdGetFunc)
-            {
-                EntityKeyIdGetFunc[entityType] = result;
-            }
-
-            return result;
-        }
-
-        public static Action<object, object> SetKeyId(Type entityType)
-        {
-            Action<object, object> result;
-
-            lock (EntityKeyIdSetFunc)
-            {
-                if (EntityKeyIdSetFunc.TryGetValue(entityType, out result)) return result;
-            }
-
-            result = CreateSetProperty(entityType);
-            //save in cache
-            lock (EntityKeyIdSetFunc)
-            {
-                EntityKeyIdSetFunc[entityType] = result;
-            }
-
-            return result;
-        }
-
-        static Func<object, object> CreateGetProperty(Type entityType)
-        {
-            MethodInfo mi = EntityCache.Get(entityType).PrimaryKeyColumn.GetMethod;
-
-            Type[] args = new Type[] { typeof(object) };
-
-            DynamicMethod method = new DynamicMethod("Get_" + entityType.Name + "KeyId", typeof(object), args, entityType.Module, true);
-            ILGenerator getIL = method.GetILGenerator();
-
-            getIL.DeclareLocal(typeof(object));
-            getIL.Emit(OpCodes.Ldarg_0); //Load the first argument
-
-            //(target object)
-            //Cast to the source type
-            getIL.Emit(OpCodes.Castclass, entityType);
-
-            //Get the property value
-            getIL.EmitCall(OpCodes.Call, mi, null);
-            if (mi.ReturnType.IsValueType)
-            {
-                getIL.Emit(OpCodes.Box, mi.ReturnType);
-                //Box if necessary
-            }
-            getIL.Emit(OpCodes.Stloc_0); //Store it
-
-            getIL.Emit(OpCodes.Ldloc_0);
-            getIL.Emit(OpCodes.Ret);
-
-            var funcType = System.Linq.Expressions.Expression.GetFuncType(typeof(object), typeof(object));
-            return (Func<object, object>)method.CreateDelegate(funcType);
-        }
-
-        static Action<object, object> CreateSetProperty(Type entityType)
-        {
-            MethodInfo mi = EntityCache.Get(entityType).PrimaryKeyColumn.SetMethod;
-
-            Type[] args = new Type[] { typeof(object), typeof(object) };
-
-            DynamicMethod method = new DynamicMethod("Set_" + entityType.Name + "KeyId", null, args, entityType.Module, true);
-            ILGenerator setIL = method.GetILGenerator();
-
-            Type paramType = mi.GetParameters()[0].ParameterType;
-
-            //setIL.DeclareLocal(typeof(object));
-            setIL.Emit(OpCodes.Ldarg_0); //Load the first argument [Entity]
-            //(target object)
-            //Cast to the source type
-            setIL.Emit(OpCodes.Castclass, entityType);
-            setIL.Emit(OpCodes.Ldarg_1); //Load the second argument [Value]
-            //(value object)
-            if (paramType.IsValueType)
-            {
-                setIL.Emit(OpCodes.Unbox, paramType); //Unbox it 
-                if (mTypeHash[paramType] != null) //and load
-                {
-                    OpCode load = (OpCode)mTypeHash[paramType];
-                    setIL.Emit(load);
-                }
-                else
-                {
-                    setIL.Emit(OpCodes.Ldobj, paramType);
-                }
-            }
-            else
-            {
-                setIL.Emit(OpCodes.Castclass, paramType); //Cast class
-            }
-
-            setIL.EmitCall(OpCodes.Callvirt, mi, null); //Set the property value
-            setIL.Emit(OpCodes.Ret);
-
-            var actionType = System.Linq.Expressions.Expression.GetActionType(typeof(object), typeof(object));
-            return (Action<object, object>)method.CreateDelegate(actionType);
-        }
-    }
+    
+    
 }

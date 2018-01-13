@@ -281,16 +281,23 @@ namespace Vega
 
                 //name
                 il.Emit(OpCodes.Ldstr, property.Name);
+                
                 //dbtype
-                il.Emit(OpCodes.Ldc_I4_S, (byte)TypeCache.TypeToDbType[property.PropertyType]);
+                Type type = property.PropertyType;
+                if (type.IsEnum) type = Enum.GetUnderlyingType(type);
+
+                if(TypeCache.TypeToDbType.TryGetValue(type, out DbType dbType))
+                    il.Emit(OpCodes.Ldc_I4_S, (byte)dbType);
+                else
+                    il.Emit(OpCodes.Ldc_I4_S, (byte)DbType.String); //TODO: fix when unkown type
 
                 //value
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Callvirt, property.GetMethod);
 
                 //box if value type
-                if (property.PropertyType.IsValueType)
-                    il.Emit(OpCodes.Box, property.PropertyType);
+                if (type.IsValueType)
+                    il.Emit(OpCodes.Box, type);
 
                 il.Emit(OpCodes.Call, addInParameter);
 

@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Data.Common;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -96,12 +97,20 @@ namespace Vega
 
         public void Commit()
         {
-            if(Transaction!=null) Transaction.Commit();
+            if (Transaction != null) {
+                Transaction.Commit();
+                Transaction = null;
+            }
+
         }
 
         public void Rollback()
         {
-            if (Transaction != null) Transaction.Rollback();
+            if (Transaction != null)
+            {
+                Transaction.Rollback();
+                Transaction = null;
+            }
         }
 
         #endregion
@@ -123,6 +132,10 @@ namespace Vega
         public object Add(T entity, string columns)
         {
             bool isTransactHere = false;
+
+            bool isConOpen = IsConnectionOpen();
+            if (!isConOpen) Connection.Open();
+
             try
             {
                 if (!entity.IsActive) entity.IsActive = true; //bydefault record will be active
@@ -136,7 +149,7 @@ namespace Vega
                 }
 
                 IDbCommand command = Connection.CreateCommand();
-                DB.CreateAddCommand(command, entity, audit, columns);
+                DB.CreateAddCommand(command, entity, audit, columns, false);
                 var keyId = ExecuteScalar(command);
                 //get identity
                 if (TableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsKeyIdEmpty())
@@ -158,6 +171,10 @@ namespace Vega
                 if (isTransactHere) Rollback();
                 throw;
             }
+            finally
+            {
+                if (!isConOpen) Connection.Close();
+            }
         }
 
         #endregion
@@ -172,7 +189,8 @@ namespace Vega
         public bool Update(T entity, string columns, T oldEntity=null)
         {
             bool isTransactHere = false;
-
+            bool isConOpen = IsConnectionOpen();
+            if (!isConOpen) Connection.Open();
             try
             {
                 AuditTrial audit = null;
@@ -216,6 +234,10 @@ namespace Vega
             {
                 if(isTransactHere) Rollback();
                 throw;
+            }
+            finally
+            {
+                if (!isConOpen) Connection.Close();
             }
         }
 
@@ -266,6 +288,8 @@ namespace Vega
         bool Delete(object id, Int32 versionNo, bool isHardDelete)
         {
             bool isTransactHere = false;
+            bool isConOpen = IsConnectionOpen();
+            if (!isConOpen) Connection.Open();
 
             try
             {
@@ -330,6 +354,10 @@ namespace Vega
                 if (isTransactHere) Rollback();
                 throw;
             }
+            finally
+            {
+                if (!isConOpen) Connection.Close();
+            }
         }
 
         #endregion
@@ -349,6 +377,8 @@ namespace Vega
             }
 
             bool isTransactHere = false;
+            bool isConOpen = IsConnectionOpen();
+            if (!isConOpen) Connection.Open();
 
             try
             {
@@ -406,6 +436,10 @@ namespace Vega
             {
                 if (isTransactHere) Rollback();
                 throw;
+            }
+            finally
+            {
+                if (!isConOpen) Connection.Close();
             }
         }
 
@@ -586,7 +620,9 @@ namespace Vega
 
             bool isConOpen = IsConnectionOpen();
             if (!isConOpen) Connection.Open();
-            long result = (long)cmd.ExecuteScalar();
+
+            long result = cmd.ExecuteScalar().Parse<long>();
+
             if (!isConOpen) Connection.Close();
             return result;
         }
@@ -651,22 +687,12 @@ namespace Vega
 
         public R Query<R>(string query)
         {
-            var result = ExecuteScalar(query);
-
-            if (result is R)
-                return (R)result;
-            else
-                return default(R);
+            return ExecuteScalar(query).Parse<R>();
         }
 
         public R Query<R>(IDbCommand cmd)
         {
-            var result = ExecuteScalar(cmd);
-
-            if (result is R)
-                return (R)result;
-            else
-                return default(R);
+            return ExecuteScalar(cmd).Parse<R>();
         }
 
         public DbDataAdapter CreateDataAdapter(IDbCommand command)
