@@ -1,0 +1,47 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2009
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vega", "Vega\Vega.csproj", "{041AA4C8-5E5E-406D-8DB4-7EC079E467D5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vega.Tests", "Vega.Tests\Vega.Tests.csproj", "{D8D46F35-FF38-4180-8C98-C18B94A4ED03}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common Items", "Common Items", "{5779B42A-E911-4EF7-9A62-EC012EB509E9}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{041AA4C8-5E5E-406D-8DB4-7EC079E467D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{041AA4C8-5E5E-406D-8DB4-7EC079E467D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{041AA4C8-5E5E-406D-8DB4-7EC079E467D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{041AA4C8-5E5E-406D-8DB4-7EC079E467D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8D46F35-FF38-4180-8C98-C18B94A4ED03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8D46F35-FF38-4180-8C98-C18B94A4ED03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8D46F35-FF38-4180-8C98-C18B94A4ED03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8D46F35-FF38-4180-8C98-C18B94A4ED03}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7925F1B1-B1C8-43F1-B153-ECD1390B0D4B}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+EndGlobal
