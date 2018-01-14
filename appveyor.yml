@@ -1,0 +1,10 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+environment:
+  isappveyor: 1
+services: mssql2016
+before_build:
+- cmd: nuget restore C:\projects\vega\Vega.sln
+build:
+  project: Vega.sln
+  verbosity: minimal

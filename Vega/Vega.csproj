@@ -5,6 +5,7 @@
 	<Title>Vega</Title>
 	<Description>Fastest .net ORM with Enterprise features</Description>
 	<PackageTags>orm;fastest;.net;enterprise;</PackageTags>
+	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System" />
@@ -21,5 +22,8 @@
   <ItemGroup>
     <Compile Remove="PagedListParameters.cs" />
     <Compile Remove="PrimaryKey.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="nuget.exe" />
   </ItemGroup>
 </Project>
