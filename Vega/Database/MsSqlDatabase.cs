@@ -148,5 +148,17 @@ namespace Vega.Data
                         WHERE type<> 0 AND name='{indexName}' AND si.object_id IN(SELECT object_id from sys.tables WHERE name='{tableName}')";
         }
 
+        public override string VirtualForeignKeyCheckQuery(ForeignKey vfk)
+        {
+            StringBuilder query = new StringBuilder();
+
+            query.Append($"SELECT TOP 1 1 FROM {vfk.FullTableName} WHERE {vfk.ColumnName}=@Id");
+
+            if (vfk.ContainsIsActive)
+                query.Append($" AND {Config.ISACTIVE_COLUMNNAME}={BITTRUEVALUE}");
+
+            return query.ToString();
+        }
+
     }
 }

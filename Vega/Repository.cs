@@ -353,6 +353,9 @@ namespace Vega
 
             try
             {
+                //check virtual foreign key violation
+                IsVirtualForeignKeyViolation(id);
+
                 if (TableInfo.NeedsHistory)
                 {
                     isTransactHere = BeginTransaction();
@@ -663,34 +666,40 @@ namespace Vega
         #region Record count
 
         /// <summary>
-        /// Count Number of records in table
+        /// Count Number of Records in Table
         /// </summary>
         /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
-        /// <returns></returns>
+        /// <returns>no of records for a given criteria</returns>
         public long Count(RecordStatusEnum status)
         {
             return Count(null, null, status);
         }
 
         /// <summary>
-        /// Count Number of records in table with criteria
+        /// Count Number of records in table with given query or criteria on current entity table
         /// </summary>
-        /// <param name="criteria">optional Criteria. e.g. "Department=@Department" </param>
+        /// <param name="queryorCriteria">optional Custom query or criteria for current entity table. e.g. "SELECT * FROM City" OR "Department=@Department" </param>
         /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
         /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
-        /// <returns></returns>
-        public long Count(string criteria = null, object parameters = null, RecordStatusEnum status = RecordStatusEnum.All)
+        /// <returns>no of records for a given query or criteria</returns>
+        public long Count(string queryorCriteria = null, object parameters = null, RecordStatusEnum status = RecordStatusEnum.All)
         {
+            bool isQuery = !string.IsNullOrEmpty(queryorCriteria) && queryorCriteria.ToLowerInvariant().Contains("select");
+
+            StringBuilder query = new StringBuilder();
+
+            if (!isQuery)
+            {
+                query.Append($"SELECT COUNT({(TableInfo.PrimaryKeyColumn != null ? TableInfo.PrimaryKeyColumn.Name : "0")}) FROM {TableInfo.FullName}");
+                if (!string.IsNullOrEmpty(queryorCriteria)) query.Append(" WHERE " + queryorCriteria);
+                if (!TableInfo.NoIsActive) DB.AppendStatusCriteria(query, status);
+            }
+            else
+                query.Append(queryorCriteria);
+
             IDbCommand cmd = Connection.CreateCommand();
-
-            string query = $"SELECT COUNT({(TableInfo.PrimaryKeyColumn != null ? TableInfo.PrimaryKeyColumn.Name : "0")}) FROM {TableInfo.FullName}";
-
-            StringBuilder commandText = DB.CreateSelectCommand(cmd, query, criteria, parameters);
-
-            if (!TableInfo.NoIsActive)DB.AppendStatusCriteria(commandText, status);
-
             cmd.CommandType = CommandType.Text;
-            cmd.CommandText = commandText.ToString();
+            cmd.CommandText = DB.CreateSelectCommand(cmd, query.ToString(), parameters).ToString();
 
             bool isConOpen = IsConnectionOpen();
             if (!isConOpen) Connection.Open();
@@ -705,12 +714,12 @@ namespace Vega
 
         #region Read History
 
-        /// <summary>
-        /// Read all history of a given record
-        /// </summary>
-        /// <param name="id">Record Id</param>
-        /// <returns>List of audit for this record</returns>
-        public IEnumerable<T> ReadHistory(object id)
+            /// <summary>
+            /// Read all history of a given record
+            /// </summary>
+            /// <param name="id">Record Id</param>
+            /// <returns>List of audit for this record</returns>
+            public IEnumerable<T> ReadHistory(object id)
         {
             AuditTrialRepository auditRepo = new AuditTrialRepository(Connection);
 
@@ -752,6 +761,11 @@ namespace Vega
         #endregion
 
         #region Read with paging
+
+        //public IEnumerable<T> ReadAllPaged(string query, object parameters, int pageNo, int pageSize, string orderBy)
+        //{
+        //    string sql = $"SELECT *,ROW_NUMBER() ORDER (ORDER BY {orderBy}) FROM ({query}) AS a";
+        //}
 
         #endregion
 
@@ -914,9 +928,7 @@ namespace Vega
             try
             {
                 if (!isConOpen) Connection.Open();
-
                 if (Transaction != null) command.Transaction = Transaction;
-
                 return command.ExecuteNonQuery();
             }
             finally
@@ -951,9 +963,7 @@ namespace Vega
             try
             {
                 if (!isConOpen) Connection.Open();
-
                 if (Transaction != null) command.Transaction = Transaction;
-
                 return command.ExecuteScalar();
             }
             catch
@@ -967,7 +977,7 @@ namespace Vega
         }
 #endregion
 
-#region DDL Methods
+        #region DDL Methods
 
         /// <summary>
         /// Checks whether database table exits for current entity table
@@ -1042,6 +1052,32 @@ namespace Vega
             return true;
         }
 
-#endregion
+        #endregion
+
+        #region Referene Integrity Methods
+
+        /// <summary>
+        /// To check foreign key violation against this table
+        /// </summary>
+        /// <param name="keyId">Master Record Id</param>
+        /// <returns>True i</returns>
+        public bool IsVirtualForeignKeyViolation(object keyId)
+        {
+            if (TableInfo.VirtualForeignKeys == null || TableInfo.VirtualForeignKeys.Count == 0)
+                return false;
+
+            foreach (ForeignKey vfk in TableInfo.VirtualForeignKeys)
+            {
+                string query = DB.VirtualForeignKeyCheckQuery(vfk);
+
+                if (Count(query, new { Id = keyId }) > 0)
+                {
+                    throw new Exception($"Virtual Foreign Key Violation. Table:{vfk.FullTableName} Column:{(!string.IsNullOrEmpty(vfk.DisplayName) ? vfk.DisplayName : vfk.ColumnName)}");
+                }
+            }
+            return false;
+        }
+
+        #endregion
     }
 }

@@ -95,6 +95,15 @@ namespace Vega
                 primaryKeyColumn.GetAction = Helper.CreateGetProperty(entity, primaryKeyProperty.Name);
 
                 result.PrimaryKeyColumn = primaryKeyColumn;
+
+
+                //check for virtual foreign key
+                var virtualForeignKeys = (IEnumerable<ForeignKey>)primaryKeyProperty.GetCustomAttributes(typeof(ForeignKey));
+                if(virtualForeignKeys != null && virtualForeignKeys.Count() > 0)
+                {
+                    if (result.VirtualForeignKeys == null) result.VirtualForeignKeys = new List<ForeignKey>();
+                    result.VirtualForeignKeys.AddRange(virtualForeignKeys);
+                }
             }
 
             foreach (PropertyInfo property in properties)

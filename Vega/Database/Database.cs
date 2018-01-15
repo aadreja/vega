@@ -62,6 +62,20 @@ namespace Vega
             return $"DROP TABLE {tableInfo.FullName}";
         }
 
+        public virtual string VirtualForeignKeyCheckQuery(ForeignKey vfk)
+        {
+            StringBuilder query = new StringBuilder();
+
+            query.Append($"SELECT 1 FROM {vfk.FullTableName} WHERE {vfk.ColumnName}=@Id");
+
+            if (vfk.ContainsIsActive)
+                query.Append($" AND {Config.ISACTIVE_COLUMNNAME}={BITTRUEVALUE}");
+
+            query.Append(" LIMIT 1 ");
+
+            return query.ToString();
+        }
+
         #endregion
 
         #region abstract properties

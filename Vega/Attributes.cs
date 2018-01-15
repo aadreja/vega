@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Reflection;
 
 namespace Vega
@@ -27,7 +28,7 @@ namespace Vega
         /// </summary>
         public TableAttribute()
         {
-            Columns = new Dictionary<string, ColumnAttribute>(StringComparer.OrdinalIgnoreCase); //ignore case 
+            Columns = new Dictionary<string, ColumnAttribute>(StringComparer.OrdinalIgnoreCase); //ignore case
             DefaultInsertColumns = new List<string>();
             DefaultUpdateColumns = new List<string>();
             DefaultReadColumns = new List<string>();
@@ -54,7 +55,7 @@ namespace Vega
 
         #endregion
 
-        #region Properties
+        #region Public Properties
 
         /// <summary>
         /// Database Schema holding this table
@@ -107,6 +108,8 @@ namespace Vega
 
         #endregion
 
+        #region Internal Properties
+
         /// <summary>
         /// Fullname of table
         /// </summary>
@@ -122,6 +125,7 @@ namespace Vega
         }
 
         internal Dictionary<string, ColumnAttribute> Columns { get; set; }
+        internal List<ForeignKey> VirtualForeignKeys { get; set; }
 
         internal List<string> DefaultInsertColumns { get; set; }
 
@@ -147,6 +151,8 @@ namespace Vega
             }
         }
 
+        #endregion
+
     }
 
     #endregion
@@ -166,6 +172,7 @@ namespace Vega
         {
             IsIdentity = false;
         }
+
         /// <summary>
         /// Pass false if this is not a primary key in database
         /// </summary>
@@ -179,7 +186,6 @@ namespace Vega
         /// True if key field. False if not key field and there is a secondary primary key field
         /// </summary>
         internal bool IsIdentity { get; set; }
-
     }
 
     /// <summary>
@@ -365,6 +371,114 @@ namespace Vega
         }
 
         #endregion
+    }
+
+    #endregion
+
+    #region Foreign Key
+
+    /// <summary>
+    /// Define on PrimaryKey Properties. Foreign Keys which are not defined at database level but still wants to check database integrity on HardDelete or SoftDelete.
+    /// Note: Attribute defined on NonPrimaryKey properties will be ignored
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = true, Inherited = false)]
+    public class ForeignKey : Attribute
+    {
+        #region constructors
+
+        /// <summary>
+        /// Default Constructor
+        /// </summary>
+        public ForeignKey()
+        {
+
+        }
+
+        /// <summary>
+        /// Overloaded Constructor that initializes current object with TableName and ColumnName.
+        /// </summary>
+        /// <param name="tableName">Name of the table containing foreign key.</param>
+        /// <param name="columnName">Name of the foreign key column.</param>
+        /// <param name="containsIsActive">Is table contains IsActive.</param>
+        public ForeignKey(string tableName, string columnName, bool containsIsActive = true)
+        {
+            TableName = tableName;
+            ColumnName = columnName;
+            ContainsIsActive = containsIsActive;
+        }
+
+        /// <summary>
+        /// Overloaded Constructor that initializes current object with SchemaName, TableName and ColumnName.
+        /// </summary>
+        /// <param name="schemaName">Name of the schema containing foreign key.</param>
+        /// <param name="tableName">Name of the table containing foreign key.</param>
+        /// <param name="columnName">Name of the foreign key column.</param>
+        /// <param name="containsIsActive">Is table contains IsActive.</param>
+        public ForeignKey(string schemaName, string tableName, string columnName, bool containsIsActive = true)
+            : this(tableName, columnName, containsIsActive)
+        {
+            SchemaName = schemaName;
+        }
+
+        /// <summary>
+        /// Overloaded Constructor that intializes current object with DisplayName
+        /// </summary>
+        /// <param name="schemaName"></param>
+        /// <param name="refTableName"></param>
+        /// <param name="columnName"></param>
+        /// <param name="displayName"></param>
+        /// <param name="containsIsActive"></param>
+        public ForeignKey(string schemaName, string refTableName, string columnName, string displayName, bool containsIsActive = true)
+            : this(schemaName, refTableName, columnName, containsIsActive)
+        {
+            DisplayName = displayName;
+        }
+
+
+        #endregion
+
+        #region properties
+
+        /// <summary>
+        /// Gets / sets name of the schema containing foregn key.
+        /// </summary>
+        public string SchemaName { get; set; }
+
+        /// <summary>
+        /// Gets / sets name of the table containing foregn key.
+        /// </summary>
+        public string TableName { get; set; }
+
+        /// <summary>
+        /// Gets / sets name of the foreign key column.
+        /// </summary>
+        public string ColumnName { get; set; }
+
+        /// <summary>
+        /// Gets / sets name of column which you want to display to user on reference exists.
+        /// </summary>
+        public string DisplayName { get; set; }
+
+        /// <summary>
+        /// Table has IsActive Column
+        /// </summary>
+        public bool ContainsIsActive { get; set; }
+
+        #endregion
+
+        /// <summary>
+        /// Fullname of table
+        /// </summary>
+        internal string FullTableName
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(SchemaName))
+                    return TableName;
+                else
+                    return SchemaName + "." + TableName;
+            }
+        }
     }
 
     #endregion

@@ -174,6 +174,4 @@ namespace Vega
 
         #endregion
     }
-
-    
 }

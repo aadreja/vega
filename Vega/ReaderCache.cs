@@ -297,9 +297,10 @@ namespace Vega
 
                 //name
                 il.Emit(OpCodes.Ldstr, property.Name);
-                
+
                 //dbtype
-                Type type = property.PropertyType;
+                //dynamic property will always return System.Object as property type. Get Type from the value
+                Type type = property.GetValue(param).GetType();
                 if (type.IsEnum) type = Enum.GetUnderlyingType(type);
 
                 if(TypeCache.TypeToDbType.TryGetValue(type, out DbType dbType))
@@ -312,8 +313,8 @@ namespace Vega
                 il.Emit(OpCodes.Callvirt, property.GetMethod);
 
                 //box if value type
-                if (type.IsValueType)
-                    il.Emit(OpCodes.Box, type);
+                if (property.PropertyType.IsValueType)
+                    il.Emit(OpCodes.Box, property.PropertyType);
 
                 il.Emit(OpCodes.Call, addInParameter);
 

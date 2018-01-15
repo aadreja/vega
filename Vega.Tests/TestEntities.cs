@@ -25,6 +25,7 @@ namespace Vega.Tests
     public class Country : EntityBase
     {
         [PrimaryKey(true)]
+        [ForeignKey("city","countryid",true)]
         public long Id { get; set; }
         public string Name { get; set; }
         public string ShortCode { get; set; }
@@ -44,16 +45,20 @@ namespace Vega.Tests
         public string State { get; set; }
         public decimal Longitude { get; set; }
         public decimal Latitude { get; set; }
-        public Int32 CountryId { get; set; }
+        public long CountryId { get; set; }
         [IgnoreColumn(true)]
         public string CountryName { get; set; }
         public EnumCityType CityType { get; set; }
     }
 
-    [Table(Name = "Users")]
+    [Table(Name = "Users", NoIsActive =true)]
     public class User : EntityBase
     {
         [PrimaryKey]
+        [ForeignKey("city", "createdby",true)]
+        [ForeignKey("city", "updatedby", true)]
+        [ForeignKey("country", "createdby", true)]
+        [ForeignKey("country", "updatedby", true)]
         public Int16 Id { get; set; }
         public string Username { get; set; }
     }
