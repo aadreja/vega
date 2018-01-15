@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>$author$</authors>
+    <owners>$author$</owners>
+    <licenseUrl>https://github.com/aadreja/vega/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/aadreja/vega</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>$description$</description>
+    <releaseNotes>Beta Release</releaseNotes>
+    <copyright>Copyright 2018 Ritesh Sutaria</copyright>
+    <tags>orm;fastest;.net;enterprise;</tags>
+  </metadata>
+</package>

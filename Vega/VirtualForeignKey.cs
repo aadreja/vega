@@ -13,7 +13,10 @@ using System.Text;
 
 namespace Vega
 {
-    internal class VirtualForeignKey
+    /// <summary>
+    /// Foreign Keys which are not defined at database level but still wants to check database integrity on HardDelete or SoftDelete
+    /// </summary>
+    public class VirtualForeignKey
     {
 
         #region constructors
@@ -35,10 +38,10 @@ namespace Vega
         /// <param name="recordOperationType">Operation Add, Update or Delete</param>
         public VirtualForeignKey(string tableName, string columnName, bool containsIsActive = true, RecordOperationEnum recordOperationType = RecordOperationEnum.Delete)
         {
-            this.TableName = tableName;
-            this.ColumnName = columnName;
-            this.ContainsIsActive = containsIsActive;
-            this.OperationType = recordOperationType;
+            TableName = tableName;
+            ColumnName = columnName;
+            ContainsIsActive = containsIsActive;
+            OperationType = recordOperationType;
         }
 
         /// <summary>
@@ -52,7 +55,7 @@ namespace Vega
         public VirtualForeignKey(string schemaName, string tableName, string columnName, bool containsIsActive = true, RecordOperationEnum recordOperationType = RecordOperationEnum.Delete)
             : this(tableName, columnName, containsIsActive, recordOperationType)
         {
-            this.SchemaName = schemaName;
+            SchemaName = schemaName;
         }
 
         /// <summary>
@@ -67,7 +70,7 @@ namespace Vega
         public VirtualForeignKey(string schemaName, string refTableName, string columnName, string displayName, bool containsIsActive = true, RecordOperationEnum recordOperationType = RecordOperationEnum.Delete)
             : this(schemaName, refTableName, columnName, containsIsActive, recordOperationType)
         {
-            this.DisplayName = displayName;
+            DisplayName = displayName;
         }
 
         /// <summary>
@@ -83,7 +86,7 @@ namespace Vega
         public VirtualForeignKey(string databaseName, string schemaName, string refTableName, string columnName, string displayName, bool containsIsActive = true, RecordOperationEnum recordOperationType = RecordOperationEnum.Delete)
             : this(schemaName, refTableName, columnName, displayName, containsIsActive, recordOperationType)
         {
-            this.DatabaseName = databaseName;
+            DatabaseName = databaseName;
         }
 
 
