@@ -1,10 +1,23 @@
 version: 1.0.{build}
 image: Visual Studio 2017
+configuration: Release
 environment:
   isappveyor: 1
 services: mssql2016
+nuget:
+  project_feed: true
 before_build:
 - cmd: nuget restore C:\projects\vega\Vega.sln
 build:
   project: Vega.sln
+  publish_nuget: true
+  publish_nuget_symbols: true
+  include_nuget_references: true
   verbosity: minimal
+after_build:
+- cmd: appveyor PushArtifact Vega.nupkg
+test: off
+deploy:
+- provider: NuGet
+  api_key:
+    secure: kqzjRF67st/zgfypgAdu9aPDIuTAiQjYPYuE7Jfjj0MLhY1eKxZDhQyUTqdu1M7g
