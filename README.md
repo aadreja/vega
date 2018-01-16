@@ -1,5 +1,4 @@
-# Vega [![https://badge.fury.io/nu/vega.svg](https://badge.fury.io/nu/vega)]
-(https://badge.fury.io/nu/vega.svg)
+# Vega [![http://badge.fury.io/nu/vega](https://badge.fury.io/nu/vega.png)](http://badge.fury.io/nu/vega)
 
 Vega is fastest .net ORM with Enterprise features. 
 
