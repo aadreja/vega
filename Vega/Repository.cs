@@ -27,7 +27,7 @@ namespace Vega
         /// <summary>
         /// default constructor
         /// </summary>
-        public Repository()
+        Repository()
         {
             TableInfo = EntityCache.Get(typeof(T));
         }
@@ -36,7 +36,7 @@ namespace Vega
         /// Constructor with specific connection
         /// </summary>
         /// <param name="connection">provide DB connection</param>
-        public Repository(IDbConnection connection) : this() 
+        public Repository(IDbConnection connection) : this()
         {
             Connection = connection;
             DB = DBCache.Get(Connection);
@@ -58,7 +58,7 @@ namespace Vega
         #region fields
 
         internal TableAttribute TableInfo { get; private set; }
-        
+
         /// <summary>
         /// Gets or set Database specific instance
         /// </summary>
@@ -105,7 +105,7 @@ namespace Vega
         /// <returns></returns>
         public bool BeginTransaction()
         {
-            if(Connection == null)
+            if (Connection == null)
                 throw new NullReferenceException("Connection is null");
 
             if (Transaction == null || Transaction.Connection == null)
@@ -118,7 +118,7 @@ namespace Vega
             }
             else
             {
-                return false; 
+                return false;
             }
         }
 
@@ -237,7 +237,7 @@ namespace Vega
         /// <param name="columns">specific columns to update, comma seperated</param>
         /// <param name="oldEntity">previous entity object for audit trial. Default null.</param>
         /// <returns>True if update successful else false</returns>
-        public bool Update(T entity, string columns, T oldEntity=null)
+        public bool Update(T entity, string columns, T oldEntity = null)
         {
             bool isTransactHere = false;
             bool isConOpen = IsConnectionOpen();
@@ -250,7 +250,7 @@ namespace Vega
                     audit = new AuditTrial();
                     isTransactHere = BeginTransaction();
 
-                    if(oldEntity == null)
+                    if (oldEntity == null)
                     {
                         oldEntity = ReadOne(entity.KeyId);
                     }
@@ -276,14 +276,14 @@ namespace Vega
                         //Save History
                         AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
                         auditTrialRepo.Add(entity, RecordOperationEnum.Update, TableInfo, audit);
-                        if(isTransactHere) Commit();
+                        if (isTransactHere) Commit();
                     }
                 }
                 return true;
             }
             catch
             {
-                if(isTransactHere) Rollback();
+                if (isTransactHere) Rollback();
                 throw;
             }
             finally
@@ -408,7 +408,7 @@ namespace Vega
 
                     auditTrialRepo.Add(id, versionNo, RecordOperationEnum.Delete, TableInfo);
 
-                    if(isTransactHere) Commit();
+                    if (isTransactHere) Commit();
                 }
                 return true;
             }
@@ -475,7 +475,7 @@ namespace Vega
                     commandText.Append($",{Config.UPDATEDBY_COLUMN.Name}=@{Config.UPDATEDBY_COLUMN.Name}");
                     command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, Session.CurrentUserId);
                 }
-                
+
                 commandText.Append($" WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}");
                 command.AddInParameter(TableInfo.PrimaryKeyColumn.Name, TableInfo.PrimaryKeyColumn.ColumnDbType, id);
 
@@ -502,7 +502,7 @@ namespace Vega
 
                     auditTrialRepo.Add(id, versionNo, RecordOperationEnum.Recover, TableInfo);
 
-                    if(isTransactHere) Commit();
+                    if (isTransactHere) Commit();
                 }
                 return true;
             }
@@ -628,7 +628,7 @@ namespace Vega
         /// <param name="orderBy">optional order by e.g. "department ASC"</param>
         /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
         /// <returns>IEnumerable list of entities</returns>
-        public IEnumerable<T> ReadAll(string columns = null, string criteria = null, object parameters = null, string orderBy=null, RecordStatusEnum status = RecordStatusEnum.All)
+        public IEnumerable<T> ReadAll(string columns = null, string criteria = null, object parameters = null, string orderBy = null, RecordStatusEnum status = RecordStatusEnum.All)
         {
             //Get columns from Entity attributes loaded in TableInfo
             if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
@@ -714,12 +714,12 @@ namespace Vega
 
         #region Read History
 
-            /// <summary>
-            /// Read all history of a given record
-            /// </summary>
-            /// <param name="id">Record Id</param>
-            /// <returns>List of audit for this record</returns>
-            public IEnumerable<T> ReadHistory(object id)
+        /// <summary>
+        /// Read all history of a given record
+        /// </summary>
+        /// <param name="id">Record Id</param>
+        /// <returns>List of audit for this record</returns>
+        public IEnumerable<T> ReadHistory(object id)
         {
             AuditTrialRepository auditRepo = new AuditTrialRepository(Connection);
 
@@ -975,7 +975,7 @@ namespace Vega
                 if (!isConOpen) Connection.Close(); //close if connection was opened here
             }
         }
-#endregion
+        #endregion
 
         #region DDL Methods
 
@@ -1022,7 +1022,7 @@ namespace Vega
         /// <returns>true if table is created else false</returns>
         public bool CreateTable()
         {
-            if(!IsTableExists()) ExecuteNonQuery(DB.CreateTableQuery(typeof(T)));
+            if (!IsTableExists()) ExecuteNonQuery(DB.CreateTableQuery(typeof(T)));
 
             return true;
         }
@@ -1052,6 +1052,11 @@ namespace Vega
             return true;
         }
 
+        /// <summary>
+        /// Gets Database Version
+        /// </summary>
+        public DBVersionInfo DBVersion { get { return DB.DBVersion; } }
+        
         #endregion
 
         #region Referene Integrity Methods

@@ -16,8 +16,11 @@ namespace Vega.Data
 {
     internal class SQLiteDatabase : Database
     {
-        public SQLiteDatabase() { }
-
+        public SQLiteDatabase()
+        {
+            
+        }
+        
         public override string DEFAULTSCHEMA { get { return "main"; } }
         public override string CURRENTDATETIMESQL { get { return "datetime('now')"; } }
         public override string BITTRUEVALUE { get { return "1"; } }
@@ -144,6 +147,11 @@ namespace Vega.Data
         public override string IndexExistsQuery(string tableName, string indexName)
         {
             return $@"SELECT 1 FROM sqlite_master WHERE type='index' AND name='{indexName}' AND tbl_name='{tableName}'";
+        }
+
+        public override void FetchDBServerInfo(IDbConnection connection)
+        {
+
         }
 
     }

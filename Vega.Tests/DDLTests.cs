@@ -56,5 +56,19 @@ namespace Vega.Tests
 
             Assert.True(cityRepo.IsIndexExists("idx_cityname"));
         }
+
+        [Fact]
+        public void GetDatabaseVersion()
+        {
+            Repository<City> repository = new Repository<City>(Fixture.Connection);
+
+            Assert.NotNull(repository.DBVersion);
+
+#if PGSQL
+            Assert.Contains("postgres", repository.DBVersion.ProductName, System.StringComparison.InvariantCultureIgnoreCase);
+#else
+            Assert.Contains("microsoft sql server", repository.DBVersion.ProductName, System.StringComparison.InvariantCultureIgnoreCase);
+#endif
+        }
     }
 }

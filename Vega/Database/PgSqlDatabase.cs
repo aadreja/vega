@@ -16,13 +16,16 @@ namespace Vega.Data
 {
     internal class PgSqlDatabase : Database
     {
-        public PgSqlDatabase() { }
+        public PgSqlDatabase()
+        {
+
+        }
 
         public override string DEFAULTSCHEMA { get { return "public"; } }
         public override string CURRENTDATETIMESQL { get { return "now()"; } }
         public override string BITTRUEVALUE { get { return "TRUE"; } }
-        public override string BITFALSEVALUE { get { return "FALSE";} }
-        public override string LASTINSERTEDROWIDSQL { get { return "SELECT lastval();";} }
+        public override string BITFALSEVALUE { get { return "FALSE"; } }
+        public override string LASTINSERTEDROWIDSQL { get { return "SELECT lastval();"; } }
 
         public override Dictionary<DbType, string> DbTypeString
         {
@@ -112,7 +115,7 @@ namespace Vega.Data
                     }
                     createSQL.Append(",");
                 }
-                else if(col.IgnoreInfo.Insert || col.IgnoreInfo.Update)
+                else if (col.IgnoreInfo.Insert || col.IgnoreInfo.Update)
                 {
                     continue;
                 }
@@ -152,6 +155,11 @@ namespace Vega.Data
                             AND a.attnum = ANY(ix.indkey)
                             AND t.relkind = 'r'
                             AND t.relname ILIKE '{tableName}' AND i.relname ILIKE '{indexName}';";
+        }
+
+        public override void FetchDBServerInfo(IDbConnection connection)
+        {
+
         }
     }
 }

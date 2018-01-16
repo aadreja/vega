@@ -18,6 +18,11 @@ namespace Vega.Data
     internal class MsSqlDatabase : Database
     {
 
+        public MsSqlDatabase()
+        {
+
+        }
+
         public override string DEFAULTSCHEMA { get { return "dbo"; } }
         public override string CURRENTDATETIMESQL { get { return "getdate()"; } }
         public override string BITTRUEVALUE { get { return "1"; } }
@@ -158,6 +163,75 @@ namespace Vega.Data
                 query.Append($" AND {Config.ISACTIVE_COLUMNNAME}={BITTRUEVALUE}");
 
             return query.ToString();
+        }
+
+        public override void FetchDBServerInfo(IDbConnection connection)
+        {
+            if (connection == null) throw new Exception("Required valid connection object to initialise database details");
+
+            string query = @"SELECT SERVERPROPERTY('Edition') AS Edition,SERVERPROPERTY('ProductVersion') AS ProductVersion;";
+            bool isConOpen = connection.State == ConnectionState.Open;
+
+            try
+            {
+                if (!isConOpen) connection.Open();
+
+                IDbCommand command = connection.CreateCommand();
+                command.CommandType = CommandType.Text;
+                command.CommandText = query;
+
+                using (IDataReader rdr = command.ExecuteReader())
+                {
+                    rdr.Read();
+
+                    DBVersion = new DBVersionInfo
+                    {
+                        ProductName = "Microsoft SQL Server",
+                        Edition = rdr.GetString(0),
+                        Version = new Version(rdr.GetString(1))
+                    };
+
+                    //https://sqlserverbuilds.blogspot.in/
+                    //https://support.microsoft.com/en-in/help/321185/how-to-determine-the-version--edition-and-update-level-of-sql-server-a
+                    if (DBVersion.Version.Major == 14)
+                        DBVersion.ProductName += "2017 " + rdr.GetString(0);
+                    else if (DBVersion.Version.Major == 13)
+                        DBVersion.ProductName += "2016 " + rdr.GetString(0);
+                    else if (DBVersion.Version.Major == 12)
+                        DBVersion.ProductName += "2014 " + rdr.GetString(0);
+                    else if (DBVersion.Version.Major == 11)
+                        DBVersion.ProductName += "2012 " + rdr.GetString(0);
+                    else if (DBVersion.Version.Major == 10)
+                    {
+                        if (DBVersion.Version.Minor >= 50)
+                            DBVersion.ProductName += "2008 R2 " + rdr.GetString(0);
+                        else
+                            DBVersion.ProductName += "2008 " + rdr.GetString(0);
+                    }
+                    else if (DBVersion.Version.Major == 9)
+                        DBVersion.ProductName += "2005 " + rdr.GetString(0);
+                    else if (DBVersion.Version.Major == 8)
+                        DBVersion.ProductName += "2000 " + rdr.GetString(0);
+                    else if (DBVersion.Version.Major == 7)
+                        DBVersion.ProductName += "7.0 " + rdr.GetString(0);
+
+                    rdr.Close();
+                }
+            }
+            catch
+            {
+                //ignore error
+            }
+            finally
+            {
+                if (!isConOpen && connection.State == ConnectionState.Open) connection.Close();
+            }
+        }
+
+        internal bool IsOffsetSupported()
+        {
+            //SQL Server 2012 and above supports offset keyword
+            return DBVersion.Version.Major >= 11;
         }
 
     }

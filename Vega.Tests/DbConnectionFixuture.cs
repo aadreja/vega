@@ -16,11 +16,6 @@ using Xunit.Sdk;
 namespace Vega.Tests
 {
 
-    public class Common
-    {
-
-    }
-
     public class DbConnectionFixuture : IDisposable
     {
         public DbConnectionFixuture()

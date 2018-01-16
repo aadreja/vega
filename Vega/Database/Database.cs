@@ -33,6 +33,8 @@ namespace Vega
             else
                 db = new Data.MsSqlDatabase();
 
+            db.FetchDBServerInfo(con);
+
             lock (dbs)
             {
                 return dbs[key] = db;
@@ -50,6 +52,7 @@ namespace Vega
         public abstract string IndexExistsQuery(string tableName, string indexName);
         public abstract string CreateTableQuery(Type entity);
         public abstract string CreateIndexQuery(string tableName, string indexName, string columns, bool isUnique);
+        public abstract void FetchDBServerInfo(IDbConnection connection);
 
         #endregion
 
@@ -91,6 +94,8 @@ namespace Vega
         #endregion
 
         #region properties
+
+        public DBVersionInfo DBVersion { get; internal set; }
 
         #endregion
 
@@ -409,5 +414,26 @@ namespace Vega
 
         #endregion
 
+    }
+
+    /// <summary>
+    /// Database Version Information
+    /// </summary>
+    public class DBVersionInfo
+    {
+        /// <summary>
+        /// Database Product Name like Microsoft SQL Server 2012
+        /// </summary>
+        public string ProductName { get; set; }
+
+        /// <summary>
+        /// Database Edition details like Standard, Enterprise, Express
+        /// </summary>
+        public string Edition { get; set; }
+
+        /// <summary>
+        /// Database Version Info
+        /// </summary>
+        public Version Version { get; set; }
     }
 }
