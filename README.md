@@ -2,6 +2,11 @@
 
 Vega is fastest .net ORM with Enterprise features. 
 
+* **Inbuilt Row Versioning
+* **Concurrency check while Update or Delete
+* **Powerful Audit Trail to keep track of all changes
+* **Object Mappig via Emit which are cached to give performance same as manual object mapping.
+
 ## Project Info
 
 * **Documentation**: [https://github.com/aadreja/vega/wiki](https://github.com/aadreja/vega/wiki)
