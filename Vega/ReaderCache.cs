@@ -92,7 +92,7 @@ namespace Vega
     /// Reader Cache
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ReaderCache<T> where T : EntityBase, new()
+    internal class ReaderCache<T> where T : EntityBase, new()
     {
         static Dictionary<ReaderKey, Func<IDataReader, T>> readers = new Dictionary<ReaderKey, Func<IDataReader, T>>();
 

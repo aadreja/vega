@@ -165,7 +165,7 @@ namespace Vega.Data
             return query.ToString();
         }
 
-        public override void FetchDBServerInfo(IDbConnection connection)
+        public override DBVersionInfo FetchDBServerInfo(IDbConnection connection)
         {
             if (connection == null) throw new Exception("Required valid connection object to initialise database details");
 
@@ -182,45 +182,49 @@ namespace Vega.Data
 
                 using (IDataReader rdr = command.ExecuteReader())
                 {
-                    rdr.Read();
-
-                    DBVersion = new DBVersionInfo
+                    DBVersionInfo dbVersion = new DBVersionInfo();
+                    if (rdr.Read())
                     {
-                        ProductName = "Microsoft SQL Server",
-                        Edition = rdr.GetString(0),
-                        Version = new Version(rdr.GetString(1))
-                    };
 
-                    //https://sqlserverbuilds.blogspot.in/
-                    //https://support.microsoft.com/en-in/help/321185/how-to-determine-the-version--edition-and-update-level-of-sql-server-a
-                    if (DBVersion.Version.Major == 14)
-                        DBVersion.ProductName += "2017 " + rdr.GetString(0);
-                    else if (DBVersion.Version.Major == 13)
-                        DBVersion.ProductName += "2016 " + rdr.GetString(0);
-                    else if (DBVersion.Version.Major == 12)
-                        DBVersion.ProductName += "2014 " + rdr.GetString(0);
-                    else if (DBVersion.Version.Major == 11)
-                        DBVersion.ProductName += "2012 " + rdr.GetString(0);
-                    else if (DBVersion.Version.Major == 10)
-                    {
-                        if (DBVersion.Version.Minor >= 50)
-                            DBVersion.ProductName += "2008 R2 " + rdr.GetString(0);
-                        else
-                            DBVersion.ProductName += "2008 " + rdr.GetString(0);
+                        dbVersion.ProductName = "Microsoft SQL Server";
+                        dbVersion.Edition = rdr.GetString(0);
+                        dbVersion.Version = new Version(rdr.GetString(1));
+
+                        //https://sqlserverbuilds.blogspot.in/
+                        //https://support.microsoft.com/en-in/help/321185/how-to-determine-the-version--edition-and-update-level-of-sql-server-a
+                        if (dbVersion.Version.Major == 14)
+                            dbVersion.ProductName += "2017 " + rdr.GetString(0);
+                        else if (dbVersion.Version.Major == 13)
+                            dbVersion.ProductName += "2016 " + rdr.GetString(0);
+                        else if (dbVersion.Version.Major == 12)
+                            dbVersion.ProductName += "2014 " + rdr.GetString(0);
+                        else if (dbVersion.Version.Major == 11)
+                            dbVersion.ProductName += "2012 " + rdr.GetString(0);
+                        else if (dbVersion.Version.Major == 10)
+                        {
+                            if (dbVersion.Version.Minor >= 50)
+                                dbVersion.ProductName += "2008 R2 " + rdr.GetString(0);
+                            else
+                                dbVersion.ProductName += "2008 " + rdr.GetString(0);
+                        }
+                        else if (dbVersion.Version.Major == 9)
+                            dbVersion.ProductName += "2005 " + rdr.GetString(0);
+                        else if (dbVersion.Version.Major == 8)
+                            dbVersion.ProductName += "2000 " + rdr.GetString(0);
+                        else if (dbVersion.Version.Major == 7)
+                            dbVersion.ProductName += "7.0 " + rdr.GetString(0);
+
+                        dbVersion.Is64Bit = dbVersion.Edition.ToLowerInvariant().Contains("64-bit");
                     }
-                    else if (DBVersion.Version.Major == 9)
-                        DBVersion.ProductName += "2005 " + rdr.GetString(0);
-                    else if (DBVersion.Version.Major == 8)
-                        DBVersion.ProductName += "2000 " + rdr.GetString(0);
-                    else if (DBVersion.Version.Major == 7)
-                        DBVersion.ProductName += "7.0 " + rdr.GetString(0);
-
                     rdr.Close();
+
+                    return dbVersion;
                 }
             }
             catch
             {
                 //ignore error
+                return null;
             }
             finally
             {
@@ -228,11 +232,7 @@ namespace Vega.Data
             }
         }
 
-        internal bool IsOffsetSupported()
-        {
-            //SQL Server 2012 and above supports offset keyword
-            return DBVersion.Version.Major >= 11;
-        }
+        
 
     }
 }

@@ -1055,7 +1055,16 @@ namespace Vega
         /// <summary>
         /// Gets Database Version
         /// </summary>
-        public DBVersionInfo DBVersion { get { return DB.DBVersion; } }
+        public DBVersionInfo DBVersion
+        {
+            get
+            {
+                if (DB.DBVersion == null)
+                    DB.DBVersion = DB.FetchDBServerInfo(Connection);
+
+                return DB.DBVersion;
+            }
+        }
         
         #endregion
 

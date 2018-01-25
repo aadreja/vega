@@ -157,9 +157,63 @@ namespace Vega.Data
                             AND t.relname ILIKE '{tableName}' AND i.relname ILIKE '{indexName}';";
         }
 
-        public override void FetchDBServerInfo(IDbConnection connection)
+        public override DBVersionInfo FetchDBServerInfo(IDbConnection connection)
         {
+            if (connection == null) throw new Exception("Required valid connection object to initialise database details");
 
+            string query = @"SELECT version();";
+            bool isConOpen = connection.State == ConnectionState.Open;
+
+            try
+            {
+                if (!isConOpen) connection.Open();
+
+                IDbCommand command = connection.CreateCommand();
+                command.CommandType = CommandType.Text;
+                command.CommandText = query;
+
+                DBVersionInfo dbVersion = new DBVersionInfo();
+
+                using (IDataReader rdr = command.ExecuteReader())
+                {
+                    if (rdr.Read())
+                    {
+                        string strVersion = rdr.GetString(0);
+                        string[] versionParts = strVersion.Split(',');
+
+                        if (versionParts.Length > 0)
+                        {
+                            dbVersion.ProductName = versionParts[0];
+
+                            if (versionParts[versionParts.Length - 1].ToLowerInvariant().Trim().Contains("64-bit"))
+                                dbVersion.Is64Bit = true;
+                        }
+                    }
+
+                    rdr.Close();
+                }
+
+                command.CommandText = "SHOW server_version;";
+                using (IDataReader rdr = command.ExecuteReader())
+                {
+                    if (rdr.Read())
+                    {
+                        dbVersion.Version = new Version(rdr.GetString(0));
+                    }
+                    rdr.Close();
+                }
+
+                return dbVersion;
+            }
+            catch
+            {
+                //ignore error
+                return null;
+            }
+            finally
+            {
+                if (!isConOpen && connection.State == ConnectionState.Open) connection.Close();
+            }
         }
     }
 }

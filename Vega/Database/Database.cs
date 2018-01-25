@@ -19,21 +19,19 @@ namespace Vega
 
         public static Database Get(IDbConnection con)
         {
-            string key = con.GetType().Name;
+            string key = con.GetType().Name + "," + con.ConnectionString;
 
             Database db;
             lock (dbs)
             {
                 if (dbs.TryGetValue(key, out db)) return db;
             }
-            if (key.Equals("npgsqlconnection", StringComparison.OrdinalIgnoreCase))
+            if (key.ToLowerInvariant().Contains("npgsqlconnection"))
                 db = new Data.PgSqlDatabase();
-            else if(key.Equals("sqliteconnection", StringComparison.OrdinalIgnoreCase))
+            else if (key.ToLowerInvariant().Contains("sqliteconnection"))
                 db = new Data.SQLiteDatabase();
             else
                 db = new Data.MsSqlDatabase();
-
-            db.FetchDBServerInfo(con);
 
             lock (dbs)
             {
@@ -52,7 +50,7 @@ namespace Vega
         public abstract string IndexExistsQuery(string tableName, string indexName);
         public abstract string CreateTableQuery(Type entity);
         public abstract string CreateIndexQuery(string tableName, string indexName, string columns, bool isUnique);
-        public abstract void FetchDBServerInfo(IDbConnection connection);
+        public abstract DBVersionInfo FetchDBServerInfo(IDbConnection connection);
 
         #endregion
 
@@ -103,6 +101,7 @@ namespace Vega
 
         internal virtual void CreateAddCommand(IDbCommand command, EntityBase entity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false)
         {
+            
             TableAttribute tableInfo = EntityCache.Get(entity.GetType());
 
             List<string> columns = new List<string>();
@@ -435,5 +434,22 @@ namespace Vega
         /// Database Version Info
         /// </summary>
         public Version Version { get; set; }
+
+        /// <summary>
+        /// Gets or set whether database is 64bit or 32bit
+        /// </summary>
+        public bool Is64Bit { get; set; }
+
+        /// <summary>
+        /// SQL Server Only. To check whether OFFSET keyword is supported by sql version
+        /// </summary>
+        internal bool IsOffsetSupported
+        {
+            get
+            {
+                //SQL Server 2012 and above supports offset keyword
+                return ProductName.ToLowerInvariant().Contains("sql server") && Version.Major >= 11;
+            }
+        }
     }
 }

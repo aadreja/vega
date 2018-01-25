@@ -69,7 +69,7 @@ namespace Vega
         /// <summary>
         /// Set True when table name is generated dynamically. Useful when using table partitioning else False
         /// </summary>
-        public bool IsDynmic { get; set; }
+        public bool IsDynamic { get; set; }
 
         /// <summary>
         /// Set True when table doesn't contain version no column else false

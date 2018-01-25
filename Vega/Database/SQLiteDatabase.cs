@@ -149,9 +149,47 @@ namespace Vega.Data
             return $@"SELECT 1 FROM sqlite_master WHERE type='index' AND name='{indexName}' AND tbl_name='{tableName}'";
         }
 
-        public override void FetchDBServerInfo(IDbConnection connection)
+        public override DBVersionInfo FetchDBServerInfo(IDbConnection connection)
         {
+            //select sqlite_version();
+            if (connection == null) throw new Exception("Required valid connection object to initialise database details");
 
+            string query = @"SELECT sqlite_version();";
+            bool isConOpen = connection.State == ConnectionState.Open;
+
+            try
+            {
+                if (!isConOpen) connection.Open();
+
+                IDbCommand command = connection.CreateCommand();
+                command.CommandType = CommandType.Text;
+                command.CommandText = query;
+
+                DBVersionInfo dbVersion = new DBVersionInfo();
+
+                using (IDataReader rdr = command.ExecuteReader())
+                {
+                    if (rdr.Read())
+                    {
+                        dbVersion.ProductName = "SQLite";
+                        dbVersion.Version = new Version(rdr.GetString(0));
+
+                        //dbVersion.Is64Bit = true;
+                    }
+                    rdr.Close();
+                }
+
+                return dbVersion;
+            }
+            catch
+            {
+                //ignore error
+                return null;
+            }
+            finally
+            {
+                if (!isConOpen && connection.State == ConnectionState.Open) connection.Close();
+            }
         }
 
     }
