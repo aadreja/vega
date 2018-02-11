@@ -8,8 +8,8 @@ namespace Vega
     {
         #region constructors
 
-        public AuditTrialRepository(IDbConnection con) : base(con) { }
-        public AuditTrialRepository(IDbTransaction tran) : base(tran) { }
+        public AuditTrialRepository(IDbConnection con, Session currentSession) : base(con, currentSession) { }
+        public AuditTrialRepository(IDbTransaction tran, Session currentSession) : base(tran, currentSession) { }
 
         #endregion
 

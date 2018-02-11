@@ -23,7 +23,7 @@ namespace Vega.Tests
                 Username = "admin",
             };
 
-            Repository<User> usrRepo = new Repository<User>(Fixture.Connection);
+            Repository<User> usrRepo = new Repository<User>(Fixture.Connection, Fixture.CurrentSession);
 
             if (usrRepo.Exists(usr.Id)) usrRepo.HardDelete(usr.Id);
 
@@ -44,7 +44,7 @@ namespace Vega.Tests
                 CityType = EnumCityType.Metro
             };
 
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
             var id = cityRepo.Add(city);
 
             Assert.Equal("Ahmedabad", cityRepo.ReadOne<string>(id, "Name"));
@@ -61,7 +61,7 @@ namespace Vega.Tests
                 Independence = new DateTime(1947, 8, 15)//15th August, 1947
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection, Fixture.CurrentSession);
             var id = countryRepo.Add(country);
 
             Assert.Equal("India", countryRepo.ReadOne<string>(id, "Name"));
@@ -78,7 +78,7 @@ namespace Vega.Tests
                 Continent = EnumContinent.America
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection, Fixture.CurrentSession);
             var id = countryRepo.Add(country);
 
             Assert.Equal("India", countryRepo.ReadOne<string>(id, "Name"));

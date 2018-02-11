@@ -36,20 +36,24 @@ namespace Vega
         /// Constructor with specific connection
         /// </summary>
         /// <param name="connection">provide DB connection</param>
-        public Repository(IDbConnection connection) : this()
+        /// <param name="currentSession">Current Session</param>
+        public Repository(IDbConnection connection, Session currentSession) : this()
         {
             Connection = connection;
             DB = DBCache.Get(Connection);
+            CurrentSession = currentSession;
         }
 
         /// <summary>
         /// Constructor with specific transaction
         /// </summary>
         /// <param name="transaction">provide DB Transaction</param>
-        public Repository(IDbTransaction transaction) : this()
+        /// <param name="currentSession">Current Session</param>
+        public Repository(IDbTransaction transaction, Session currentSession) : this()
         {
             Connection = transaction.Connection;
             Transaction = transaction;
+            CurrentSession = currentSession;
             DB = DBCache.Get(Connection);
         }
 
@@ -82,6 +86,11 @@ namespace Vega
         /// gets or set connection object
         /// </summary>
         public IDbConnection Connection { get; set; }
+
+        /// <summary>
+        /// gets or set session object
+        /// </summary>
+        public Session CurrentSession { get; set; }
 
         #endregion
 
@@ -188,7 +197,7 @@ namespace Vega
                 }
 
                 IDbCommand command = Connection.CreateCommand();
-                DB.CreateAddCommand(command, entity, audit, columns, false);
+                DB.CreateAddCommand(command, entity, this.CurrentSession, audit, columns, false);
                 var keyId = ExecuteScalar(command);
                 //get identity
                 if (TableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsKeyIdEmpty())
@@ -199,7 +208,7 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     //Save Audit Trial
-                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
+                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction, CurrentSession);
                     auditTrialRepo.Add(entity, RecordOperationEnum.Insert, TableInfo, audit);
                     if (isTransactHere) Commit();
                 }
@@ -258,7 +267,7 @@ namespace Vega
 
                 IDbCommand command = Connection.CreateCommand();
 
-                bool isUpdateNeeded = DB.CreateUpdateCommand(command, entity, oldEntity, audit, columns);
+                bool isUpdateNeeded = DB.CreateUpdateCommand(command, entity, oldEntity, CurrentSession, audit, columns);
 
                 if (isUpdateNeeded)
                 {
@@ -274,7 +283,7 @@ namespace Vega
                     if (TableInfo.NeedsHistory)
                     {
                         //Save History
-                        AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
+                        AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction, CurrentSession);
                         auditTrialRepo.Add(entity, RecordOperationEnum.Update, TableInfo, audit);
                         if (isTransactHere) Commit();
                     }
@@ -379,7 +388,7 @@ namespace Vega
                     if (!TableInfo.NoUpdatedBy)
                     {
                         commandText.Append($",{Config.UPDATEDBY_COLUMN.Name}=@{Config.UPDATEDBY_COLUMN.Name}");
-                        command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, Session.CurrentUserId);
+                        command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, CurrentSession.CurrentUserId);
                     }
                 }
                 commandText.Append($" WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}");
@@ -404,7 +413,7 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     //Save History
-                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
+                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction, CurrentSession);
 
                     auditTrialRepo.Add(id, versionNo, RecordOperationEnum.Delete, TableInfo);
 
@@ -473,7 +482,7 @@ namespace Vega
                 if (!TableInfo.NoUpdatedBy)
                 {
                     commandText.Append($",{Config.UPDATEDBY_COLUMN.Name}=@{Config.UPDATEDBY_COLUMN.Name}");
-                    command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, Session.CurrentUserId);
+                    command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, CurrentSession.CurrentUserId);
                 }
 
                 commandText.Append($" WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}");
@@ -498,7 +507,7 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     //Save History
-                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
+                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction, CurrentSession);
 
                     auditTrialRepo.Add(id, versionNo, RecordOperationEnum.Recover, TableInfo);
 
@@ -721,7 +730,7 @@ namespace Vega
         /// <returns>List of audit for this record</returns>
         public IEnumerable<T> ReadHistory(object id)
         {
-            AuditTrialRepository auditRepo = new AuditTrialRepository(Connection);
+            AuditTrialRepository auditRepo = new AuditTrialRepository(Connection, CurrentSession);
 
             return auditRepo.ReadAll<T>(TableInfo.Name, id);
         }
@@ -760,12 +769,127 @@ namespace Vega
 
         #endregion
 
-        #region Read with paging
+        #region Read Paged
 
-        //public IEnumerable<T> ReadAllPaged(string query, object parameters, int pageNo, int pageSize, string orderBy)
-        //{
-        //    string sql = $"SELECT *,ROW_NUMBER() ORDER (ORDER BY {orderBy}) FROM ({query}) AS a";
-        //}
+        /// <summary>
+        /// Read all without query, sorted for specific Page No and Page Size
+        /// </summary>
+        /// <param name="orderBy">Sort Columns. e.g. "department" or "department DESC"</param>
+        /// <param name="pageNo">Page No to retrieve. e.g. 1</param>
+        /// <param name="pageSize">Page Size. e.g. 50</param>
+        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
+        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <returns></returns>
+        public IEnumerable<T> ReadAllPaged(string orderBy, int pageNo, int pageSize, string columns = null, string criteria=null, object parameters = null)
+        {
+            if (string.IsNullOrEmpty(orderBy))
+                throw new MissingMemberException("Missing orderBy parameter");
+
+            //Get columns from Entity attributes loaded in TableInfo
+            if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
+
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandType = CommandType.Text;
+
+            string query = $"SELECT {columns} FROM {TableInfo.FullName} ";
+            StringBuilder commandText = DB.CreateSelectCommand(cmd, query, criteria); //don't pass parameter as it will be added in ReadAllPaged() function
+
+            return ReadAllPaged(commandText.ToString(), orderBy, pageNo, pageSize, parameters);
+        }
+
+        /// <summary>
+        /// Read all with Query, Sorted for specific Page No and Page Size
+        /// </summary>
+        /// <param name="query">parameterized query</param>
+        /// <param name="orderBy">Sort Columns. e.g. "department" or "department DESC"</param>
+        /// <param name="pageNo">Page No to retrieve. e.g. 1</param>
+        /// <param name="pageSize">Page Size. e.g. 50</param>
+        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"}</param>
+        /// <returns></returns>
+        public IEnumerable<T> ReadAllPaged(string query, string orderBy, int pageNo, int pageSize, object parameters = null)
+        {
+            if (string.IsNullOrEmpty(orderBy))
+                throw new MissingMemberException("Missing orderBy parameter");
+
+            //Get columns from Entity attributes loaded in TableInfo
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandType = CommandType.Text;
+            DB.CreateReadAllPagedCommand(cmd, query, orderBy, pageNo, pageSize, parameters);
+            
+            bool isConOpen = IsConnectionOpen();
+            if (!isConOpen) Connection.Open();
+            using (IDataReader rdr = ExecuteReader(cmd))
+            {
+                var func = ReaderCache<T>.GetFromCache(rdr);
+                if (rdr != null)
+                {
+                    while (rdr.Read()) yield return func(rdr);
+                }
+                rdr.Close();
+                rdr.Dispose();
+                if (!isConOpen) Connection.Close();
+            }
+        }
+
+        /// <summary>
+        /// Fastest Paged ReadAll without query and OFFSET
+        /// </summary>
+        /// <param name="orderBy">Sort Columns. e.g. "department" or "department DESC"</param>
+        /// <param name="pageSize">Page Size. e.g. 50</param>
+        /// <param name="navigation">Navigation Next,Previous,First or Last</param>
+        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
+        /// <param name="lastOrderByColumnValues">Required for Next and Previous Navigation only. Next - Last value of all orderby column(s). Previous - First Value of all order by column(s)</param>
+        /// <param name="lastKeyId">Required for Next and Previous Navigation only. Next - Last KeyId Value. Previous - First KeyId value</param>
+        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"}</param>
+        /// <returns></returns>
+        public IEnumerable<T> ReadAllPaged(string orderBy, int pageSize, PageNavigationEnum navigation, string columns = null, string criteria = null, object[] lastOrderByColumnValues = null, object lastKeyId = null, object parameters = null)
+        {
+            //Get columns from Entity attributes loaded in TableInfo
+            if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
+
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandType = CommandType.Text;
+
+            string query = $"SELECT {columns} FROM {TableInfo.FullName} ";
+            StringBuilder commandText = DB.CreateSelectCommand(cmd, query, criteria); //don't pass parameter as it will be added in ReadAllPaged() function
+
+            return ReadAllPaged(commandText.ToString(), orderBy, pageSize, navigation, lastOrderByColumnValues, lastKeyId, parameters);
+        }
+
+        /// <summary>
+        /// Fastest Paged Read without OFFSET. With Query, Sorted
+        /// </summary>
+        /// <param name="query">parameterized query</param>
+        /// <param name="orderBy">Sort Columns. e.g. "department" or "department DESC"</param>
+        /// <param name="pageSize">Page Size. e.g. 50</param>
+        /// <param name="navigation">Navigation Next,Previous,First or Last</param>
+        /// <param name="lastOrderByColumnValues">Required for Next and Previous Navigation only. Next - Last value of all orderby column(s). Previous - First Value of all order by column(s)</param>
+        /// <param name="lastKeyId">Required for Next and Previous Navigation only. Next - Last KeyId Value. Previous - First KeyId value</param>
+        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"}</param>
+        /// <returns></returns>
+        public IEnumerable<T> ReadAllPaged(string query, string orderBy, int pageSize, PageNavigationEnum navigation, object[] lastOrderByColumnValues=null, object lastKeyId=null, object parameters = null)
+        {
+            //Get columns from Entity attributes loaded in TableInfo
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandType = CommandType.Text;
+            DB.CreateReadAllPagedNoOffsetCommand<T>(cmd, query, orderBy, pageSize, navigation, lastOrderByColumnValues, lastKeyId, parameters);
+
+            bool isConOpen = IsConnectionOpen();
+            if (!isConOpen) Connection.Open();
+            using (IDataReader rdr = ExecuteReader(cmd))
+            {
+                var func = ReaderCache<T>.GetFromCache(rdr);
+                if (rdr != null)
+                {
+                    while (rdr.Read()) yield return func(rdr);
+                }
+                rdr.Close();
+                rdr.Dispose();
+                if (!isConOpen) Connection.Close();
+            }
+        }
 
         #endregion
 
@@ -1057,13 +1181,7 @@ namespace Vega
         /// </summary>
         public DBVersionInfo DBVersion
         {
-            get
-            {
-                if (DB.DBVersion == null)
-                    DB.DBVersion = DB.FetchDBServerInfo(Connection);
-
-                return DB.DBVersion;
-            }
+            get { return DB.GetDBVersion(Connection); }
         }
         
         #endregion

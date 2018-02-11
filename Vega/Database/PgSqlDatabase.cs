@@ -12,7 +12,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 
-namespace Vega.Data
+namespace Vega
 {
     internal class PgSqlDatabase : Database
     {

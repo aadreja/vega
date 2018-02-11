@@ -32,6 +32,9 @@
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="System.Data.SQLite" Version="1.0.107" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Vega\Vega.csproj" />
   </ItemGroup>
   <ItemGroup>

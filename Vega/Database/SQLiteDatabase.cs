@@ -12,7 +12,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 
-namespace Vega.Data
+namespace Vega
 {
     internal class SQLiteDatabase : Database
     {
@@ -191,6 +191,5 @@ namespace Vega.Data
                 if (!isConOpen && connection.State == ConnectionState.Open) connection.Close();
             }
         }
-
     }
 }

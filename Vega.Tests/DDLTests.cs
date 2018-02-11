@@ -17,7 +17,7 @@ namespace Vega.Tests
         public void CreateTableNoIdentity()
         {
             EntityCache.Clear(); //clear entity cache
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection, Fixture.CurrentSession);
             //Drop table if exists
             countryRepo.DropTable();
             countryRepo.CreateTable();
@@ -29,7 +29,7 @@ namespace Vega.Tests
         public void CreateTableIdentity()
         {
             EntityCache.Clear(); //clear entity cache
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
             cityRepo.DropTable();
             cityRepo.CreateTable();
             Assert.True(cityRepo.IsTableExists());
@@ -39,7 +39,7 @@ namespace Vega.Tests
         public void CreateTableDifferentName()
         {
             EntityCache.Clear(); //clear entity cache
-            Repository<User> userRepo = new Repository<User>(Fixture.Connection);
+            Repository<User> userRepo = new Repository<User>(Fixture.Connection, Fixture.CurrentSession);
             userRepo.DropTable();
             userRepo.CreateTable();
             Assert.True(userRepo.IsTableExists());
@@ -49,7 +49,7 @@ namespace Vega.Tests
         public void CreateIndex()
         {
             EntityCache.Clear(); //clear entity cache
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
             
             cityRepo.CreateTable();
             cityRepo.CreateIndex("idx_cityname", "countryid,state,name", false);
@@ -60,12 +60,14 @@ namespace Vega.Tests
         [Fact]
         public void GetDatabaseVersion()
         {
-            Repository<City> repository = new Repository<City>(Fixture.Connection);
+            Repository<City> repository = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             Assert.NotNull(repository.DBVersion);
 
 #if PGSQL
             Assert.Contains("postgres", repository.DBVersion.ProductName, System.StringComparison.InvariantCultureIgnoreCase);
+#elif SQLITE
+            Assert.Contains("sqlite", repository.DBVersion.ProductName, System.StringComparison.InvariantCultureIgnoreCase);
 #else
             Assert.Contains("microsoft sql server", repository.DBVersion.ProductName, System.StringComparison.InvariantCultureIgnoreCase);
 #endif

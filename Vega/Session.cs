@@ -17,14 +17,27 @@ namespace Vega
     /// value must be initialized at the application start once
     /// as needed one may add other session properties
     /// </summary>
-    public static class Session
+    public class Session
     {
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        public Session() { }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="currentUserId"></param>
+        public Session(int currentUserId)
+        {
+            CurrentUserId = currentUserId;
+        }
 
         /// <summary>
         /// Current User Id - used by framework for Insert, Update and Delete operations
         /// Must set at application start
         /// </summary>
-        public static Int32 CurrentUserId { get; set; }
+        public Int32 CurrentUserId { get; set; }
 
     }
 }

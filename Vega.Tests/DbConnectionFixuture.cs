@@ -24,39 +24,40 @@ namespace Vega.Tests
 #if PGSQL
             Connection = new NpgsqlConnection("server=localhost;port=5432;Database=postgres;User Id=postgres;Password=postgres;timeout=1024;");
 #elif SQLITE
-            Connection = new SQLiteConnection("Data Source=.\\test.db;Version=3;");
+            Connection = new System.Data.SQLite.SQLiteConnection("Data Source=.\\test.db;Version=3;");
 #else
             if(IsAppVeyor)
                 Connection = new SqlConnection("Server=(local)\\SQL2016;Database=master;User ID=sa;Password=Password12!");
             else
                 Connection = new SqlConnection("Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
 #endif
-            Session.CurrentUserId = 1;
+            CurrentSession = new Session(1);
 
             //Create Required Tables
-            Repository<Country> countryRepo = new Repository<Country>(Connection);
+            Repository<Country> countryRepo = new Repository<Country>(Connection, CurrentSession);
             countryRepo.CreateTable();
 
-            Repository<City> cityRepo = new Repository<City>(Connection);
+            Repository<City> cityRepo = new Repository<City>(Connection, CurrentSession);
             cityRepo.CreateTable();
 
-            Repository<User> userRepo = new Repository<User>(Connection);
+            Repository<User> userRepo = new Repository<User>(Connection, CurrentSession);
             userRepo.CreateTable();
-
         }
 
         public IDbConnection Connection { get; set; }
 
+        public Session CurrentSession { get; set; }
+
         public void Dispose()
         {
             //Drop created tables
-            Repository<Country> countryRepo = new Repository<Country>(Connection);
+            Repository<Country> countryRepo = new Repository<Country>(Connection, CurrentSession);
             countryRepo.DropTable();
 
-            Repository<City> cityRepo = new Repository<City>(Connection);
+            Repository<City> cityRepo = new Repository<City>(Connection, CurrentSession);
             cityRepo.DropTable();
 
-            Repository<User> userRepo = new Repository<User>(Connection);
+            Repository<User> userRepo = new Repository<User>(Connection, CurrentSession);
             userRepo.DropTable();
 
             Connection?.Dispose();

@@ -25,7 +25,7 @@ namespace Vega.Tests
                 Longitude = 11.50m,
             };
 
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
             var id = cityRepo.Add(city);
 
             city = cityRepo.ReadOne(id);
@@ -50,7 +50,7 @@ namespace Vega.Tests
                 Longitude = 11.50m,
             };
 
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
             var id = cityRepo.Add(city);
 
             city = cityRepo.ReadOne(id);
@@ -72,7 +72,7 @@ namespace Vega.Tests
                 Independence = new DateTime(1947, 8, 15)
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection, Fixture.CurrentSession);
             var id = countryRepo.Add(country);
 
             country = countryRepo.ReadOne(id);

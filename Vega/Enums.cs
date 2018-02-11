@@ -80,39 +80,27 @@ namespace Vega
         Procedure
     }
 
-    // <summary>
-    // Sort Direction
-    // </summary>
-    //public enum SortDirectionEnum
-    //{
-    //    Ascending = 0,
-    //    Decending = 1
-    //}
-
-    // <summary>
-    // Page Navigator
-    // </summary>
-    //public enum ListPagerEnum
-    //{
-    //    FirstPage = 0,
-    //    LastPage = 1,
-    //    NextPage = 2,
-    //    PrevPage = 3
-    //}
-
-    // <summary>
-    // Search Operator enum
-    // </summary>
-    //public enum DbSearchOperatorEnum
-    //{
-    //    Equals = 0,
-    //    Like = 1,
-    //    GreaterThen = 2,
-    //    GreaterThenEquals = 3,
-    //    LessThen = 4,
-    //    LessThenEquals = 5,
-    //    Between = 6,
-    //    NotEquals = 7
-    //}
+    /// <summary>
+    /// Page Navigator
+    /// </summary>
+    public enum PageNavigationEnum
+    {
+        /// <summary>
+        /// Navigate to First Page
+        /// </summary>
+        First = 0,
+        /// <summary>
+        /// Navigate to Last Page
+        /// </summary>
+        Last = 1,
+        /// <summary>
+        /// Navigate to Next Page
+        /// </summary>
+        Next = 2,
+        /// <summary>
+        /// Navigate to Previous Page
+        /// </summary>
+        Previous = 3
+    }
 
 }

@@ -17,12 +17,13 @@ public class Country : EntityBase
 public class CountryRepo
 {
     string conString = "Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+    Session currentSession = new Session(1);
 
     public int Add(Country country)
     {
         using (SqlConnection connection = new SqlConnection(conString))
         {
-            Repository<Country> countryRepo = new Repository<Country>(connection);
+            Repository<Country> countryRepo = new Repository<Country>(connection, currentSession);
             return (int)countryRepo.Add(country);
         }
     }
@@ -31,7 +32,7 @@ public class CountryRepo
     {
         using (SqlConnection connection = new SqlConnection(conString))
         {
-            Repository<Country> countryRepo = new Repository<Country>(connection);
+            Repository<Country> countryRepo = new Repository<Country>(connection, currentSession);
             return countryRepo.Update(country);
         }
     }
@@ -40,7 +41,7 @@ public class CountryRepo
     {
         using (SqlConnection connection = new SqlConnection(conString))
         {
-            Repository<Country> countryRepo = new Repository<Country>(connection);
+            Repository<Country> countryRepo = new Repository<Country>(connection, currentSession);
             return countryRepo.Delete(countryId);
         }
     }
@@ -49,7 +50,7 @@ public class CountryRepo
     {
         using (SqlConnection connection = new SqlConnection(conString))
         {
-            Repository<Country> countryRepo = new Repository<Country>(connection);
+            Repository<Country> countryRepo = new Repository<Country>(connection, currentSession);
             return countryRepo.ReadOne(countryId);
         }
     }
@@ -58,7 +59,7 @@ public class CountryRepo
     {
         using (SqlConnection connection = new SqlConnection(conString))
         {
-            Repository<Country> countryRepo = new Repository<Country>(connection);
+            Repository<Country> countryRepo = new Repository<Country>(connection, currentSession);
             return countryRepo.ReadAll().ToList();
         }
     }

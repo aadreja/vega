@@ -21,7 +21,7 @@ namespace Vega.Tests
         [Fact]
         public void SingleEntity()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             try
             {
@@ -66,7 +66,7 @@ namespace Vega.Tests
         [Fact]
         public void MultipleEntity()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             try
             {
@@ -85,7 +85,7 @@ namespace Vega.Tests
 
                 cityRepo.BeginTransaction();
 
-                Repository<Country> countryRepo = new Repository<Country>(cityRepo.Transaction);
+                Repository<Country> countryRepo = new Repository<Country>(cityRepo.Transaction, Fixture.CurrentSession);
 
                 country.Id = (long)countryRepo.Add(country);
 
@@ -113,7 +113,7 @@ namespace Vega.Tests
         [Fact]
         public void Rollback()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             try
             {

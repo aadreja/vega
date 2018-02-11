@@ -22,7 +22,7 @@ namespace Vega.Tests
         [Fact]
         public void ExecuteDataSet()
         {
-            //Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            //Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             ////Bulk Insert Data
             //City[] cities = new City[20];
@@ -46,7 +46,7 @@ namespace Vega.Tests
         [Fact]
         public void ReadCount()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             int counter = 10;
 
@@ -70,7 +70,7 @@ namespace Vega.Tests
         [Fact]
         public void ReadOne()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             City city = new City()
             {
@@ -94,7 +94,7 @@ namespace Vega.Tests
         [Fact]
         public void ReadAll()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             var cityList = cityRepo.ReadAll();
 
@@ -104,7 +104,7 @@ namespace Vega.Tests
         [Fact]
         public void ReadAllActive()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             var cityList = cityRepo.ReadAll(RecordStatusEnum.Active);
 
@@ -114,7 +114,7 @@ namespace Vega.Tests
         [Fact]
         public void ReadAllInActive()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             var cityList = cityRepo.ReadAll(RecordStatusEnum.InActive);
 
@@ -124,7 +124,7 @@ namespace Vega.Tests
         [Fact]
         public void Query()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             City city = new City()
             {
@@ -142,7 +142,7 @@ namespace Vega.Tests
         [Fact]
         public void ReadAllSort()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             for (int i = 0; i < 10; i++) {
                 City city = new City()
@@ -164,7 +164,7 @@ namespace Vega.Tests
         [Fact]
         public void ReadAllQuery()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             for (int i = 0; i < 10; i++)
             {
@@ -187,7 +187,7 @@ namespace Vega.Tests
         [Fact]
         public void ReadAllEnumCriteria()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             for (int i = 0; i < 10; i++)
             {

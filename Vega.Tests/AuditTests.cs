@@ -30,7 +30,7 @@ namespace Vega.Tests
             };
 
             //cleanup audittrial table
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             var id = cityRepo.Add(city);
             cityRepo.ExecuteNonQuery("DELETE FROM " + Config.AUDIT_TABLENAME);
@@ -82,7 +82,7 @@ namespace Vega.Tests
                 Longitude = 16.50m,
             };
 
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
 
             var id = cityRepo.Add(city);
 

@@ -27,11 +27,11 @@ namespace Vega
                 if (dbs.TryGetValue(key, out db)) return db;
             }
             if (key.ToLowerInvariant().Contains("npgsqlconnection"))
-                db = new Data.PgSqlDatabase();
+                db = new PgSqlDatabase();
             else if (key.ToLowerInvariant().Contains("sqliteconnection"))
-                db = new Data.SQLiteDatabase();
+                db = new SQLiteDatabase();
             else
-                db = new Data.MsSqlDatabase();
+                db = new MsSqlDatabase();
 
             lock (dbs)
             {
@@ -93,13 +93,20 @@ namespace Vega
 
         #region properties
 
-        public DBVersionInfo DBVersion { get; internal set; }
+        DBVersionInfo dbVersion;
+        internal DBVersionInfo GetDBVersion(IDbConnection connection)
+        {
+            if (dbVersion == null)
+                dbVersion = FetchDBServerInfo(connection);
+
+            return dbVersion;
+        }
 
         #endregion
 
         #region Create CRUD commands
 
-        internal virtual void CreateAddCommand(IDbCommand command, EntityBase entity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false)
+        internal virtual void CreateAddCommand(IDbCommand command, EntityBase entity,Session session, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false)
         {
             
             TableAttribute tableInfo = EntityCache.Get(entity.GetType());
@@ -109,8 +116,8 @@ namespace Vega
             if (!string.IsNullOrEmpty(columnNames)) columns.AddRange(columnNames.Split(','));
             else columns.AddRange(tableInfo.DefaultUpdateColumns);//Get columns from Entity attributes loaded in TableInfo
 
-            entity.CreatedBy = Session.CurrentUserId;
-            entity.UpdatedBy = Session.CurrentUserId;
+            entity.CreatedBy = session.CurrentUserId;
+            entity.UpdatedBy = session.CurrentUserId;
 
             bool isPrimaryKeyEmpty = false;
             if (tableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsKeyIdEmpty())
@@ -153,7 +160,7 @@ namespace Vega
                     if (!columns.Contains(Config.CREATEDBY_COLUMN.Name))
                         columns.Add(Config.CREATEDBY_COLUMN.Name);
 
-                    command.AddInParameter("@" + Config.CREATEDBY_COLUMN.Name, Config.CREATEDBY_COLUMN.ColumnDbType, Session.CurrentUserId);
+                    command.AddInParameter("@" + Config.CREATEDBY_COLUMN.Name, Config.CREATEDBY_COLUMN.ColumnDbType, session.CurrentUserId);
                 }
 
                 if (!tableInfo.NoCreatedOn & !columns.Contains(Config.CREATEDON_COLUMN.Name))
@@ -166,7 +173,7 @@ namespace Vega
                     if (!columns.Contains(Config.UPDATEDBY_COLUMN.Name))
                         columns.Add(Config.UPDATEDBY_COLUMN.Name);
 
-                    command.AddInParameter("@" + Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, Session.CurrentUserId);
+                    command.AddInParameter("@" + Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, session.CurrentUserId);
                 }
 
                 if (!tableInfo.NoUpdatedOn & !columns.Contains(Config.UPDATEDON_COLUMN.Name))
@@ -223,7 +230,7 @@ namespace Vega
             }
         }
 
-        internal virtual bool CreateUpdateCommand(IDbCommand command, EntityBase entity, EntityBase oldEntity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false)
+        internal virtual bool CreateUpdateCommand(IDbCommand command, EntityBase entity, EntityBase oldEntity, Session session, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false)
         {
             bool isUpdateNeeded = false;
 
@@ -234,7 +241,7 @@ namespace Vega
             if (!string.IsNullOrEmpty(columnNames)) columns.AddRange(columnNames.Split(','));
             else columns.AddRange(tableInfo.DefaultUpdateColumns);//Get columns from Entity attributes loaded in TableInfo
 
-            entity.UpdatedBy = Session.CurrentUserId;
+            entity.UpdatedBy = session.CurrentUserId;
 
             StringBuilder commandText = new StringBuilder();
 
@@ -267,7 +274,7 @@ namespace Vega
                 {
                     commandText.Append($"{columns[i]} = @{columns[i]}");
                     commandText.Append(",");
-                    command.AddInParameter("@" + columns[i], Config.UPDATEDBY_COLUMN.ColumnDbType, Session.CurrentUserId);
+                    command.AddInParameter("@" + columns[i], Config.UPDATEDBY_COLUMN.ColumnDbType, session.CurrentUserId);
                 }
                 else if (columns[i].Equals(Config.UPDATEDON_COLUMN.Name, StringComparison.OrdinalIgnoreCase))
                 {
@@ -367,6 +374,150 @@ namespace Vega
             return commandText;
         }
 
+        internal virtual void CreateReadAllPagedCommand(IDbCommand command, string query, string orderBy, int pageNo, int pageSize, object parameters = null)
+        {
+            StringBuilder commandText = new StringBuilder();
+
+            if (this is MsSqlDatabase)
+            {
+                if (GetDBVersion(command.Connection).Version.Major >= 11) //SQL server 2012 and above supports offset
+                    commandText.Append($@"{query} 
+                                    ORDER BY {orderBy} 
+                                    OFFSET {((pageNo - 1) * pageSize)} ROWS 
+                                    FETCH NEXT {pageSize} ROWS ONLY");
+                else
+                    commandText.Append($@"SELECT * FROM (
+                        SELECT ROW_NUMBER() OVER(ORDER BY {orderBy}) AS rownumber, 
+                        * FROM ({query}) as sq
+                    ) AS q
+                    WHERE (rownumber between {((pageNo - 1) * pageSize) + 1} AND {pageNo * pageSize})");
+            }
+            else
+            {
+                commandText.Append($@"{query} 
+                                ORDER BY {orderBy}
+                                LIMIT {pageSize}
+                                OFFSET {((pageNo - 1) * pageSize)}");
+            }
+            command.CommandType = CommandType.Text;
+            command.CommandText = commandText.ToString();
+
+            if (parameters != null)
+                ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
+        }
+
+        internal virtual void CreateReadAllPagedNoOffsetCommand<T>(IDbCommand command, string query, string orderBy, int pageSize, PageNavigationEnum navigation, object[] lastOrderByColumnValues = null, object lastKeyId = null, object parameters = null)
+        {
+            string[] orderByColumns = orderBy.Split(',');
+            string[] orderByDirection = new string[orderByColumns.Length];
+            for (int i = 0; i < orderByColumns.Length; i++)
+            {
+                if (orderByColumns[i].ToLowerInvariant().Contains("desc"))
+                {
+                    orderByDirection[i] = "DESC";
+                    orderByColumns[i] = orderByColumns[i].ToLowerInvariant().Replace("desc", "").Trim();
+                }
+                else
+                {
+                    orderByDirection[i] = "ASC";
+                    orderByColumns[i] = orderByColumns[i].ToLowerInvariant().Replace("asc", "").Trim();
+                }
+            }
+            if (orderByColumns.Length == 0)
+                throw new MissingMemberException("Orderby column(s) is missing");
+            if ((navigation == PageNavigationEnum.Next || navigation == PageNavigationEnum.Previous) && lastOrderByColumnValues.Length != orderByColumns.Length)
+                throw new MissingMemberException("For Next and Previous Navigation Length of Last Values must be equal to orderby columns length");
+            if ((navigation == PageNavigationEnum.Next || navigation == PageNavigationEnum.Previous) && lastKeyId == null)
+                throw new MissingMemberException("For Next and Previous Navigation Last KeyId is required");
+
+            TableAttribute tableInfo = EntityCache.Get(typeof(T));
+            bool hasWhere = query.ToLowerInvariant().Contains("where");
+
+            StringBuilder pagedCriteria = new StringBuilder();
+            StringBuilder pagedOrderBy = new StringBuilder();
+
+            if (!hasWhere)
+                pagedCriteria.Append(" WHERE 1=1");
+
+            for (int i = 0; i < orderByColumns.Length; i++)
+            {
+                string applyEquals = (i <= orderByColumns.Length - 2 ? "=" : "");
+
+                if (navigation == PageNavigationEnum.Next)
+                {
+                    //when multiple orderbycolumn - apply '>=' or '<=' till second last column
+                    if (orderByDirection[i] == "ASC")
+                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} AND {tableInfo.PrimaryKeyColumn.Name} > @p_{tableInfo.PrimaryKeyColumn.Name}) OR {orderByColumns[i]} >{applyEquals} @p_{orderByColumns[i]})");
+                    else
+                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} AND {tableInfo.PrimaryKeyColumn.Name} < @p_{tableInfo.PrimaryKeyColumn.Name}) OR ({orderByColumns[i]} IS NULL OR {orderByColumns[i]} <{applyEquals} @p_{orderByColumns[i]}))");
+                }
+                else if (navigation == PageNavigationEnum.Previous)
+                {
+                    if (orderByDirection[i] == "ASC")
+                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} AND {tableInfo.PrimaryKeyColumn.Name} < @p_{tableInfo.PrimaryKeyColumn.Name}) OR ({orderByColumns[i]} IS NULL OR {orderByColumns[i]} <{applyEquals} @p_{orderByColumns[i]}))");
+                    else
+                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} AND {tableInfo.PrimaryKeyColumn.Name} > @p_{tableInfo.PrimaryKeyColumn.Name}) OR {orderByColumns[i]} >{applyEquals} @p_{orderByColumns[i]})");
+                }
+
+                if (navigation == PageNavigationEnum.Next || navigation == PageNavigationEnum.Previous)
+                {
+                    //add Parameter for Last value of ordered column 
+                    DbType dbType;
+                    //see if column exists in TableInfo
+                    tableInfo.Columns.TryGetValue(orderByColumns[i], out ColumnAttribute orderByColumn);
+                    if (orderByColumn != null)
+                        dbType = orderByColumn.ColumnDbType;
+                    else
+                        TypeCache.TypeToDbType.TryGetValue(lastOrderByColumnValues[i].GetType(), out dbType);
+
+                    command.AddInParameter("@p_" + orderByColumns[i], dbType, lastOrderByColumnValues[i]);
+                }
+
+                if (i > 0) pagedOrderBy.Append(",");
+
+                if (navigation == PageNavigationEnum.Last || navigation == PageNavigationEnum.Previous)
+                {
+                    //reverse sort as we are going backward
+                    pagedOrderBy.Append($"{orderByColumns[i]} {(orderByDirection[i] == "ASC" ? "DESC" : "ASC")}");
+                }
+                else
+                {
+                    pagedOrderBy.Append($"{orderByColumns[i]} {orderByDirection[i]}");
+                }
+            }
+
+            //add keyfield parameter for Next and Previous navigation
+            if (navigation == PageNavigationEnum.Next || navigation == PageNavigationEnum.Previous)
+            {
+                //add LastKeyId Parameter
+                command.AddInParameter("@p_" + tableInfo.PrimaryKeyColumn.Name, tableInfo.PrimaryKeyColumn.ColumnDbType, lastKeyId);
+            }
+
+            //add keyfield in orderby clause. Direction will be taken from 1st orderby column
+            if (navigation == PageNavigationEnum.Last || navigation == PageNavigationEnum.Previous)
+            {
+                //reverse sort as we are going backward
+                pagedOrderBy.Append($",{tableInfo.PrimaryKeyColumn.Name} {(orderByDirection[0] == "ASC" ? "DESC" : "ASC")}");
+            }
+            else
+            {
+                pagedOrderBy.Append($",{tableInfo.PrimaryKeyColumn.Name} {orderByDirection[0]}");
+            }
+
+            command.CommandType = CommandType.Text;
+
+            if (this is MsSqlDatabase)
+                command.CommandText = $"SELECT * FROM (SELECT TOP {pageSize} * FROM ({query} {pagedCriteria.ToString()}) AS r1 ORDER BY {pagedOrderBy}) AS r2 ORDER BY {orderBy}";
+            else
+                command.CommandText = $"SELECT * FROM ({query} {pagedCriteria.ToString()} ORDER BY {pagedOrderBy} LIMIT {pageSize}) AS r ORDER BY {orderBy}";
+
+            if (parameters != null)
+                ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
+        }
+
+        #endregion
+
+        #region other methods
         internal void AppendStatusCriteria(StringBuilder commandText, RecordStatusEnum status = RecordStatusEnum.All)
         {
             if (status == RecordStatusEnum.All) return; //nothing to do
