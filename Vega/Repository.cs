@@ -531,10 +531,10 @@ namespace Vega
         #region Read
 
         /// <summary>
-        /// To check record exists 
+        /// To Check record exists for a given Record Id
         /// </summary>
         /// <param name="id">Record Id</param>
-        /// <returns></returns>
+        /// <returns>True if Record exists otherwise False</returns>
         public bool Exists(object id)
         {
             IDbCommand command = Connection.CreateCommand();
@@ -545,11 +545,28 @@ namespace Vega
         }
 
         /// <summary>
-        /// Read one record with specific ID
+        /// To Check record exists for a given Criteria
+        /// </summary>
+        /// <param name="criteria">parameterised criteria e.g. "department=@Department"</param>
+        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <returns>True if Record exists otherwise False</returns>
+        public bool Exists(string criteria, object parameters)
+        {
+            bool hasWhere = criteria.ToLowerInvariant().Contains("where");
+            
+            IDbCommand command = Connection.CreateCommand();
+            command.CommandType = CommandType.Text;
+            command.CommandText = $"SELECT 1 FROM {TableInfo.FullName} {(!hasWhere ? " WHERE " : "")} {criteria}";
+            ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
+            return ExecuteScalar(command) != null;
+        }
+
+        /// <summary>
+        /// Read First record with specific ID
         /// </summary>
         /// <param name="id">record id</param>
         /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
-        /// <returns></returns>
+        /// <returns>Entity if record found otherwise null</returns>
         public T ReadOne(object id, string columns = null)
         {
             //Get columns from Entity attributes loaded in TableInfo
@@ -580,12 +597,51 @@ namespace Vega
         }
 
         /// <summary>
+        /// Returns First Record with specific criteria
+        /// </summary>
+        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <param name="criteria">parameterised criteria e.g. "department=@Department"</param>
+        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <returns>Entity if record found otherwise null</returns>
+        public T ReadOne(string criteria=null, object parameters=null, string columns = null)
+        {
+            bool hasWhere = criteria.ToLowerInvariant().Contains("where");
+
+            //Get columns from Entity attributes loaded in TableInfo
+            if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
+
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandText = $"SELECT {columns} FROM {TableInfo.FullName} {(!hasWhere ? " WHERE " : "")} {criteria}";
+
+            ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
+
+            bool isConOpen = IsConnectionOpen();
+
+            if (!isConOpen) Connection.Open();
+
+            using (IDataReader rdr = ExecuteReader(cmd))
+            {
+                var func = ReaderCache<T>.GetFromCache(rdr);
+
+                if (rdr != null && rdr.Read())
+                {
+                    return func(rdr);
+                }
+                rdr.Close();
+                if (!isConOpen) Connection.Close();
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Read value of one column for a given record
         /// </summary>
         /// <typeparam name="R">Type of value</typeparam>
         /// <param name="id">record id</param>
         /// <param name="column">column name</param>
-        /// <returns></returns>
+        /// <returns>Value if record found otherwise null or default</returns>
         public R ReadOne<R>(object id, string column)
         {
             IDbCommand cmd = Connection.CreateCommand();
@@ -896,6 +952,22 @@ namespace Vega
         #endregion
 
         #region Execute methods
+
+        /// <summary>
+        /// Performs query with parameters and returns first column of first retrieved row in a given type
+        /// </summary>
+        /// <typeparam name="R">Type of Value to Return</typeparam>
+        /// <param name="query">SQL Query</param>
+        /// <param name="parameters">Dynamic parameter(s)</param>
+        /// <returns>retrieved value in given type</returns>
+        public R Query<R>(string query, object parameters)
+        {
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandText = query;
+            cmd.CommandType = CommandType.Text;
+            ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
+            return ExecuteScalar(cmd).Parse<R>();
+        }
 
         /// <summary>
         /// Performs query and returns first column of first retrieved row in a given type

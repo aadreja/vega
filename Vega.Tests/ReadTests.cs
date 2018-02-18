@@ -44,6 +44,26 @@ namespace Vega.Tests
         }
 
         [Fact]
+        public void Exists()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+
+            City city = new City()
+            {
+                Name = "ReadTests.Exists",
+                State = "RO",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m
+            };
+            city.Id = (long)cityRepo.Add(city);
+
+            Assert.True(cityRepo.Exists(city.Id));
+            Assert.True(cityRepo.Exists("State=@State", new {State="RO"}));
+            Assert.False(cityRepo.Exists("State=@State", new { State = "R1" }));
+        }
+
+        [Fact]
         public void ReadCount()
         {
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
@@ -89,6 +109,9 @@ namespace Vega.Tests
             Assert.Equal(city.CountryId, cityReadOne.CountryId);
             Assert.Equal(city.Longitude, cityReadOne.Longitude);
             Assert.Equal(city.Latitude, cityReadOne.Latitude);
+
+            cityReadOne = cityRepo.ReadOne("State=@State", new { State = "RO" });
+            Assert.Equal("RO", cityReadOne.State);
         }
 
         [Fact]
@@ -136,7 +159,11 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            cityRepo.Query<long>("SELECT id FROM City");
+            long id = cityRepo.Query<long>("SELECT id FROM City WHERE Name='ReadTests.Query'");
+            Assert.Equal(city.Id, id);
+
+            id = cityRepo.Query<long>("SELECT id FROM City WHERE Id=@Id", new { Id = city.Id });
+            Assert.Equal(city.Id, id);
         }
 
         [Fact]
