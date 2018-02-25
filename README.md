@@ -29,7 +29,7 @@ Vega is fastest .net ORM with Enterprise features.
 | **Select Tests** |
 | - ADO          | 104 | 106 | 287 | 136 | 133 |
 | - Vega         | 133 | 109 | 159 | 143 | 137 |
-| **Select List Tests ** |
+| **Select List Tests** |
 | - ADO          |   5 |   3 |   3 |   3 |   3 |
 | - Vega         |   7 |   4 |   5 |   3 |   4 |
 
