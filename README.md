@@ -19,21 +19,20 @@ Vega is fastest .net ORM with Enterprise features.
 
 ## Performance Results for 1000 records 5 iteration
 
-| Iteration    |   1 |   2 |   3 |   4 |   5 |
+| Run    |   1 |   2 |   3 |   4 |   5 |
 | -------------| --- | --- | --- | --- | --- |
 | **Insert Tests**  |
-| - ADO	       | 135 | 126 | 121 | 142 | 151 |
-| - Vega	       | 212 | 171 | 148 | 177 | 193 |
+| - ADO	       | 135ms | 126ms | 121ms | 142ms | 151ms |
+| - Vega	       | 212ms | 171ms | 148ms | 177ms | 193ms |
 | **Update Tests** |
-| - ADO          | 140 | 143 | 483 | 157 | 163 |
-| - Vega         | 159 | 163 | 351 | 173 | 162 |
+| - ADO          | 140ms | 143ms | 483ms | 157ms | 163ms |
+| - Vega         | 159ms | 163ms | 351ms | 173ms | 162ms |
 | **Select Tests** |
-| - ADO          | 104 | 106 | 287 | 136 | 133 |
-| - Vega         | 133 | 109 | 159 | 143 | 137 |
+| - ADO          | 104ms | 106ms | 287ms | 136ms | 133ms |
+| - Vega         | 133ms | 109ms | 159ms | 143ms | 137ms |
 | **Select List Tests** |
-| - ADO          |   5 |   3 |   3 |   3 |   3 |
-| - Vega         |   7 |   4 |   5 |   3 |   4 |
-
+| - ADO          |   5ms |   3ms |   3ms |   3ms |   3ms |
+| - Vega         |   7ms |   4ms |   5ms |   3ms |   4ms |
 
 
 ## License
