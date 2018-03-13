@@ -17,7 +17,7 @@ namespace Vega.Tests
         public void CreateTableNoIdentity()
         {
             EntityCache.Clear(); //clear entity cache
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             //Drop table if exists
             countryRepo.DropTable();
             countryRepo.CreateTable();
@@ -29,7 +29,7 @@ namespace Vega.Tests
         public void CreateTableIdentity()
         {
             EntityCache.Clear(); //clear entity cache
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             cityRepo.DropTable();
             cityRepo.CreateTable();
             Assert.True(cityRepo.IsTableExists());
@@ -39,7 +39,7 @@ namespace Vega.Tests
         public void CreateTableDifferentName()
         {
             EntityCache.Clear(); //clear entity cache
-            Repository<User> userRepo = new Repository<User>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<User> userRepo = new Repository<User>(Fixture.Connection);
             userRepo.DropTable();
             userRepo.CreateTable();
             Assert.True(userRepo.IsTableExists());
@@ -49,7 +49,7 @@ namespace Vega.Tests
         public void CreateIndex()
         {
             EntityCache.Clear(); //clear entity cache
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             
             cityRepo.CreateTable();
             cityRepo.CreateIndex("idx_cityname", "countryid,state,name", false);
@@ -60,7 +60,7 @@ namespace Vega.Tests
         [Fact]
         public void GetDatabaseVersion()
         {
-            Repository<City> repository = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> repository = new Repository<City>(Fixture.Connection);
 
             Assert.NotNull(repository.DBVersion);
 

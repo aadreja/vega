@@ -1,0 +1,41 @@
+﻿<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>BenchmarkTest</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet=v0.10.12, OS=Windows 10 Redstone 2 [1703, Creators Update] (10.0.15063.850)
+Intel Core i7-6500U CPU 2.50GHz (Skylake), 1 CPU, 4 logical cores and 2 physical cores
+Frequency=2531251 Hz, Resolution=395.0616 ns, Timer=TSC
+  [Host]     : .NET Framework 4.6.1 (CLR 4.0.30319.42000), 64bit RyuJIT-v4.7.2115.0  [AttachedDebugger]
+  DefaultJob : .NET Framework 4.6.1 (CLR 4.0.30319.42000), 64bit RyuJIT-v4.7.2115.0
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>    Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th>
+</tr>
+</thead><tbody><tr><td>InsertADO</td><td>214.770 ms</td><td>19.1165 ms</td><td>56.3656 ms</td><td>216.004 ms</td>
+</tr><tr><td>UpdateADO</td><td>190.411 ms</td><td>17.4957 ms</td><td>51.5863 ms</td><td>174.565 ms</td>
+</tr><tr><td>SelectADO</td><td>115.190 ms</td><td>5.0756 ms</td><td>14.6442 ms</td><td>110.837 ms</td>
+</tr><tr><td>SelectListADO</td><td>2.849 ms</td><td>0.0661 ms</td><td>0.1908 ms</td><td>2.800 ms</td>
+</tr><tr><td>InsertVega</td><td>140.862 ms</td><td>3.6547 ms</td><td>10.3081 ms</td><td>139.770 ms</td>
+</tr><tr><td>UpdateVega</td><td>130.668 ms</td><td>2.4800 ms</td><td>2.1985 ms</td><td>130.596 ms</td>
+</tr><tr><td>SelectVega</td><td>109.210 ms</td><td>2.3608 ms</td><td>4.6600 ms</td><td>106.875 ms</td>
+</tr><tr><td>SelectListVega</td><td>2.900 ms</td><td>0.0552 ms</td><td>0.0489 ms</td><td>2.919 ms</td>
+</tr><tr><td>InsertDapper</td><td>117.883 ms</td><td>2.3551 ms</td><td>2.4185 ms</td><td>116.426 ms</td>
+</tr><tr><td>UpdateDapper</td><td>119.415 ms</td><td>2.3864 ms</td><td>2.5534 ms</td><td>119.255 ms</td>
+</tr><tr><td>SelectDapper</td><td>109.603 ms</td><td>2.8505 ms</td><td>8.1325 ms</td><td>107.702 ms</td>
+</tr><tr><td>SelectListDapper</td><td>3.085 ms</td><td>0.0691 ms</td><td>0.1441 ms</td><td>3.044 ms</td>
+</tr></tbody></table>
+</body>
+</html>

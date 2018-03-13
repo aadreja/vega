@@ -31,33 +31,30 @@ namespace Vega.Tests
             else
                 Connection = new SqlConnection("Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
 #endif
-            CurrentSession = new Session(1);
 
             //Create Required Tables
-            Repository<Country> countryRepo = new Repository<Country>(Connection, CurrentSession);
+            Repository<Country> countryRepo = new Repository<Country>(Connection);
             countryRepo.CreateTable();
 
-            Repository<City> cityRepo = new Repository<City>(Connection, CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Connection);
             cityRepo.CreateTable();
 
-            Repository<User> userRepo = new Repository<User>(Connection, CurrentSession);
+            Repository<User> userRepo = new Repository<User>(Connection);
             userRepo.CreateTable();
         }
 
         public IDbConnection Connection { get; set; }
 
-        public Session CurrentSession { get; set; }
-
         public void Dispose()
         {
             //Drop created tables
-            Repository<Country> countryRepo = new Repository<Country>(Connection, CurrentSession);
+            Repository<Country> countryRepo = new Repository<Country>(Connection);
             countryRepo.DropTable();
 
-            Repository<City> cityRepo = new Repository<City>(Connection, CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Connection);
             cityRepo.DropTable();
 
-            Repository<User> userRepo = new Repository<User>(Connection, CurrentSession);
+            Repository<User> userRepo = new Repository<User>(Connection);
             userRepo.DropTable();
 
             Connection?.Dispose();
@@ -71,6 +68,14 @@ namespace Vega.Tests
                     return true;
                 else
                     return false;
+            }
+        }
+
+        public int CurrentUserId
+        {
+            get
+            {
+                return 1;
             }
         }
     }

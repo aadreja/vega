@@ -11,6 +11,7 @@ using System.Data;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading;
 
 namespace Vega
 {
@@ -94,6 +95,7 @@ namespace Vega
     /// <typeparam name="T"></typeparam>
     internal class ReaderCache<T> where T : EntityBase, new()
     {
+        static ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
         static Dictionary<ReaderKey, Func<IDataReader, T>> readers = new Dictionary<ReaderKey, Func<IDataReader, T>>();
 
         static int GetReaderHash(IDataReader reader)
@@ -125,14 +127,24 @@ namespace Vega
             ReaderKey key = new ReaderKey(hash, reader);
 
             Func<IDataReader, T> func;
-            lock (readers)
+            try
             {
+                cacheLock.EnterReadLock();
                 if (readers.TryGetValue(key, out func)) return func;
             }
-            func = ReaderToObject(reader);
-            lock (readers)
+            finally
             {
+                cacheLock.ExitReadLock();
+            }
+            func = ReaderToObject(reader);
+            try
+            {
+                cacheLock.EnterWriteLock();
                 return readers[key] = func;
+            }
+            finally
+            {
+                cacheLock.ExitWriteLock();
             }
         }
 
@@ -260,6 +272,7 @@ namespace Vega
     {
         static Dictionary<Type, Action<object, IDbCommand>> dynamicParameters = new Dictionary<Type, Action<object, IDbCommand>>();
         static MethodInfo addInParameter;
+        static ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
 
         static ParameterCache()
         {
@@ -272,14 +285,26 @@ namespace Vega
         {
             Type pType = param.GetType();
             Action<object, IDbCommand> action;
-            lock (dynamicParameters)
+            try
             {
+                cacheLock.EnterReadLock();
                 if (dynamicParameters.TryGetValue(pType, out action)) return action;
             }
-            action = AddParameters(param, cmd);
-            lock (dynamicParameters)
+            finally
             {
+                cacheLock.ExitReadLock();
+            }
+            
+            action = AddParameters(param, cmd);
+
+            try
+            {
+                cacheLock.EnterWriteLock();
                 return dynamicParameters[pType] = action;
+            }
+            finally
+            {
+                cacheLock.ExitWriteLock();
             }
         }
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BenchmarkDotNet.Running;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -11,6 +12,15 @@ namespace Vega.SampleApp
 
         static void Main(string[] args)
         {
+            //var summary = BenchmarkRunner.Run(typeof(BenchmarkTest));
+            //Console.WriteLine("Done");
+            //Console.ReadLine();
+            //return;
+
+            PerformanceTest pTest = new PerformanceTest();
+            pTest.Run();
+            return;
+
             defaultColor = Console.ForegroundColor;
 
             WriteLine("-------------------------------------------", ConsoleColor.Green);
@@ -22,8 +32,6 @@ namespace Vega.SampleApp
             CreateDBWithSampleData();
 
             //Set Session
-            Common.Session = new Session(1);
-
             long id = InsertSample();
             UpdateSample(id);
             ReadById(id);
@@ -41,7 +49,7 @@ namespace Vega.SampleApp
 
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
 
                 List<City> cities = cityRepo.ReadHistory(id).ToList();
 
@@ -61,7 +69,7 @@ namespace Vega.SampleApp
 
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
 
                 List<City> cities = cityRepo.ReadAllPaged("name", 1, 5).ToList();
 
@@ -90,7 +98,7 @@ namespace Vega.SampleApp
 
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
 
                 List<City> cities = cityRepo.ReadAllPaged("name", 5, PageNavigationEnum.First).ToList();
 
@@ -123,7 +131,7 @@ namespace Vega.SampleApp
             WriteLine("Read All", ConsoleColor.Green);
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
                 List<City> cities = cityRepo.ReadAll().ToList();
 
                 WriteLine($"Found {cities.Count} Records", ConsoleColor.Green);
@@ -143,7 +151,7 @@ namespace Vega.SampleApp
             WriteLine("Read by Criteria", ConsoleColor.Green);
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
                 List<City> cities = cityRepo.ReadAll(null, "State=@State", new { State = "GU" }).ToList();
                 WriteLine($"Found {cities.Count} Records", ConsoleColor.Green);
                 foreach (City city in cities)
@@ -155,7 +163,7 @@ namespace Vega.SampleApp
             WriteLine("Read Name by Criteria", ConsoleColor.Green);
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
                 List<City> cities = cityRepo.ReadAll("Name", "State=@State", new { State = "GU" }).ToList();
                 WriteLine($"Found {cities.Count} Records", ConsoleColor.Green);
                 foreach (City city in cities)
@@ -167,7 +175,7 @@ namespace Vega.SampleApp
             WriteLine("Exists", ConsoleColor.Green);
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
                 bool isExists = cityRepo.Exists("Name=@Name", new { Name = "Ahmedabad" });
                 WriteLine($"Ahmedabad exists {isExists}");
 
@@ -178,7 +186,7 @@ namespace Vega.SampleApp
             WriteLine("Read one value", ConsoleColor.Green);
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
                 decimal latitude = cityRepo.Query<decimal>("SELECT latitude FROM city WHERE Name=@Name", new { Name = "Ahmedabad" });
 
                 WriteLine($"Latitude of Ahmedabad is {latitude}");
@@ -187,7 +195,7 @@ namespace Vega.SampleApp
             WriteLine("Count", ConsoleColor.Green);
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
                 long count = cityRepo.Count();// "SELECT latitude FROM city WHERE Name=@Name", new { Name = "Ahmedabad" });
 
                 WriteLine($"Record count is {count}");
@@ -210,12 +218,13 @@ namespace Vega.SampleApp
                 CountryId = 1,
                 CityType = EnumCityType.Metro,
                 Longitude = 100.23m,
-                Latitude = 123.23m
+                Latitude = 123.23m,
+                CreatedBy = 1
             };
 
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
                 city.Id = (long)cityRepo.Add(city);
             }
             WriteLine($"City {city.Name} added with Id {city.Id}");
@@ -232,12 +241,13 @@ namespace Vega.SampleApp
 
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
 
                 //Read First
                 City city = cityRepo.ReadOne(id);
 
                 city.CityType = EnumCityType.NonMetro;
+                city.UpdatedBy = 1;
                 cityRepo.Update(city);
 
                 WriteLine($"City {city.Name} updated");
@@ -250,7 +260,7 @@ namespace Vega.SampleApp
 
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+                Repository<City> cityRepo = new Repository<City>(con);
                 City city = cityRepo.ReadOne(id);
 
                 WriteLine($"City Id={city.Id},Name={city.Name},Type={city.CityType}");
@@ -265,8 +275,8 @@ namespace Vega.SampleApp
 
             using (SqlConnection con = new SqlConnection(Common.ConnectionString))
             {
-                Repository<City> cityRepo = new Repository<City>(con, Common.Session);
-                cityRepo.Delete(id);
+                Repository<City> cityRepo = new Repository<City>(con);
+                cityRepo.Delete(id, 1);
 
                 WriteLine($"City Id={id} deleted");
             }
@@ -283,7 +293,7 @@ namespace Vega.SampleApp
                 {
                     using (var con = new SqlConnection(Common.MasterConnectionString))
                     {
-                        Repository<User> master = new Repository<User>(con, Common.Session);
+                        Repository<User> master = new Repository<User>(con);
 
                         //close existing connections
                         master.ExecuteNonQuery($"ALTER DATABASE [{Common.DBName}] set single_user with rollback immediate");
@@ -311,7 +321,7 @@ namespace Vega.SampleApp
                 {
                     using (var masterCon = new SqlConnection(Common.MasterConnectionString))
                     {
-                        Repository<User> master = new Repository<User>(masterCon, Common.Session);
+                        Repository<User> master = new Repository<User>(masterCon);
                         master.ExecuteNonQuery($"CREATE DATABASE {Common.DBName} ON (NAME = N'{Common.DBName}', FILENAME = '{dbFileName}')");
                     }
                 }
@@ -326,16 +336,16 @@ namespace Vega.SampleApp
             SqlConnection con = new SqlConnection(Common.ConnectionString);
 
             //Create Tables
-            Repository<User> userRepo = new Repository<User>(con, Common.Session);
+            Repository<User> userRepo = new Repository<User>(con);
             if(!userRepo.IsTableExists())
                 userRepo.CreateTable();
 
-            Repository<Country> countryRepo = new Repository<Country>(con, Common.Session);
+            Repository<Country> countryRepo = new Repository<Country>(con);
             if (!countryRepo.IsTableExists())
                 countryRepo.CreateTable();
 
             //Create City
-            Repository<City> cityRepo = new Repository<City>(con, Common.Session);
+            Repository<City> cityRepo = new Repository<City>(con);
             if (!cityRepo.IsTableExists())
                 cityRepo.CreateTable();
 
@@ -349,6 +359,7 @@ namespace Vega.SampleApp
                 User usr = new User()
                 {
                     Username = "admin",
+                    CreatedBy = 1
                 };
                 usr.Id = (short)userRepo.Add(usr);
                 WriteLine($"User {usr.Username} added with Id {usr.Id}");
@@ -362,7 +373,8 @@ namespace Vega.SampleApp
                 {
                     Name = "India",
                     Continent = EnumContinent.Asia,
-                    Independence = new DateTime(1947, 8, 15)
+                    Independence = new DateTime(1947, 8, 15),
+                    CreatedBy = 1
                 };
                 country.Id = (int)countryRepo.Add(country);
                 WriteLine($"Country {country.Name} added with Id {country.Id}");
@@ -377,7 +389,8 @@ namespace Vega.SampleApp
                 CountryId = country.Id,
                 State = "DL",
                 Longitude = 19.0760m,
-                Latitude = 72.8777m
+                Latitude = 72.8777m,
+                CreatedBy = 1
             });
             cities.Add(new City()
             {
@@ -386,7 +399,8 @@ namespace Vega.SampleApp
                 CountryId = country.Id,
                 State = "MH",
                 Longitude = 28.7041m,
-                Latitude = 77.1025m
+                Latitude = 77.1025m,
+                CreatedBy = 1
             });
             cities.Add(new City()
             {
@@ -395,7 +409,8 @@ namespace Vega.SampleApp
                 CountryId = country.Id,
                 State = "GJ",
                 Longitude = 23.0225m,
-                Latitude = 72.5714m
+                Latitude = 72.5714m,
+                CreatedBy = 1
             });
 
             try

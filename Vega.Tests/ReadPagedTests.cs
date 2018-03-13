@@ -20,7 +20,7 @@ namespace Vega.Tests
         [Fact]
         public void NoQueryNoOffsetMultipleOrderByWithCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -35,7 +35,8 @@ namespace Vega.Tests
                     State = i % 5 == 0 ? "RC" : "DC",
                     CountryId = i % 2 == 0 ? 1 : 2,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -106,7 +107,7 @@ namespace Vega.Tests
         [Fact]
         public void NoQueryNoOffsetWithCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -121,7 +122,8 @@ namespace Vega.Tests
                     State = i % 2 == 0 ? "RC" : "DC",
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -183,7 +185,7 @@ namespace Vega.Tests
         [Fact]
         public void NoQueryNoOffsetMultipleOrderByNoCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -198,7 +200,8 @@ namespace Vega.Tests
                     State = i % 2 == 0 ? "RC" : "DC",
                     CountryId = i % 2 == 0 ? 1 : 2,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -267,7 +270,7 @@ namespace Vega.Tests
         [Fact]
         public void NoQueryNoOffsetNoCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -282,7 +285,8 @@ namespace Vega.Tests
                     State = "RC",
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -343,7 +347,7 @@ namespace Vega.Tests
         [Fact]
         public void WithQueryNoOffsetMultipleOrderByWithCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -358,7 +362,8 @@ namespace Vega.Tests
                     State = i % 5 == 0 ? "RC" : "DC",
                     CountryId = i % 2 == 0 ? 1 : 2,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -429,7 +434,7 @@ namespace Vega.Tests
         [Fact]
         public void WithQueryNoOffsetWithCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -444,7 +449,8 @@ namespace Vega.Tests
                     State = i % 2 == 0 ? "RC" : "DC",
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -506,7 +512,7 @@ namespace Vega.Tests
         [Fact]
         public void WithQueryNoOffsetMultipleOrderByNoCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -521,7 +527,8 @@ namespace Vega.Tests
                     State = i % 2 == 0 ? "RC" : "DC",
                     CountryId = i % 2 == 0 ? 1 : 2,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -590,7 +597,7 @@ namespace Vega.Tests
         [Fact]
         public void WithQueryNoOffsetNoCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -605,7 +612,8 @@ namespace Vega.Tests
                     State = "RC",
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -666,7 +674,7 @@ namespace Vega.Tests
         [Fact]
         public void NoQueryNoCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -681,7 +689,8 @@ namespace Vega.Tests
                     State = "RC",
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -703,7 +712,7 @@ namespace Vega.Tests
         [Fact]
         public void NoQueryWithCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -718,7 +727,8 @@ namespace Vega.Tests
                     State = (i % 2 == 0 ? "RC" : "DC"),
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -739,7 +749,7 @@ namespace Vega.Tests
         [Fact]
         public void WithQueryNoCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -754,7 +764,8 @@ namespace Vega.Tests
                     State = "RC",
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -776,7 +787,7 @@ namespace Vega.Tests
         [Fact]
         public void WithQueryWithCriteriaTest()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -791,7 +802,8 @@ namespace Vega.Tests
                     State = (i % 2 == 0 ? "RC" : "DC"),
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy =Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }

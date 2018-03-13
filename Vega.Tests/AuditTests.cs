@@ -27,10 +27,11 @@ namespace Vega.Tests
                 State = "GU",
                 Latitude = 10.65m,
                 Longitude = 11.50m,
+                CreatedBy =Fixture.CurrentUserId
             };
 
             //cleanup audittrial table
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             var id = cityRepo.Add(city);
             cityRepo.ExecuteNonQuery("DELETE FROM " + Config.AUDIT_TABLENAME);
@@ -41,10 +42,12 @@ namespace Vega.Tests
 
             //now update record
             city.State = "MH";
+            city.UpdatedBy =Fixture.CurrentUserId;
             cityRepo.Update(city);
 
             //update again
             city.CountryId = 1;
+            city.UpdatedBy =Fixture.CurrentUserId;
             cityRepo.Update(city);
 
             //read history
@@ -80,9 +83,10 @@ namespace Vega.Tests
                 State = "RJ",
                 Latitude = 56.65m,
                 Longitude = 16.50m,
+                CreatedBy =Fixture.CurrentUserId
             };
 
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             var id = cityRepo.Add(city);
 

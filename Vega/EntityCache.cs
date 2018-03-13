@@ -14,7 +14,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace Vega
 {
@@ -23,6 +23,7 @@ namespace Vega
     /// </summary>
     public static class EntityCache
     {
+        static ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
         static Dictionary<Type, TableAttribute> Entities;
 
         static EntityCache()
@@ -42,9 +43,14 @@ namespace Vega
         {
             TableAttribute result;
 
-            lock (Entities)
+            try
             {
+                cacheLock.EnterReadLock();
                 if (Entities.TryGetValue(entity, out result)) return result;
+            }
+            finally
+            {
+                cacheLock.ExitReadLock();
             }
 
             result = (TableAttribute)entity.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault();
@@ -171,9 +177,14 @@ namespace Vega
                 }
             }
 
-            lock (Entities)
+            try
             {
+                cacheLock.EnterWriteLock();
                 Entities[entity] = result;
+            }
+            finally
+            {
+                cacheLock.ExitWriteLock();
             }
 
             return result;

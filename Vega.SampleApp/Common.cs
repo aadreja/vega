@@ -8,7 +8,7 @@ namespace Vega.SampleApp
 {
     public static class Common
     {
-        public static Session Session;
+        //public static Session Session;
 
         public static string DBName = "vegasample";
         public static string ConnectionString = $"Server=.;Initial Catalog={DBName};Integrated Security=true;";

@@ -21,7 +21,7 @@ namespace Vega.Tests
         [Fact]
         public void SingleEntity()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             try
             {
@@ -33,12 +33,14 @@ namespace Vega.Tests
                     new City()
                     {
                         Name = "Transaction City 1",
-                        State = "T"
+                        State = "T",
+                        CreatedBy=1
                     },
                     new City()
                     {
                         Name = "Transaction City 2",
-                        State = "T"
+                        State = "T",
+                        CreatedBy=1
                     }
                 };
 
@@ -66,14 +68,15 @@ namespace Vega.Tests
         [Fact]
         public void MultipleEntity()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             try
             {
                 //add country record
                 Country country = new Country()
                 {
-                    Name = "TransactionTests.MultipleEntity"
+                    Name = "TransactionTests.MultipleEntity",
+                    CreatedBy = Fixture.CurrentUserId
                 };
 
                 //add city record
@@ -81,11 +84,12 @@ namespace Vega.Tests
                 {
                     Name = "TransactionTests.MultipleEntity",
                     State = "T",
+                    CreatedBy = Fixture.CurrentUserId
                 };
 
                 cityRepo.BeginTransaction();
 
-                Repository<Country> countryRepo = new Repository<Country>(cityRepo.Transaction, Fixture.CurrentSession);
+                Repository<Country> countryRepo = new Repository<Country>(cityRepo.Transaction);
 
                 country.Id = (long)countryRepo.Add(country);
 
@@ -113,7 +117,7 @@ namespace Vega.Tests
         [Fact]
         public void Rollback()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             try
             {
@@ -122,11 +126,12 @@ namespace Vega.Tests
                 {
                     Id = 1,
                     Name = "TransactionTests.Rollback",
-                    State = null
+                    State = null,
+                    CreatedBy = Fixture.CurrentUserId
                 };
 
                 //Delete record if exists before transaction
-                if (cityRepo.Exists(city.Id)) cityRepo.HardDelete(city.Id);
+                if (cityRepo.Exists(city.Id)) cityRepo.HardDelete(city.Id, Fixture.CurrentUserId);
 
                 cityRepo.BeginTransaction();
 

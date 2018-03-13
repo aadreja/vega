@@ -23,9 +23,10 @@ namespace Vega.Tests
             {
                 Name = "India",
                 Continent = EnumContinent.Asia,
+                CreatedBy =Fixture.CurrentUserId
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection,  Fixture.CurrentSession);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             //add master record
             country.Id = (long)countryRepo.Add(country);
 
@@ -35,15 +36,16 @@ namespace Vega.Tests
                 State = "GU",
                 Latitude = 10.65m,
                 Longitude = 11.50m,
-                CountryId = country.Id
+                CountryId = country.Id,
+                CreatedBy=Fixture.CurrentUserId
             };
 
             //add child record
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             city.Id = (long)cityRepo.Add(city);
 
             //now try to delete country record;
-            Exception ex = Assert.Throws<Exception>(() => countryRepo.Delete(country.Id));
+            Exception ex = Assert.Throws<Exception>(() => countryRepo.Delete(country.Id, Fixture.CurrentUserId));
 
             Assert.Contains("Virtual Foreign Key", ex.Message);
         }
@@ -55,14 +57,15 @@ namespace Vega.Tests
             {
                 Name = "India",
                 Continent = EnumContinent.Asia,
+                CreatedBy= Fixture.CurrentUserId
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             //add master record
             country.Id = (long)countryRepo.Add(country);
 
             //now try to delete country record
-            Assert.True(countryRepo.Delete(country.Id));
+            Assert.True(countryRepo.Delete(country.Id, Fixture.CurrentUserId));
         }
 
         [Fact]
@@ -72,10 +75,10 @@ namespace Vega.Tests
             {
                 Id = 1,
                 Username = "super",
+                CreatedBy = Fixture.CurrentUserId
             };
 
-            Repository<User> userRepo = new Repository<User>(Fixture.Connection, Fixture.CurrentSession);
-            userRepo.CurrentSession = new Session(1);
+            Repository<User> userRepo = new Repository<User>(Fixture.Connection);
             //add master record
             usr.Id = (short)userRepo.Add(usr);
 
@@ -84,9 +87,10 @@ namespace Vega.Tests
             {
                 Name = "India",
                 Continent = EnumContinent.Asia,
+                CreatedBy = Fixture.CurrentUserId
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             //add master record
             country.Id = (long)countryRepo.Add(country);
 
@@ -96,14 +100,15 @@ namespace Vega.Tests
                 State = "GU",
                 Latitude = 10.65m,
                 Longitude = 11.50m,
-                CountryId = country.Id
+                CountryId = country.Id,
+                CreatedBy = Fixture.CurrentUserId
             };
 
             //add child record
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             city.Id = (long)cityRepo.Add(city);
 
-            Exception ex = Assert.Throws<Exception>(() => userRepo.Delete(usr.Id));
+            Exception ex = Assert.Throws<Exception>(() => userRepo.Delete(usr.Id, Fixture.CurrentUserId));
             Assert.Contains("Virtual Foreign Key", ex.Message);
 
         }

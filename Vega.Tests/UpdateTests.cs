@@ -23,9 +23,10 @@ namespace Vega.Tests
                 State = "GU",
                 Latitude = 10.65m,
                 Longitude = 11.50m,
+                CreatedBy =Fixture.CurrentUserId
             };
 
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             var id = cityRepo.Add(city);
 
             city = cityRepo.ReadOne(id);
@@ -48,9 +49,10 @@ namespace Vega.Tests
                 State = "GU",
                 Latitude = 10.65m,
                 Longitude = 11.50m,
+                CreatedBy =Fixture.CurrentUserId
             };
 
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             var id = cityRepo.Add(city);
 
             city = cityRepo.ReadOne(id);
@@ -69,10 +71,11 @@ namespace Vega.Tests
             {
                 Name = "India",
                 ShortCode = "IN",
-                Independence = new DateTime(1947, 8, 15)
+                Independence = new DateTime(1947, 8, 15),
+                CreatedBy =Fixture.CurrentUserId
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             var id = countryRepo.Add(country);
 
             country = countryRepo.ReadOne(id);

@@ -36,24 +36,20 @@ namespace Vega
         /// Constructor with specific connection
         /// </summary>
         /// <param name="connection">provide DB connection</param>
-        /// <param name="currentSession">Current Session</param>
-        public Repository(IDbConnection connection, Session currentSession) : this()
+        public Repository(IDbConnection connection) : this()
         {
             Connection = connection;
             DB = DBCache.Get(Connection);
-            CurrentSession = currentSession;
         }
 
         /// <summary>
         /// Constructor with specific transaction
         /// </summary>
         /// <param name="transaction">provide DB Transaction</param>
-        /// <param name="currentSession">Current Session</param>
-        public Repository(IDbTransaction transaction, Session currentSession) : this()
+        public Repository(IDbTransaction transaction) : this()
         {
             Connection = transaction.Connection;
             Transaction = transaction;
-            CurrentSession = currentSession;
             DB = DBCache.Get(Connection);
         }
 
@@ -86,11 +82,6 @@ namespace Vega
         /// gets or set connection object
         /// </summary>
         public IDbConnection Connection { get; set; }
-
-        /// <summary>
-        /// gets or set session object
-        /// </summary>
-        public Session CurrentSession { get; set; }
 
         #endregion
 
@@ -193,11 +184,14 @@ namespace Vega
                 {
                     //begin transaction
                     isTransactHere = BeginTransaction();
-                    audit = new AuditTrial();
+                    audit = new AuditTrial
+                    {
+                        CreatedBy = entity.CreatedBy
+                    };
                 }
 
                 IDbCommand command = Connection.CreateCommand();
-                DB.CreateAddCommand(command, entity, this.CurrentSession, audit, columns, false);
+                DB.CreateAddCommand(command, entity, audit, columns, false);
                 var keyId = ExecuteScalar(command);
                 //get identity
                 if (TableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsKeyIdEmpty())
@@ -208,7 +202,7 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     //Save Audit Trial
-                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction, CurrentSession);
+                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
                     auditTrialRepo.Add(entity, RecordOperationEnum.Insert, TableInfo, audit);
                     if (isTransactHere) Commit();
                 }
@@ -256,9 +250,12 @@ namespace Vega
                 AuditTrial audit = null;
                 if (TableInfo.NeedsHistory)
                 {
-                    audit = new AuditTrial();
-                    isTransactHere = BeginTransaction();
+                    audit = new AuditTrial
+                    {
+                        CreatedBy = entity.UpdatedBy
+                    };
 
+                    isTransactHere = BeginTransaction();
                     if (oldEntity == null)
                     {
                         oldEntity = ReadOne(entity.KeyId);
@@ -267,7 +264,7 @@ namespace Vega
 
                 IDbCommand command = Connection.CreateCommand();
 
-                bool isUpdateNeeded = DB.CreateUpdateCommand(command, entity, oldEntity, CurrentSession, audit, columns);
+                bool isUpdateNeeded = DB.CreateUpdateCommand(command, entity, oldEntity, audit, columns);
 
                 if (isUpdateNeeded)
                 {
@@ -283,7 +280,7 @@ namespace Vega
                     if (TableInfo.NeedsHistory)
                     {
                         //Save History
-                        AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction, CurrentSession);
+                        AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
                         auditTrialRepo.Add(entity, RecordOperationEnum.Update, TableInfo, audit);
                         if (isTransactHere) Commit();
                     }
@@ -309,10 +306,11 @@ namespace Vega
         /// Hard delete for entity with NoIsActive flag else Soft Delete
         /// </summary>
         /// <param name="id">Record Id</param>
+        /// <param name="updatedBy">Updated By User Id</param>
         /// <returns>deletion status</returns>
-        public bool Delete(object id)
+        public bool Delete(object id, int updatedBy)
         {
-            return Delete(id, 0, false);
+            return Delete(id, 0, updatedBy, false);
         }
 
         /// <summary>
@@ -320,20 +318,22 @@ namespace Vega
         /// </summary>
         /// <param name="id">Record Id</param>
         /// <param name="versionNo">Version of deleting record</param>
+        /// <param name="updatedBy">Updated By User Id</param>
         /// <returns>deletion status</returns>
-        public bool Delete(object id, Int32 versionNo)
+        public bool Delete(object id, Int32 versionNo, int updatedBy)
         {
-            return Delete(id, versionNo, false);
+            return Delete(id, versionNo, updatedBy, false);
         }
 
         /// <summary>
         /// Hard delete irrelevant of NoIsActive flag
         /// </summary>
         /// <param name="id">Record Id</param>
+        /// <param name="updatedBy">Updated By User Id</param>
         /// <returns>deletion status</returns>
-        public bool HardDelete(object id)
+        public bool HardDelete(object id, int updatedBy)
         {
-            return Delete(id, 0, true);
+            return Delete(id, 0, updatedBy, true);
         }
 
         /// <summary>
@@ -341,10 +341,11 @@ namespace Vega
         /// </summary>
         /// <param name="id">Record Id</param>
         /// <param name="versionNo">Version of deleting record</param>
+        /// <param name="updatedBy">Updated By User Id</param>
         /// <returns>deletion status</returns>
-        public bool HardDelete(object id, Int32 versionNo)
+        public bool HardDelete(object id, Int32 versionNo, int updatedBy)
         {
-            return Delete(id, versionNo, true);
+            return Delete(id, versionNo, updatedBy, true);
         }
 
         /// <summary>
@@ -352,9 +353,10 @@ namespace Vega
         /// </summary>
         /// <param name="id">id of record</param>
         /// <param name="versionNo">version no for concurrency check</param>
+        /// <param name="updatedBy">Updated By User Id</param>
         /// <param name="isHardDelete">true to perform harddelete else false for soft delete(i.e mark isactive=false)</param>
         /// <returns>deletion status</returns>
-        bool Delete(object id, Int32 versionNo, bool isHardDelete)
+        bool Delete(object id, Int32 versionNo, int updatedBy, bool isHardDelete)
         {
             bool isTransactHere = false;
             bool isConOpen = IsConnectionOpen();
@@ -388,7 +390,7 @@ namespace Vega
                     if (!TableInfo.NoUpdatedBy)
                     {
                         commandText.Append($",{Config.UPDATEDBY_COLUMN.Name}=@{Config.UPDATEDBY_COLUMN.Name}");
-                        command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, CurrentSession.CurrentUserId);
+                        command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, updatedBy);
                     }
                 }
                 commandText.Append($" WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}");
@@ -413,9 +415,9 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     //Save History
-                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction, CurrentSession);
+                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
 
-                    auditTrialRepo.Add(id, versionNo, RecordOperationEnum.Delete, TableInfo);
+                    auditTrialRepo.Add(id, versionNo, updatedBy, RecordOperationEnum.Delete, TableInfo);
 
                     if (isTransactHere) Commit();
                 }
@@ -440,10 +442,11 @@ namespace Vega
         /// Recovers Soft Deleted Record with specific id. i.e. marks isactive=true
         /// </summary>
         /// <param name="id">record id</param>
+        /// <param name="updatedBy">Updated By user id</param>
         /// <returns>true if recovered else false</returns>
-        public bool Recover(object id)
+        public bool Recover(object id, int updatedBy)
         {
-            return Recover(id, 0);
+            return Recover(id, 0, updatedBy);
         }
 
         /// <summary>
@@ -451,8 +454,9 @@ namespace Vega
         /// </summary>
         /// <param name="id">record id</param>
         /// <param name="versionNo">rowversion for concurrency check</param>
+        /// <param name="updatedBy">Updated By user id</param>
         /// <returns></returns>
-        public bool Recover(object id, Int32 versionNo)
+        public bool Recover(object id, Int32 versionNo, int updatedBy)
         {
             if (TableInfo.NoIsActive)
             {
@@ -482,7 +486,7 @@ namespace Vega
                 if (!TableInfo.NoUpdatedBy)
                 {
                     commandText.Append($",{Config.UPDATEDBY_COLUMN.Name}=@{Config.UPDATEDBY_COLUMN.Name}");
-                    command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, CurrentSession.CurrentUserId);
+                    command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, updatedBy);
                 }
 
                 commandText.Append($" WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}");
@@ -507,9 +511,9 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     //Save History
-                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction, CurrentSession);
+                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
 
-                    auditTrialRepo.Add(id, versionNo, RecordOperationEnum.Recover, TableInfo);
+                    auditTrialRepo.Add(id, versionNo, updatedBy, RecordOperationEnum.Recover, TableInfo);
 
                     if (isTransactHere) Commit();
                 }
@@ -786,7 +790,7 @@ namespace Vega
         /// <returns>List of audit for this record</returns>
         public IEnumerable<T> ReadHistory(object id)
         {
-            AuditTrialRepository auditRepo = new AuditTrialRepository(Connection, CurrentSession);
+            AuditTrialRepository auditRepo = new AuditTrialRepository(Connection);
 
             return auditRepo.ReadAll<T>(TableInfo.Name, id);
         }

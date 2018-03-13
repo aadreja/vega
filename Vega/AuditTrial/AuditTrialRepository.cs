@@ -8,8 +8,8 @@ namespace Vega
     {
         #region constructors
 
-        public AuditTrialRepository(IDbConnection con, Session currentSession) : base(con, currentSession) { }
-        public AuditTrialRepository(IDbTransaction tran, Session currentSession) : base(tran, currentSession) { }
+        public AuditTrialRepository(IDbConnection con) : base(con) { }
+        public AuditTrialRepository(IDbTransaction tran) : base(tran) { }
 
         #endregion
 
@@ -52,7 +52,7 @@ namespace Vega
         }
 
         //for delete & restore
-        internal bool Add(object recordId, int recordVersionNo, RecordOperationEnum operation, TableAttribute tableInfo)
+        internal bool Add(object recordId, int recordVersionNo, int updatedBy, RecordOperationEnum operation, TableAttribute tableInfo)
         {
             if (operation != RecordOperationEnum.Delete && operation != RecordOperationEnum.Recover)
                 throw new InvalidOperationException("Invalid call to this method. This method shall be call for Delete and Recover operation only.");
@@ -63,8 +63,9 @@ namespace Vega
             {
                 OperationType = operation,
                 RecordId = recordId.ToString(),
-                RecordVersionNo = recordVersionNo+1,
+                RecordVersionNo = recordVersionNo + 1,
                 TableName = tableInfo.Name,
+                CreatedBy = updatedBy
             };
             audit.AppendDetail(Config.ISACTIVE_COLUMN.Name, !(operation == RecordOperationEnum.Delete), DbType.Boolean);
             audit.Details = audit.GenerateString();

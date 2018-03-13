@@ -21,11 +21,12 @@ namespace Vega.Tests
             {
                 Id = 1,
                 Username = "admin",
+                CreatedBy = Fixture.CurrentUserId
             };
 
-            Repository<User> usrRepo = new Repository<User>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<User> usrRepo = new Repository<User>(Fixture.Connection);
 
-            if (usrRepo.Exists(usr.Id)) usrRepo.HardDelete(usr.Id);
+            if (usrRepo.Exists(usr.Id)) usrRepo.HardDelete(usr.Id, Fixture.CurrentUserId);
 
             usrRepo.Add(usr);
 
@@ -41,10 +42,11 @@ namespace Vega.Tests
                 State = "GU",
                 Latitude = 10.65m,
                 Longitude = 11.50m,
-                CityType = EnumCityType.Metro
+                CityType = EnumCityType.Metro,
+                CreatedBy =Fixture.CurrentUserId
             };
 
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             var id = cityRepo.Add(city);
 
             Assert.Equal("Ahmedabad", cityRepo.ReadOne<string>(id, "Name"));
@@ -58,10 +60,11 @@ namespace Vega.Tests
             {
                 Name = "India",
                 ShortCode = "IN",
-                Independence = new DateTime(1947, 8, 15)//15th August, 1947
+                Independence = new DateTime(1947, 8, 15),//15th August, 1947
+                CreatedBy =Fixture.CurrentUserId
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             var id = countryRepo.Add(country);
 
             Assert.Equal("India", countryRepo.ReadOne<string>(id, "Name"));
@@ -75,10 +78,11 @@ namespace Vega.Tests
                 Name = "India",
                 ShortCode = "IN",
                 Independence = new DateTime(1947, 8, 15),
-                Continent = EnumContinent.America
+                Continent = EnumContinent.America,
+                CreatedBy =Fixture.CurrentUserId
             };
 
-            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             var id = countryRepo.Add(country);
 
             Assert.Equal("India", countryRepo.ReadOne<string>(id, "Name"));
