@@ -11,6 +11,7 @@ Vega is fastest .net ORM with Enterprise features.
 * Ability to define Virtual Foreign Keys to check data integrity on Delete.
 * Cross database support for Microsoft SQL Server, PostgreSQL, SQLite.
 
+
 ## Project Info
 
 * **Documentation**: [https://github.com/aadreja/vega/wiki](https://github.com/aadreja/vega/wiki)
@@ -32,7 +33,6 @@ Vega is fastest .net ORM with Enterprise features.
 | **Select List Tests** |
 | - ADO          |   5ms |   3ms |   3ms |   3ms |   3ms |
 | - Vega         |   7ms |   4ms |   5ms |   3ms |   4ms |
-
 
 
 ## License
