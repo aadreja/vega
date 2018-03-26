@@ -67,7 +67,7 @@ namespace Vega
         /// <summary>
         /// Gets or Set CreatedOn Property
         /// </summary>
-        [Column(Name = Config.CREATEDON_COLUMNNAME, Title = "Created On", IsAllowSorting = true)]
+        [Column(Name = Config.CREATEDON_COLUMNNAME, Title = "Created On")]
         public DateTime CreatedOn { get; set; }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace Vega
         /// <summary>
         /// Gets or Set UpdatedOn Property
         /// </summary>
-        [Column(Name = Config.UPDATEDON_COLUMNNAME, Title = "Updated On", IsAllowSorting = true)]
+        [Column(Name = Config.UPDATEDON_COLUMNNAME, Title = "Updated On")]
         public DateTime UpdatedOn { get; set; }
 
         /// <summary>

@@ -25,6 +25,7 @@ namespace Vega.SampleApp
         public string State { get; set; }
         public decimal Longitude { get; set; }
         public decimal Latitude { get; set; }
+        [IgnoreColumn(false, true, false)]
         public long CountryId { get; set; }
         [IgnoreColumn(true)]
         public string CountryName { get; set; }

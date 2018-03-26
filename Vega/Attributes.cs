@@ -298,21 +298,6 @@ namespace Vega
         /// </summary>
         public int NumericScale { get; set; }
 
-        /// <summary>
-        /// Allow Sorting on this column
-        /// </summary>
-        public bool IsAllowSorting { get; set; }
-
-        /// <summary>
-        /// Allow search on this column
-        /// </summary>
-        public bool IsAllowSearch { get; set; }
-
-        /// <summary>
-        /// Search operator
-        /// </summary>
-        //public DbSearchOperatorEnum SearchOperator { get; set; }
-
         #endregion
 
         #region Internal Properties

@@ -1262,7 +1262,7 @@ namespace Vega
         
         #endregion
 
-        #region Referene Integrity Methods
+        #region Referencial Integrity Methods
 
         /// <summary>
         /// To check foreign key violation against this table
