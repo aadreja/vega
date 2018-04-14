@@ -54,45 +54,45 @@ namespace Vega
         /// <summary>
         /// Gets or Set CreatedBy Property
         /// </summary>
-        [Column(Name = Config.CREATEDBY_COLUMNNAME, Title = "Created By")]
-        public Int32 CreatedBy { get; set; }
+        [Column(Title = "Created By")]
+        public object CreatedBy { get; set; }
 
         /// <summary>
         /// Gets or Set CreatedByName Property
         /// </summary>
         [IgnoreColumn(true)]
-        [Column(Name = Config.CREATEDBYNAME_COLUMNNAME, Title = "Created By")]
+        [Column(Title = "Created By")]
         public string CreatedByName { get; set; }
 
         /// <summary>
         /// Gets or Set CreatedOn Property
         /// </summary>
-        [Column(Name = Config.CREATEDON_COLUMNNAME, Title = "Created On")]
+        [Column(Title = "Created On")]
         public DateTime CreatedOn { get; set; }
 
         /// <summary>
         /// Gets or Set UpdatedBy Property
         /// </summary>
-        [Column(Name = Config.UPDATEDBY_COLUMNNAME, Title = "Updated By")]
-        public Int32 UpdatedBy { get; set; }
+        [Column(Title = "Updated By")]
+        public object UpdatedBy { get; set; }
 
         /// <summary>
         /// Gets or Set UpdatedByName Property
         /// </summary>
         [IgnoreColumn(true)]
-        [Column(Name = Config.UPDATEDBYNAME_COLUMNNAME, Title = "Updated By")]
+        [Column(Title = "Updated By")]
         public string UpdatedByName { get; set; }
 
         /// <summary>
         /// Gets or Set UpdatedOn Property
         /// </summary>
-        [Column(Name = Config.UPDATEDON_COLUMNNAME, Title = "Updated On")]
+        [Column(Title = "Updated On")]
         public DateTime UpdatedOn { get; set; }
 
         /// <summary>
         /// Gets or Set VersionNo Property
         /// </summary>
-        [Column(Name = Config.VERSIONNO_COLUMNNAME, Title = "Version")]
+        [Column(Title = "Version")]
         public int VersionNo
         {
             get { return versionNo; }
@@ -106,7 +106,7 @@ namespace Vega
         /// <summary>
         /// Gets or Set IsActive Property
         /// </summary>
-        [Column(Name = Config.ISACTIVE_COLUMNNAME, Title = "Is Active")]
+        [Column(Title = "Is Active")]
         public bool IsActive { get; set; }
 
         /// <summary>
@@ -154,8 +154,21 @@ namespace Vega
         /// <returns></returns>
         public bool IsKeyIdEmpty()
         {
-            var id = KeyId;
+            return IsKeyFieldEmpty(KeyId, "Primary Key");
+        }
 
+        internal bool IsCreatedByEmpty()
+        {
+            return IsKeyFieldEmpty(CreatedBy, "Created By");
+        }
+
+        internal bool IsUpdatedByEmpty()
+        {
+            return IsKeyFieldEmpty(UpdatedBy, "Updated By");
+        }
+
+        bool IsKeyFieldEmpty(object id, string fieldName)
+        {
             if (id is null)
                 return true;
             else if (id.IsNumber())
@@ -169,7 +182,7 @@ namespace Vega
                 else return false;
             }
             else
-                throw new Exception(id.GetType().Name + " data type not supported for Primary Key");
+                throw new Exception(id.GetType().Name + " data type not supported for " + fieldName);
         }
 
         #endregion

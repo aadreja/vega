@@ -51,15 +51,15 @@ namespace Vega.Tests
         public EnumCityType CityType { get; set; }
     }
 
-    [Table(Name = "Users", NoIsActive =true)]
+    [Table(Name = "Users", NoIsActive = true)]
     public class User : EntityBase
     {
         [PrimaryKey]
-        [ForeignKey("city", "createdby",true)]
+        [ForeignKey("city", "createdby", true)]
         [ForeignKey("city", "updatedby", true)]
         [ForeignKey("country", "createdby", true)]
         [ForeignKey("country", "updatedby", true)]
-        public Int16 Id { get; set; }
+        public Guid Id { get; set; }
         public string Username { get; set; }
     }
 

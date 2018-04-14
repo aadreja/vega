@@ -308,7 +308,7 @@ namespace Vega
         /// <param name="id">Record Id</param>
         /// <param name="updatedBy">Updated By User Id</param>
         /// <returns>deletion status</returns>
-        public bool Delete(object id, int updatedBy)
+        public bool Delete(object id, object updatedBy)
         {
             return Delete(id, 0, updatedBy, false);
         }
@@ -320,7 +320,7 @@ namespace Vega
         /// <param name="versionNo">Version of deleting record</param>
         /// <param name="updatedBy">Updated By User Id</param>
         /// <returns>deletion status</returns>
-        public bool Delete(object id, Int32 versionNo, int updatedBy)
+        public bool Delete(object id, Int32 versionNo, object updatedBy)
         {
             return Delete(id, versionNo, updatedBy, false);
         }
@@ -331,7 +331,7 @@ namespace Vega
         /// <param name="id">Record Id</param>
         /// <param name="updatedBy">Updated By User Id</param>
         /// <returns>deletion status</returns>
-        public bool HardDelete(object id, int updatedBy)
+        public bool HardDelete(object id, object updatedBy)
         {
             return Delete(id, 0, updatedBy, true);
         }
@@ -343,7 +343,7 @@ namespace Vega
         /// <param name="versionNo">Version of deleting record</param>
         /// <param name="updatedBy">Updated By User Id</param>
         /// <returns>deletion status</returns>
-        public bool HardDelete(object id, Int32 versionNo, int updatedBy)
+        public bool HardDelete(object id, Int32 versionNo, object updatedBy)
         {
             return Delete(id, versionNo, updatedBy, true);
         }
@@ -356,7 +356,7 @@ namespace Vega
         /// <param name="updatedBy">Updated By User Id</param>
         /// <param name="isHardDelete">true to perform harddelete else false for soft delete(i.e mark isactive=false)</param>
         /// <returns>deletion status</returns>
-        bool Delete(object id, Int32 versionNo, int updatedBy, bool isHardDelete)
+        bool Delete(object id, Int32 versionNo, object updatedBy, bool isHardDelete)
         {
             bool isTransactHere = false;
             bool isConOpen = IsConnectionOpen();

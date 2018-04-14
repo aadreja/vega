@@ -159,7 +159,7 @@ namespace Vega
             query.Append($"SELECT TOP 1 1 FROM {vfk.FullTableName} WHERE {vfk.ColumnName}=@Id");
 
             if (vfk.ContainsIsActive)
-                query.Append($" AND {Config.ISACTIVE_COLUMNNAME}={BITTRUEVALUE}");
+                query.Append($" AND {Config.VegaConfig.IsActiveColumnName}={BITTRUEVALUE}");
 
             return query.ToString();
         }

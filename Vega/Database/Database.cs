@@ -84,7 +84,7 @@ namespace Vega
             query.Append($"SELECT 1 FROM {vfk.FullTableName} WHERE {vfk.ColumnName}=@Id");
 
             if (vfk.ContainsIsActive)
-                query.Append($" AND {Config.ISACTIVE_COLUMNNAME}={BITTRUEVALUE}");
+                query.Append($" AND {Config.VegaConfig.IsActiveColumnName}={BITTRUEVALUE}");
 
             query.Append(" LIMIT 1 ");
 
@@ -124,13 +124,13 @@ namespace Vega
         {
             TableAttribute tableInfo = EntityCache.Get(entity.GetType());
 
-            if (!tableInfo.NoCreatedBy && entity.CreatedBy == 0)
+            if (!tableInfo.NoCreatedBy && entity.IsCreatedByEmpty())
                 throw new MissingFieldException("CreatedBy is required");
 
             List<string> columns = new List<string>();
 
             if (!string.IsNullOrEmpty(columnNames)) columns.AddRange(columnNames.Split(','));
-            else columns.AddRange(tableInfo.DefaultUpdateColumns);//Get columns from Entity attributes loaded in TableInfo
+            else columns.AddRange(tableInfo.DefaultInsertColumns);//Get columns from Entity attributes loaded in TableInfo
 
             bool isPrimaryKeyEmpty = false;
             if (tableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsKeyIdEmpty())
@@ -249,7 +249,7 @@ namespace Vega
 
             TableAttribute tableInfo = EntityCache.Get(entity.GetType());
 
-            if (!tableInfo.NoUpdatedBy && entity.UpdatedBy == 0)
+            if (!tableInfo.NoUpdatedBy && entity.IsUpdatedByEmpty())
                 throw new MissingFieldException("Updated By is required");
 
             List<string> columns = new List<string>();
@@ -349,7 +349,7 @@ namespace Vega
             commandText.Append($" WHERE {tableInfo.PrimaryKeyColumn.Name}=@{tableInfo.PrimaryKeyColumn.Name}");
             command.AddInParameter("@" + tableInfo.PrimaryKeyColumn.Name, tableInfo.PrimaryKeyColumn.ColumnDbType, entity.KeyId);
 
-            if (Config.DB_CONCURRENCY_CHECK && !tableInfo.NoVersionNo)
+            if (Config.VegaConfig.DbConcurrencyCheck && !tableInfo.NoVersionNo)
             {
                 commandText.Append($" AND {Config.VERSIONNO_COLUMN.Name}=@{Config.VERSIONNO_COLUMN.Name}");
                 command.AddInParameter("@" + Config.VERSIONNO_COLUMN.Name, Config.VERSIONNO_COLUMN.ColumnDbType, entity.VersionNo);

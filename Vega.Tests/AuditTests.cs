@@ -34,7 +34,7 @@ namespace Vega.Tests
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             var id = cityRepo.Add(city);
-            cityRepo.ExecuteNonQuery("DELETE FROM " + Config.AUDIT_TABLENAME);
+            cityRepo.ExecuteNonQuery("DELETE FROM " + Config.VegaConfig.AuditTableName);
 
             //add record
             city.Id = 0;
@@ -91,7 +91,7 @@ namespace Vega.Tests
             var id = cityRepo.Add(city);
 
             //cleanup audit table
-            cityRepo.ExecuteNonQuery("DELETE FROM " + Config.AUDIT_TABLENAME);
+            cityRepo.ExecuteNonQuery("DELETE FROM " + Config.VegaConfig.AuditTableName);
 
             //add record
             city.Id = 0;

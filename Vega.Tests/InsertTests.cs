@@ -19,7 +19,7 @@ namespace Vega.Tests
         {
             User usr = new User
             {
-                Id = 1,
+                Id = Fixture.CurrentUserId,
                 Username = "admin",
                 CreatedBy = Fixture.CurrentUserId
             };
@@ -30,7 +30,8 @@ namespace Vega.Tests
 
             usrRepo.Add(usr);
 
-            Assert.Equal(1, usrRepo.ReadOne<short>(1, "id"));
+            Assert.Equal<Guid>(Fixture.CurrentUserId, usrRepo.ReadOne<Guid>(Fixture.CurrentUserId, "id"));
+            //Assert.Equal<int>(Fixture.CurrentUserId, usrRepo.ReadOne<int>(Fixture.CurrentUserId, "id"));
         }
 
         [Fact]

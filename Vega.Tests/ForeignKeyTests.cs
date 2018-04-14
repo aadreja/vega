@@ -73,14 +73,16 @@ namespace Vega.Tests
         {
             User usr = new User
             {
-                Id = 1,
+                Id = Fixture.CurrentUserId,
                 Username = "super",
                 CreatedBy = Fixture.CurrentUserId
             };
 
             Repository<User> userRepo = new Repository<User>(Fixture.Connection);
             //add master record
-            usr.Id = (short)userRepo.Add(usr);
+            usr.Id = (Guid)userRepo.Add(usr);
+            //usr.Id = (int)userRepo.Add(usr);
+
 
             //perform insert/update operations
             Country country = new Country

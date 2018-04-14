@@ -825,7 +825,7 @@ namespace Vega.Tests
         [Fact]
         public void NoQueryNoCriteriaTestMSSQLBelow2012()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             cityRepo.DropTable();
             cityRepo.CreateTable();
 
@@ -839,7 +839,8 @@ namespace Vega.Tests
                     State = "RC",
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy = Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -862,7 +863,7 @@ namespace Vega.Tests
         [Fact]
         public void NoQueryWithCriteriaMSSQLBelow2012Test()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -877,7 +878,8 @@ namespace Vega.Tests
                     State = (i % 2 == 0 ? "RC" : "DC"),
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy = Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -899,7 +901,7 @@ namespace Vega.Tests
         [Fact]
         public void WithQueryNoCriteriaTestMSSQLBelow2012()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
             cityRepo.DropTable();
             cityRepo.CreateTable();
 
@@ -913,7 +915,8 @@ namespace Vega.Tests
                     State = "RC",
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy = Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -936,7 +939,7 @@ namespace Vega.Tests
         [Fact]
         public void WithQueryWithCriteriaMSSQLBelow2012Test()
         {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection, Fixture.CurrentSession);
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
             cityRepo.DropTable();
             cityRepo.CreateTable();
@@ -951,7 +954,8 @@ namespace Vega.Tests
                     State = (i % 2 == 0 ? "RC" : "DC"),
                     CountryId = 1,
                     Longitude = 1m,
-                    Latitude = 1m
+                    Latitude = 1m,
+                    CreatedBy = Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }

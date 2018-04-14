@@ -31,6 +31,12 @@ namespace Vega.Tests
             else
                 Connection = new SqlConnection("Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
 #endif
+            //Configure Vega
+            Configuration configuration = new Configuration
+            {
+                CreatedUpdatedByColumnType = DbType.Guid
+            };
+            Config.Configure(configuration);
 
             //Create Required Tables
             Repository<Country> countryRepo = new Repository<Country>(Connection);
@@ -71,11 +77,19 @@ namespace Vega.Tests
             }
         }
 
-        public int CurrentUserId
+        //public int CurrentUserId
+        //{
+        //    get
+        //    {
+        //        return 1;
+        //    }
+        //}
+
+        public Guid CurrentUserId
         {
             get
             {
-                return 1;
+                return new Guid("C1DA3BA6-8763-4993-A081-38037B76F7EA");
             }
         }
     }

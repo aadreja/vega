@@ -34,13 +34,13 @@ namespace Vega.Tests
                     {
                         Name = "Transaction City 1",
                         State = "T",
-                        CreatedBy=1
+                        CreatedBy= Fixture.CurrentUserId
                     },
                     new City()
                     {
                         Name = "Transaction City 2",
                         State = "T",
-                        CreatedBy=1
+                        CreatedBy=Fixture.CurrentUserId
                     }
                 };
 

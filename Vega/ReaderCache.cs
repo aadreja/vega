@@ -196,15 +196,18 @@ namespace Vega
                     il.Emit(OpCodes.Ldloc_0); //load T result
                     il.Emit(OpCodes.Ldloc_1); //TODO: dynamic location using valueCopyLocal
 
-                    il.Emit(OpCodes.Unbox_Any, rdr.GetFieldType(i)); //type cast
-                    
+                    //14-Apr-2018 - add an unbox instruction to convert the boxed value type into the actual value on the stack.
+                    //Unbox only for ValueType
+                    if (columnInfo.Property.PropertyType.IsValueType)
+                        il.Emit(OpCodes.Unbox_Any, rdr.GetFieldType(i)); //type cast
+
                     // for nullable type fields
                     if (columnInfo.Property.PropertyType.IsGenericType && columnInfo.Property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                     {
                         var underlyingType = Nullable.GetUnderlyingType(columnInfo.Property.PropertyType);
                         il.Emit(OpCodes.Newobj, columnInfo.Property.PropertyType.GetConstructor(new Type[] { underlyingType }));
                     }
-                    
+
                     il.Emit(OpCodes.Callvirt, columnInfo.SetMethod);
                     il.Emit(OpCodes.Nop);
 

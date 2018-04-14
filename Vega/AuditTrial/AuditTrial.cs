@@ -13,27 +13,23 @@ namespace Vega
         internal object Value { get; set; }
     }
 
-    [Table(Name = Config.AUDIT_TABLENAME, NoUpdatedBy =true, NoUpdatedOn =true, NoIsActive =true, NoVersionNo =true)]
+    [Table(NoUpdatedBy =true, NoUpdatedOn =true, NoIsActive =true, NoVersionNo =true)]
     internal class AuditTrial : EntityBase
     {
 
-        [Column(Name = Config.AUDIT_KEYCOLUMNNAME)]
         [PrimaryKey(true)]
         public long AuditTrailId { get; set; }
 
-        [Column(Name = Config.AUDIT_OPERATIONTYPECOLUMNNAME)]
         public RecordOperationEnum OperationType { get; set; }
 
-        [Column(Name = Config.AUDIT_TABLENAMECOLUMNNAME, ColumnDbType = DbType.String, NumericPrecision = 255)]
+        [Column(ColumnDbType = DbType.String, NumericPrecision = 255)]
         public string TableName { get; set; }
 
-        [Column(Name = Config.AUDIT_RECORDIDCOLUMNNAME, ColumnDbType = DbType.String, NumericPrecision = 50)]
+        [Column(ColumnDbType = DbType.String, NumericPrecision = 50)]
         public string RecordId { get; set; }
 
-        [Column(Name = Config.AUDIT_DETAILSCOLUMNNAME)]
         public string Details { get; set; }
 
-        [Column(Name = Config.AUDIT_RECORDVERSIONCOLUMNNAME)]
         public int RecordVersionNo { get; set; }
 
         #region methods

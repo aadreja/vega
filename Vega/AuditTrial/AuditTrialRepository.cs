@@ -30,7 +30,7 @@ namespace Vega
             //check for index on RecordId field
             if (IsAuditTableExists)
             {
-                CreateIndex(Config.AUDIT_RECORDIDINDEXNAME, $"{Config.AUDIT_TABLENAMECOLUMNNAME},{Config.AUDIT_RECORDIDCOLUMNNAME}", false);
+                CreateIndex(Config.VegaConfig.AuditRecordIdIndexName, $"{Config.VegaConfig.AuditTableNameColumnName},{Config.VegaConfig.AuditRecordIdColumnName}", false);
             }
             
             IsAuditTableExistsCheckDone = true;
@@ -52,7 +52,7 @@ namespace Vega
         }
 
         //for delete & restore
-        internal bool Add(object recordId, int recordVersionNo, int updatedBy, RecordOperationEnum operation, TableAttribute tableInfo)
+        internal bool Add(object recordId, int recordVersionNo, object updatedBy, RecordOperationEnum operation, TableAttribute tableInfo)
         {
             if (operation != RecordOperationEnum.Delete && operation != RecordOperationEnum.Recover)
                 throw new InvalidOperationException("Invalid call to this method. This method shall be call for Delete and Recover operation only.");
@@ -79,7 +79,7 @@ namespace Vega
         {
             TableAttribute tableInfo = EntityCache.Get(typeof(T));
 
-            var lstAudit = ReadAll(null, $"{Config.AUDIT_TABLENAMECOLUMNNAME}=@TableName AND {Config.AUDIT_RECORDIDCOLUMNNAME}=@RecordId", new { TableName = tableName, RecordId = id.ToString() }, Config.CREATEDON_COLUMNNAME + " ASC");
+            var lstAudit = ReadAll(null, $"{Config.VegaConfig.AuditTableNameColumnName}=@TableName AND {Config.VegaConfig.AuditRecordIdColumnName}=@RecordId", new { TableName = tableName, RecordId = id.ToString() }, Config.VegaConfig.CreatedOnColumnName + " ASC");
 
             T current = null;
 

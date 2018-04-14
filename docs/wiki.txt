@@ -1,0 +1,44 @@
+{{AFC submission|d|v|u=Aadreja|ns=118|decliner=78.26|declinets=20180326163941|ts=20180326141843}} <!-- Do not remove this line! -->
+
+{{AFC comment|1=This also appears to be an advertisement, not an encyclopedia article. [[User:78.26|<span style="border:1px solid black;color:red; padding:1px;background:1h5h1h; color: #008B8B;"><b>78.26</b></span>]] <sub>([[User talk:78.26|spin me]] / [[Special:Contributions/78.26|revolutions]])</sub> 16:39, 26 March 2018 (UTC)}}
+
+----
+
+{{About|the .NET library||Vega (disambiguation){{!}}Vega ORM}}
+{{Multiple issues|{{unreferenced|date=September 2012}}{{Notability|Products|date=September 2012}}{{advert|date=August 2012}}}}
+{{Infobox software
+| logo                   =
+| name                   = Vega ORM
+| latest release version = 1.0.3
+| latest release date    = {{release date|2018|03|26}}
+| operating system       = [[Cross-platform]]
+| platform               = [[Microsoft .NET|.NET]] 3.5 or 4.0 and [[Microsoft .NET Standard|.NET Standard]]
+| programming language   = [[C Sharp (programming language)|C#]]
+| genre                  = [[Object-relational mapping]]
+| license                = [[Apache License 2.0]]
+| website                = {{url|https://github.com/aadreja/vega}}
+}}
+
+'''Vega''' is the fastest [[.NET Framework|Microsoft .NET]] [[object-relational mapping]] (ORM) with Enterprise features. It helps Object Mapping with Database eliminating developers to write SQL Queries. Vega ORM is [[free software|free]] as [[open source software]] that is distributed under [[Apache License 2.0]] license.
+
+==Features==
+
+Key features of Vega ORM:
+
+* Fastest Object Mapping using Emit
+* Inbuilt Row Versioning
+* Powerful Audit Trail
+* No need to write Insert, Update, Delete Queries
+* Concurrency check during Update and Delete.
+* Inbuilt implementation of common fields like CreatedBy, CreatedOn, UpdatedBy, UpdatedOn, IsActive, VersionNo
+* Ability to define Virtual Foreign Keys to check data integrity on Delete.
+* Cross database support for Microsoft SQL Server, PostgreSQL, SQLite.
+
+== References ==
+<!-- Inline citations added to your article will automatically display here. See https://en.wikipedia.org/wiki/WP:REFB for instructions on how to add citations. -->
+{{reflist}}
+
+== External links ==
+*[https://github.com/aadreja/vega Vega Homepage]
+*[https://github.com/aadreja/vega/wiki Vega Documentation]
+*[[NuGet]] [https://www.nuget.org/packages/vega Vega package]

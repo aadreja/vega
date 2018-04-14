@@ -9,7 +9,7 @@
 	<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net461|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG;PGSQL;NET461</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;MSSQL;NET461;NET461</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
     <DefineConstants>TRACE;DEBUG;PGSQL;netstandard2.0</DefineConstants>
