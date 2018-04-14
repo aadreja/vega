@@ -59,7 +59,7 @@ namespace Vega.Tests
         [ForeignKey("city", "updatedby", true)]
         [ForeignKey("country", "createdby", true)]
         [ForeignKey("country", "updatedby", true)]
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public string Username { get; set; }
     }
 

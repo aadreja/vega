@@ -80,8 +80,8 @@ namespace Vega.Tests
 
             Repository<User> userRepo = new Repository<User>(Fixture.Connection);
             //add master record
-            usr.Id = (Guid)userRepo.Add(usr);
-            //usr.Id = (int)userRepo.Add(usr);
+            //usr.Id = (Guid)userRepo.Add(usr);
+            usr.Id = (int)userRepo.Add(usr);
 
 
             //perform insert/update operations

@@ -34,7 +34,7 @@ namespace Vega.Tests
             //Configure Vega
             Configuration configuration = new Configuration
             {
-                CreatedUpdatedByColumnType = DbType.Guid
+                CreatedUpdatedByColumnType = DbType.Int32
             };
             Config.Configure(configuration);
 
@@ -77,21 +77,21 @@ namespace Vega.Tests
             }
         }
 
-        //public int CurrentUserId
-        //{
-        //    get
-        //    {
-        //        return 1;
-        //    }
-        //}
-
-        public Guid CurrentUserId
+        public int CurrentUserId
         {
             get
             {
-                return new Guid("C1DA3BA6-8763-4993-A081-38037B76F7EA");
+                return 1;
             }
         }
+
+        //public Guid CurrentUserId
+        //{
+        //    get
+        //    {
+        //        return new Guid("C1DA3BA6-8763-4993-A081-38037B76F7EA");
+        //    }
+        //}
     }
 
     public class TestPriorityAttribute : Attribute

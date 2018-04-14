@@ -30,8 +30,8 @@ namespace Vega.Tests
 
             usrRepo.Add(usr);
 
-            Assert.Equal<Guid>(Fixture.CurrentUserId, usrRepo.ReadOne<Guid>(Fixture.CurrentUserId, "id"));
-            //Assert.Equal<int>(Fixture.CurrentUserId, usrRepo.ReadOne<int>(Fixture.CurrentUserId, "id"));
+            //Assert.Equal<Guid>(Fixture.CurrentUserId, usrRepo.ReadOne<Guid>(Fixture.CurrentUserId, "id"));
+            Assert.Equal<int>(Fixture.CurrentUserId, usrRepo.ReadOne<int>(Fixture.CurrentUserId, "id"));
         }
 
         [Fact]
