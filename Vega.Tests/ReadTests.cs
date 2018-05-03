@@ -90,6 +90,65 @@ namespace Vega.Tests
         }
 
         [Fact]
+        public void ReadOneNullParameter()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ReadOneNullParameter",
+                State = "RO1",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            city.Id = (long)cityRepo.Add(city);
+
+            City cityReadOne = cityRepo.ReadOne("State=@State", new { State = "RO1" }, "name");
+
+            Assert.Equal(city.Name, cityReadOne.Name);
+        }
+
+        [Fact]
+        public void ReadOneWithCriterialNoParameter()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ReadOneWithCriterialNoParameter",
+                State = "RO2",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            city.Id = (long)cityRepo.Add(city);
+
+            Assert.Throws<Exception>(() => cityRepo.ReadOne("State=@State", null, "name"));
+        }
+
+        [Fact]
+        public void ReadOneMultipleParameter()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ReadOneMultipleParameter",
+                State = "RO3",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            city.Id = (long)cityRepo.Add(city);
+
+            City result = cityRepo.ReadOne("State=@state and CountryId=@countryid", new { State="RO3", CountryId = 1}, "name");
+        }
+
+        [Fact]
         public void ReadOne()
         {
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
@@ -241,6 +300,7 @@ namespace Vega.Tests
 
             Assert.Equal((int)cityRepo.Count("CityType=@CityType", new { CityType = EnumCityType.Metro }), cityList.Count());
         }
+
 
     }
 }

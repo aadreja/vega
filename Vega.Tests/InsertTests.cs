@@ -68,6 +68,8 @@ namespace Vega.Tests
             Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             var id = countryRepo.Add(country);
 
+            var id1 = countryRepo.Update(country);
+
             Assert.Equal("India", countryRepo.ReadOne<string>(id, "Name"));
         }
 

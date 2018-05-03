@@ -12,7 +12,9 @@ using System.Data;
 using System.Data.Common;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Vega
 {
@@ -556,12 +558,17 @@ namespace Vega
         /// <returns>True if Record exists otherwise False</returns>
         public bool Exists(string criteria, object parameters)
         {
+            ValidateParameters(criteria, parameters);
+
             bool hasWhere = criteria.ToLowerInvariant().Contains("where");
             
             IDbCommand command = Connection.CreateCommand();
             command.CommandType = CommandType.Text;
             command.CommandText = $"SELECT 1 FROM {TableInfo.FullName} {(!hasWhere ? " WHERE " : "")} {criteria}";
-            ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
+
+            if (parameters != null)
+                ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
+
             return ExecuteScalar(command) != null;
         }
 
@@ -609,6 +616,9 @@ namespace Vega
         /// <returns>Entity if record found otherwise null</returns>
         public T ReadOne(string criteria=null, object parameters=null, string columns = null)
         {
+            if(!ValidateParameters(criteria, parameters))
+                return null;
+
             bool hasWhere = criteria.ToLowerInvariant().Contains("where");
 
             //Get columns from Entity attributes loaded in TableInfo
@@ -618,7 +628,8 @@ namespace Vega
             cmd.CommandType = CommandType.Text;
             cmd.CommandText = $"SELECT {columns} FROM {TableInfo.FullName} {(!hasWhere ? " WHERE " : "")} {criteria}";
 
-            ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
+            if (parameters != null)
+                ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
 
             bool isConOpen = IsConnectionOpen();
 
@@ -699,6 +710,8 @@ namespace Vega
         /// <returns>IEnumerable list of entities</returns>
         public IEnumerable<T> ReadAll(string columns = null, string criteria = null, object parameters = null, string orderBy = null, RecordStatusEnum status = RecordStatusEnum.All)
         {
+            ValidateParameters(criteria, parameters);
+
             //Get columns from Entity attributes loaded in TableInfo
             if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
 
@@ -843,6 +856,8 @@ namespace Vega
         /// <returns></returns>
         public IEnumerable<T> ReadAllPaged(string orderBy, int pageNo, int pageSize, string columns = null, string criteria=null, object parameters = null)
         {
+            ValidateParameters(criteria, parameters);
+
             if (string.IsNullOrEmpty(orderBy))
                 throw new MissingMemberException("Missing orderBy parameter");
 
@@ -906,6 +921,8 @@ namespace Vega
         /// <returns></returns>
         public IEnumerable<T> ReadAllPaged(string orderBy, int pageSize, PageNavigationEnum navigation, string columns = null, string criteria = null, object[] lastOrderByColumnValues = null, object lastKeyId = null, object parameters = null)
         {
+            ValidateParameters(criteria, parameters);
+
             //Get columns from Entity attributes loaded in TableInfo
             if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
 
@@ -969,7 +986,10 @@ namespace Vega
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandText = query;
             cmd.CommandType = CommandType.Text;
-            ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
+
+            if (parameters != null)
+                ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
+
             return ExecuteScalar(cmd).Parse<R>();
         }
 
@@ -1287,5 +1307,35 @@ namespace Vega
         }
 
         #endregion
+
+        private bool ValidateParameters(string criteria, object parameters)
+        {
+            //Check Parameters and Criteria Count
+            //Find parameters in criteria
+            if (!string.IsNullOrEmpty(criteria))
+            {
+                MatchCollection lstCriteria = Regex.Matches(criteria, "(\\@\\w+)");
+
+                if (lstCriteria.Count <= 0)
+                    return true;
+
+                if (parameters is null || lstCriteria.Count > parameters.GetType().GetProperties().Count())
+                {
+                    throw new Exception("Required Dyanmic parameter(s) are missing");
+                }
+
+                //Match with dynamic parameter object
+                PropertyInfo[] dynamicProperties = parameters.GetType().GetProperties();
+                foreach (Match mCriteria in lstCriteria)
+                {
+                    PropertyInfo prop = dynamicProperties.FirstOrDefault(d => d.Name.Equals(mCriteria.Value.Replace("@", ""), StringComparison.OrdinalIgnoreCase));
+                    if (prop == null)
+                    {
+                        throw new Exception(string.Format("Parameter {0} is missing", mCriteria.Value));
+                    }
+                }
+            }
+            return true;
+        }
     }
 }
