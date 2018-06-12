@@ -4,7 +4,7 @@
 #Ignore Folders
 unused/
 docs/
-docs1/
+packages/
 
 # User-specific files
 *.suo

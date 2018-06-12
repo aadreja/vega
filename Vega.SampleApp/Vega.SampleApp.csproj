@@ -28,10 +28,7 @@
   </ItemGroup>
   -->
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.10.12" />
     <PackageReference Include="Dapper" Version="1.50.4" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Vega\Vega.csproj" />
+    <PackageReference Include="vega" Version="1.0.5" />
   </ItemGroup>
 </Project>

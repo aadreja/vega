@@ -4,7 +4,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using Dapper;
-using BenchmarkDotNet.Attributes;
+//using BenchmarkDotNet.Attributes;
 
 namespace Vega.SampleApp
 {
@@ -16,93 +16,7 @@ namespace Vega.SampleApp
         long SelectListTest(int count);
     }
 
-    public class BenchmarkTest
-    {
-        int count = 1000;
-        ADOTest adoTest;
-        VegaTest vegaTest;
-        DapperTest dapperTest;
 
-        public BenchmarkTest()
-        {
-            adoTest = new ADOTest();
-            vegaTest = new VegaTest();
-            dapperTest = new DapperTest();
-        }
-
-        [Benchmark]
-        public void InsertADO()
-        {
-            adoTest.InsertTest(count);
-        }
-
-        [Benchmark]
-        public void UpdateADO()
-        {
-            adoTest.InsertTest(count);
-        }
-
-        [Benchmark]
-        public void SelectADO()
-        {
-            adoTest.SelectTest(count);
-        }
-
-        [Benchmark]
-        public void SelectListADO()
-        {
-            adoTest.SelectListTest(count);
-        }
-
-        [Benchmark]
-        public void InsertVega()
-        {
-            vegaTest.InsertTest(count);
-        }
-
-        [Benchmark]
-        public void UpdateVega()
-        {
-            vegaTest.InsertTest(count);
-        }
-
-        [Benchmark]
-        public void SelectVega()
-        {
-            vegaTest.SelectTest(count);
-        }
-
-        [Benchmark]
-        public void SelectListVega()
-        {
-            vegaTest.SelectListTest(count);
-        }
-
-        [Benchmark]
-        public void InsertDapper()
-        {
-            dapperTest.InsertTest(count);
-        }
-
-        [Benchmark]
-        public void UpdateDapper()
-        {
-            dapperTest.InsertTest(count);
-        }
-
-        [Benchmark]
-        public void SelectDapper()
-        {
-            dapperTest.SelectTest(count);
-        }
-
-        [Benchmark]
-        public void SelectListDapper()
-        {
-            dapperTest.SelectListTest(count);
-        }
-
-    }
 
 
     public class PerformanceTest
@@ -658,4 +572,92 @@ namespace Vega.SampleApp
             return w.ElapsedMilliseconds;
         }
     }
+
+    //public class BenchmarkTest
+    //{
+    //    int count = 1000;
+    //    ADOTest adoTest;
+    //    VegaTest vegaTest;
+    //    DapperTest dapperTest;
+
+    //    public BenchmarkTest()
+    //    {
+    //        adoTest = new ADOTest();
+    //        vegaTest = new VegaTest();
+    //        dapperTest = new DapperTest();
+    //    }
+
+    //    [Benchmark]
+    //    public void InsertADO()
+    //    {
+    //        adoTest.InsertTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void UpdateADO()
+    //    {
+    //        adoTest.InsertTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void SelectADO()
+    //    {
+    //        adoTest.SelectTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void SelectListADO()
+    //    {
+    //        adoTest.SelectListTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void InsertVega()
+    //    {
+    //        vegaTest.InsertTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void UpdateVega()
+    //    {
+    //        vegaTest.InsertTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void SelectVega()
+    //    {
+    //        vegaTest.SelectTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void SelectListVega()
+    //    {
+    //        vegaTest.SelectListTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void InsertDapper()
+    //    {
+    //        dapperTest.InsertTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void UpdateDapper()
+    //    {
+    //        dapperTest.InsertTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void SelectDapper()
+    //    {
+    //        dapperTest.SelectTest(count);
+    //    }
+
+    //    [Benchmark]
+    //    public void SelectListDapper()
+    //    {
+    //        dapperTest.SelectListTest(count);
+    //    }
+
+    //}
 }

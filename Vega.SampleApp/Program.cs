@@ -1,5 +1,4 @@
-﻿using BenchmarkDotNet.Running;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -12,14 +11,7 @@ namespace Vega.SampleApp
 
         static void Main(string[] args)
         {
-            //var summary = BenchmarkRunner.Run(typeof(BenchmarkTest));
-            //Console.WriteLine("Done");
-            //Console.ReadLine();
-            //return;
-
-            PerformanceTest pTest = new PerformanceTest();
-            pTest.Run();
-            return;
+            
 
             defaultColor = Console.ForegroundColor;
 
@@ -31,7 +23,6 @@ namespace Vega.SampleApp
 
             CreateDBWithSampleData();
 
-            //Set Session
             long id = InsertSample();
             UpdateSample(id);
             ReadById(id);
@@ -39,6 +30,8 @@ namespace Vega.SampleApp
             Read();
             ReadPaged();
             AuditTrial(id);
+            PerformanceTest pTest = new PerformanceTest();
+            pTest.Run();
 
             Console.ReadKey();
         }

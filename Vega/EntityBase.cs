@@ -55,45 +55,45 @@ namespace Vega
         /// Gets or Set CreatedBy Property
         /// </summary>
         [Column(Title = "Created By")]
-        public object CreatedBy { get; set; }
+        public virtual object CreatedBy { get; set; }
 
         /// <summary>
         /// Gets or Set CreatedByName Property
         /// </summary>
         [IgnoreColumn(true)]
         [Column(Title = "Created By")]
-        public string CreatedByName { get; set; }
+        public virtual string CreatedByName { get; set; }
 
         /// <summary>
         /// Gets or Set CreatedOn Property
         /// </summary>
         [Column(Title = "Created On")]
-        public DateTime CreatedOn { get; set; }
+        public virtual DateTime CreatedOn { get; set; }
 
         /// <summary>
         /// Gets or Set UpdatedBy Property
         /// </summary>
         [Column(Title = "Updated By")]
-        public object UpdatedBy { get; set; }
+        public virtual object UpdatedBy { get; set; }
 
         /// <summary>
         /// Gets or Set UpdatedByName Property
         /// </summary>
         [IgnoreColumn(true)]
         [Column(Title = "Updated By")]
-        public string UpdatedByName { get; set; }
+        public virtual string UpdatedByName { get; set; }
 
         /// <summary>
         /// Gets or Set UpdatedOn Property
         /// </summary>
         [Column(Title = "Updated On")]
-        public DateTime UpdatedOn { get; set; }
+        public virtual DateTime UpdatedOn { get; set; }
 
         /// <summary>
         /// Gets or Set VersionNo Property
         /// </summary>
         [Column(Title = "Version")]
-        public int VersionNo
+        public virtual int VersionNo
         {
             get { return versionNo; }
             set
@@ -107,22 +107,22 @@ namespace Vega
         /// Gets or Set IsActive Property
         /// </summary>
         [Column(Title = "Is Active")]
-        public bool IsActive { get; set; }
+        public virtual bool IsActive { get; set; }
 
-        /// <summary>
-        /// Gets operation type
-        /// </summary>
-        [IgnoreColumn(true)]
-        public string Operation
-        {
-            get
-            {
-                if (!IsActive) return "In Active";
-                else if (VersionNo == 0 || VersionNo == 1) return "Add";
-                else if (VersionNo > 1) return "Update";
-                else return "Unknown";
-            }
-        }
+        ///// <summary>
+        ///// Gets operation type
+        ///// </summary>
+        //[IgnoreColumn(true)]
+        //public string Operation
+        //{
+        //    get
+        //    {
+        //        if (!IsActive) return "In Active";
+        //        else if (VersionNo == 0 || VersionNo == 1) return "Add";
+        //        else if (VersionNo > 1) return "Update";
+        //        else return "Unknown";
+        //    }
+        //}
 
         #endregion
 
