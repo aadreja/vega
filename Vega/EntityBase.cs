@@ -105,20 +105,20 @@ namespace Vega
         [Column(Title = "Is Active")]
         public virtual bool? IsActive { get; set; }
 
-        ///// <summary>
-        ///// Gets operation type
-        ///// </summary>
-        //[IgnoreColumn(true)]
-        //public string Operation
-        //{
-        //    get
-        //    {
-        //        if (!IsActive) return "In Active";
-        //        else if (VersionNo == 0 || VersionNo == 1) return "Add";
-        //        else if (VersionNo > 1) return "Update";
-        //        else return "Unknown";
-        //    }
-        //}
+        /// <summary>
+        /// Gets operation type
+        /// </summary>
+        [IgnoreColumn(true)]
+        public string Operation
+        {
+            get
+            {
+                if (!(IsActive ?? false)) return "In Active";
+                else if (VersionNo == 0 || VersionNo == 1) return "Add";
+                else if (VersionNo > 1) return "Update";
+                else return "Unknown";
+            }
+        }
 
         #endregion
 

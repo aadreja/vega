@@ -263,7 +263,8 @@ namespace Vega
 
             foreach (PropertyInfo property in type.GetProperties())
             {
-                ColumnAttribute column = new ColumnAttribute();
+                var column = (ColumnAttribute)property.GetCustomAttribute(typeof(ColumnAttribute));
+                column = column ?? new ColumnAttribute();
 
                 if (property.Name == "AuditTrailId")
                     column.Name = Config.VegaConfig.AuditKeyColumnName;
@@ -298,6 +299,7 @@ namespace Vega
                         column.ColumnDbType = columnDbType;
                     }
                 }
+
                 column.SetPropertyInfo(property, typeof(AuditTrial));
                 result.DefaultInsertColumns.Add(column.Name);
                 result.DefaultReadColumns.Add(column.Name);
