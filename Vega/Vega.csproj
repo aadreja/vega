@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
 	<TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
 	<PackageId>Vega</PackageId>
 	<Title>Vega</Title>
 	<Description>Fastest .net ORM with Enterprise features</Description>
 	<PackageTags>orm;fastest;.net;enterprise;</PackageTags>
+  <LangVersion>7.1</LangVersion>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
