@@ -14,7 +14,7 @@ namespace Vega
     }
 
     [Table(NoUpdatedBy =true, NoUpdatedOn =true, NoIsActive =true, NoVersionNo =true)]
-    internal class AuditTrial : EntityBase
+    internal class AuditTrial
     {
 
         [PrimaryKey(true)]
@@ -30,7 +30,10 @@ namespace Vega
 
         public string Details { get; set; }
 
-        public int RecordVersionNo { get; set; }
+        public int? RecordVersionNo { get; set; }
+
+        public object CreatedBy { get; set; }
+        public DateTime CreatedOn { get; set; }
 
         #region methods
 
@@ -45,8 +48,7 @@ namespace Vega
         {
             if (value == null) return; //null values don't go in history
             if (lstAuditDetails == null) lstAuditDetails = new List<AuditTrailDetail>();
-
-            string strValue = string.Empty;
+            string strValue;
             if (type == DbType.Boolean)
                 strValue = (bool)value ? "1" : "0";
             else if (type == DbType.Date)

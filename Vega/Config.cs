@@ -37,7 +37,7 @@ namespace Vega
             CreatedUpdatedByColumnType = DbType.Int32;
             CreatedByColumnName = "createdby";
             CreatedOnColumnName = "createdon";
-            CreatedByNameColumnName = "updatedbyname";
+            CreatedByNameColumnName = "createdbyname";
             UpdatedByColumnName = "updatedby";
             UpdatedOnColumnName = "updatedon";
             UpdatedByNameColumnName = "updatedbyname";

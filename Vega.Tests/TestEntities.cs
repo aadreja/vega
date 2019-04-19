@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Vega;
 
 namespace Vega.Tests
 {
@@ -19,6 +14,32 @@ namespace Vega.Tests
         Metro = 1,
         NonMetro = 2,
         Town = 3
+    }
+
+    [Table(NoCreatedBy = true, NoCreatedOn = true, NoUpdatedBy =true, NoUpdatedOn =true, NeedsHistory = true)]
+    public class Job : EntityBase
+    {
+        [PrimaryKey(true)]
+        public int JobId { get; set; }
+        public string JobName { get; set; }
+    }
+
+    [Table(NoIsActive =true, NoVersionNo =true, NeedsHistory =true)]
+    public class Department : EntityBase
+    {
+        [PrimaryKey(true)]
+        public int DepartmentId { get; set; }
+        public string DepartmentName { get; set; }
+    }
+
+    [Table(IsNoDefaultFields=true)]
+    public class Employee
+    {
+        [PrimaryKey(true)]
+        public int EmployeeId { get; set; }
+        public string EmployeeName { get; set; }
+        public string Department { get; set; }
+        public DateTime? DOB { get; set; }
     }
 
     [Table(NeedsHistory = false)]

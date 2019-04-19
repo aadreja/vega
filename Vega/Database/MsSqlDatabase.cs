@@ -114,7 +114,7 @@ namespace Vega
                     }
                     createSQL.Append(",");
                 }
-                else if (col.IgnoreInfo.Insert || col.IgnoreInfo.Update)
+                else if (col.IgnoreInfo.Insert && col.IgnoreInfo.Update)
                 {
                     continue;
                 }

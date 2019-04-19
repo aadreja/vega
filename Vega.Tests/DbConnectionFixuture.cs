@@ -47,6 +47,15 @@ namespace Vega.Tests
 
             Repository<User> userRepo = new Repository<User>(Connection);
             userRepo.CreateTable();
+
+            Repository<Employee> empRepo = new Repository<Employee>(Connection);
+            empRepo.CreateTable();
+
+            Repository<Department> deptRepo = new Repository<Department>(Connection);
+            deptRepo.CreateTable();
+
+            Repository<Job> jobRepo = new Repository<Job>(Connection);
+            jobRepo.CreateTable();
         }
 
         public IDbConnection Connection { get; set; }
@@ -62,6 +71,15 @@ namespace Vega.Tests
 
             Repository<User> userRepo = new Repository<User>(Connection);
             userRepo.DropTable();
+
+            Repository<Employee> empRepo = new Repository<Employee>(Connection);
+            empRepo.DropTable();
+
+            Repository<Department> deptRepo = new Repository<Department>(Connection);
+            deptRepo.DropTable();
+
+            Repository<Job> jobRepo = new Repository<Job>(Connection);
+            jobRepo.DropTable();
 
             Connection?.Dispose();
         }

@@ -87,5 +87,47 @@ namespace Vega.Tests
             Assert.Null(countryRepo.ReadOne<DateTime?>(id, "independence"));
         }
 
+        [Fact]
+        public void UpdateDefaultUpdatedOn()
+        {
+            Country country = new Country
+            {
+                Name = "India",
+                ShortCode = "IN",
+                Independence = new DateTime(1947, 8, 15),
+                CreatedBy = Fixture.CurrentUserId
+            };
+
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
+            var id = countryRepo.Add(country);
+            country = countryRepo.ReadOne(id);
+            country.Independence = null;
+            countryRepo.Update(country, "independence");
+            Assert.Equal(DateTime.Now.ToString("dd-MM-yyyy hh:mm:ss"), countryRepo.ReadOne<DateTime>(id, "UpdatedOn").ToString("dd-MM-yyyy hh:mm:ss"));
+        }
+
+        [Fact]
+        public void UpdateOverrideUpdatedOn()
+        {
+            DateTime overrideDate = new DateTime(2019, 04, 18, 1, 1, 1);
+            Country country = new Country
+            {
+                Name = "India",
+                ShortCode = "IN",
+                Independence = new DateTime(1947, 8, 15),
+                CreatedBy = Fixture.CurrentUserId,
+            };
+
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
+            var id = countryRepo.Add(country);
+
+            country = countryRepo.ReadOne(id);
+
+            country.Independence = null;
+            country.UpdatedOn = overrideDate;
+
+            countryRepo.Update(country, "independence", overrideCreatedUpdatedOn:true);
+            Assert.Equal(overrideDate, countryRepo.ReadOne<DateTime>(id, "UpdatedOn"));
+        }
     }
 }

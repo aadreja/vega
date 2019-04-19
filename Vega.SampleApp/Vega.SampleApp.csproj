@@ -10,7 +10,8 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net461|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG;PGSQL;NET461</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;MSSQL;NET461</DefineConstants>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <!--<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
     <DefineConstants>TRACE;DEBUG;PGSQL;netstandard2.0</DefineConstants>
@@ -28,7 +29,11 @@
   </ItemGroup>
   -->
   <ItemGroup>
+    <PackageReference Include="ChoETL.JSON" Version="1.1.0.1" />
     <PackageReference Include="Dapper" Version="1.50.4" />
     <PackageReference Include="vega" Version="1.0.5" />
   </ItemGroup>
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="del vegasample.mdf&#xD;&#xA;del vegasample_log.ldf" />
+  </Target>
 </Project>

@@ -26,6 +26,7 @@ namespace Vega.Tests
                 CreatedBy =Fixture.CurrentUserId
             };
 
+
             Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
             //add master record
             country.Id = (long)countryRepo.Add(country);

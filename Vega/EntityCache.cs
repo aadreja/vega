@@ -26,9 +26,24 @@ namespace Vega
         static ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
         static Dictionary<Type, TableAttribute> Entities;
 
+        /// <summary>
+        /// Delegate handler that's used to compile the IL to.
+        /// (This delegate is standard in .net 3.5)
+        /// </summary>
+        /// <typeparam name="T1">Parameter Type</typeparam>
+        /// <typeparam name="TResult">Return Type</typeparam>
+        /// <param name="arg1">Argument</param>
+        /// <returns>Result</returns>
+        public delegate TResult Func<T1, TResult>(T1 arg1);
+        /// <summary>
+        /// This dictionary caches the delegates for each 'to-clone' type.
+        /// </summary>
+        static Dictionary<Type, Delegate> CachedCloneIL;
+
         static EntityCache()
         {
             Entities = new Dictionary<Type, TableAttribute>();
+            CachedCloneIL = new Dictionary<Type, Delegate>();
         }
 
         /// <summary>
@@ -37,6 +52,7 @@ namespace Vega
         public static void Clear()
         {
             Entities.Clear();
+            CachedCloneIL.Clear();
         }
 
         internal static TableAttribute Get(Type entity)
@@ -112,12 +128,8 @@ namespace Vega
                     };
                 }
 
-                primaryKeyColumn.Property = primaryKeyProperty;
-                primaryKeyColumn.SetMethod = primaryKeyProperty.GetSetMethod();
-                primaryKeyColumn.GetMethod = primaryKeyProperty.GetGetMethod();
-                primaryKeyColumn.SetAction = Helper.CreateSetProperty(entity, primaryKeyProperty.Name);
-                primaryKeyColumn.GetAction = Helper.CreateGetProperty(entity, primaryKeyProperty.Name);
-
+                primaryKeyColumn.SetPropertyInfo(primaryKeyProperty, entity);
+                
                 result.PrimaryKeyColumn = primaryKeyColumn;
 
                 //check for virtual foreign key
@@ -177,12 +189,8 @@ namespace Vega
                     }
                 }
 
-                column.Property = property;
-                column.SetMethod = property.GetSetMethod();
-                column.GetMethod = property.GetGetMethod();
-                column.SetAction = Helper.CreateSetProperty(entity, property.Name);
-                column.GetAction = Helper.CreateGetProperty(entity, property.Name);
-
+                column.SetPropertyInfo(property, entity);
+                
                 column.IgnoreInfo = ignoreInfo ?? new IgnoreColumnAttribute(false);
 
                 if (result.NoCreatedBy && (column.Name.Equals(Config.VegaConfig.CreatedByColumnName, StringComparison.OrdinalIgnoreCase)
@@ -229,6 +237,8 @@ namespace Vega
 
         internal static TableAttribute GetAuditTrialTableAttribute()
         {
+            //TODO: Remove Unnecessary code
+
             TableAttribute result = new TableAttribute
             {
                 Name = Config.VegaConfig.AuditTableName,
@@ -243,31 +253,17 @@ namespace Vega
 
             var type = typeof(AuditTrial);
             var pkProperty = typeof(AuditTrial).GetProperty("AuditTrailId");
-
             result.PrimaryKeyAttribute = (PrimaryKeyAttribute)pkProperty.GetCustomAttributes(typeof(PrimaryKeyAttribute)).FirstOrDefault();
             result.PrimaryKeyColumn = new ColumnAttribute()
             {
                 Name = Config.VegaConfig.AuditKeyColumnName,
                 ColumnDbType = DbType.Int64,
-                Property = pkProperty,
-                SetMethod = pkProperty.GetSetMethod(),
-                GetMethod = pkProperty.GetGetMethod(),
-                SetAction = Helper.CreateSetProperty(type, pkProperty.Name),
-                GetAction = Helper.CreateGetProperty(type, pkProperty.Name),
             };
+            result.PrimaryKeyColumn.SetPropertyInfo(pkProperty, typeof(AuditTrial));
 
             foreach (PropertyInfo property in type.GetProperties())
             {
-                //TODO: check for valid property types to be added in list
-                if ((property.Name.Equals("keyid", StringComparison.OrdinalIgnoreCase) ||
-                    property.Name.Equals("operation", StringComparison.OrdinalIgnoreCase)))
-                    continue;
-
-                //check for ignore property attribute
-                var ignoreInfo = (IgnoreColumnAttribute)property.GetCustomAttribute(typeof(IgnoreColumnAttribute));
-                var column = (ColumnAttribute)property.GetCustomAttribute(typeof(ColumnAttribute));
-
-                if (column == null) column = new ColumnAttribute();
+                ColumnAttribute column = new ColumnAttribute();
 
                 if (property.Name == "AuditTrailId")
                     column.Name = Config.VegaConfig.AuditKeyColumnName;
@@ -290,8 +286,7 @@ namespace Vega
 
                 if (!column.IsColumnDbTypeDefined)
                 {
-                    if (column.Name.Equals(Config.VegaConfig.CreatedByColumnName, StringComparison.OrdinalIgnoreCase) ||
-                        column.Name.Equals(Config.VegaConfig.UpdatedByColumnName, StringComparison.OrdinalIgnoreCase))
+                    if (column.Name.Equals(Config.VegaConfig.CreatedByColumnName, StringComparison.OrdinalIgnoreCase))
                         column.ColumnDbType = Config.VegaConfig.CreatedUpdatedByColumnType;
                     else if (property.PropertyType.IsEnum)
                         column.ColumnDbType = TypeCache.TypeToDbType[property.PropertyType.GetEnumUnderlyingType()];
@@ -303,44 +298,66 @@ namespace Vega
                         column.ColumnDbType = columnDbType;
                     }
                 }
-
-                column.Property = property;
-                column.SetMethod = property.GetSetMethod();
-                column.GetMethod = property.GetGetMethod();
-                column.SetAction = Helper.CreateSetProperty(type, property.Name);
-                column.GetAction = Helper.CreateGetProperty(type, property.Name);
-
-                column.IgnoreInfo = ignoreInfo ?? new IgnoreColumnAttribute(false);
-
-                if (result.NoCreatedBy && (column.Name.Equals(Config.VegaConfig.CreatedByColumnName, StringComparison.OrdinalIgnoreCase)
-                    || column.Name.Equals(Config.VegaConfig.CreatedByNameColumnName, StringComparison.OrdinalIgnoreCase)))
-                    continue;
-                else if (result.NoCreatedOn && column.Name.Equals(Config.VegaConfig.CreatedOnColumnName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                else if (result.NoUpdatedBy && ((column.Name.Equals(Config.VegaConfig.UpdatedByColumnName, StringComparison.OrdinalIgnoreCase)
-                    || column.Name.Equals(Config.VegaConfig.UpdatedByNameColumnName, StringComparison.OrdinalIgnoreCase))))
-                    continue;
-                else if (result.NoUpdatedOn && column.Name.Equals(Config.VegaConfig.UpdatedOnColumnName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                else if (result.NoIsActive && column.Name.Equals(Config.VegaConfig.IsActiveColumnName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                else if (result.NoVersionNo && column.Name.Equals(Config.VegaConfig.VersionNoColumnName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                else
-                {
-                    if (!column.IgnoreInfo.Insert)
-                        result.DefaultInsertColumns.Add(column.Name);
-
-                    if (!column.IgnoreInfo.Update)
-                        result.DefaultUpdateColumns.Add(column.Name);
-
-                    if (!column.IgnoreInfo.Read)
-                        result.DefaultReadColumns.Add(column.Name);
-
-                    result.Columns[column.Name] = column;
-                }
+                column.SetPropertyInfo(property, typeof(AuditTrial));
+                result.DefaultInsertColumns.Add(column.Name);
+                result.DefaultReadColumns.Add(column.Name);
+                result.Columns[column.Name] = column;
             }
             return result;
         }
-    }    
+
+        #region clone object using IL
+
+        /// <summary>
+        /// http://whizzodev.blogspot.com/2008/03/object-cloning-using-il-in-c.html
+        /// Generic cloning method that clones an object using IL.
+        /// Only the first call of a certain type will hold back performance.
+        /// After the first call, the compiled IL is executed.
+        /// </summary>
+        /// <typeparam name="T">Type of object to clone</typeparam>
+        /// <param name="entity">Object to clone</param>
+        /// <returns>Cloned object</returns>
+        internal static T CloneObjectWithIL<T>(T entity)
+        {
+            Delegate cloneIL;
+            if (!CachedCloneIL.TryGetValue(typeof(T), out cloneIL))
+            {
+                // Create ILGenerator
+                DynamicMethod dymMethod = new DynamicMethod("DoClone", typeof(T), new Type[] { typeof(T) }, true);
+                ConstructorInfo cInfo = entity.GetType().GetConstructor(new Type[] { });
+
+                ILGenerator generator = dymMethod.GetILGenerator();
+
+                LocalBuilder lbf = generator.DeclareLocal(typeof(T));
+                //lbf.SetLocalSymInfo("_temp");
+
+                generator.Emit(OpCodes.Newobj, cInfo);
+                generator.Emit(OpCodes.Stloc_0);
+                foreach (FieldInfo field in entity.GetType().GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic))
+                {
+                    // Load the new object on the eval stack... (currently 1 item on eval stack)
+                    generator.Emit(OpCodes.Ldloc_0);
+                    // Load initial object (parameter)          (currently 2 items on eval stack)
+                    generator.Emit(OpCodes.Ldarg_0);
+                    // Replace value by field value             (still currently 2 items on eval stack)
+                    generator.Emit(OpCodes.Ldfld, field);
+                    // Store the value of the top on the eval stack into the object underneath that value on the value stack.
+                    //  (0 items on eval stack)
+                    generator.Emit(OpCodes.Stfld, field);
+                }
+
+                // Load new constructed obj on eval stack -> 1 item on stack
+                generator.Emit(OpCodes.Ldloc_0);
+                // Return constructed object.   --> 0 items on stack
+                generator.Emit(OpCodes.Ret);
+
+                cloneIL = dymMethod.CreateDelegate(typeof(Func<T, T>));
+                CachedCloneIL.Add(typeof(T), cloneIL);
+            }
+            return ((Func<T, T>)cloneIL)(entity);
+        }
+
+        #endregion
+
+    }
 }

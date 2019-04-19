@@ -55,12 +55,12 @@ namespace Vega.Tests
                 CountryId = 1,
                 Longitude = 1m,
                 Latitude = 1m,
-                CreatedBy =Fixture.CurrentUserId
+                CreatedBy = Fixture.CurrentUserId
             };
             city.Id = (long)cityRepo.Add(city);
 
             Assert.True(cityRepo.Exists(city.Id));
-            Assert.True(cityRepo.Exists("State=@State", new {State="RO"}));
+            Assert.True(cityRepo.Exists("State=@State", new { State = "RO" }));
             Assert.False(cityRepo.Exists("State=@State", new { State = "R1" }));
         }
 
@@ -80,7 +80,7 @@ namespace Vega.Tests
                     CountryId = 1,
                     Longitude = 1m,
                     Latitude = 1m,
-                    CreatedBy =Fixture.CurrentUserId
+                    CreatedBy = Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -145,7 +145,7 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            City result = cityRepo.ReadOne("State=@state and CountryId=@countryid", new { State="RO3", CountryId = 1}, "name");
+            City result = cityRepo.ReadOne("State=@state and CountryId=@countryid", new { State = "RO3", CountryId = 1 }, "name");
         }
 
         [Fact]
@@ -160,7 +160,7 @@ namespace Vega.Tests
                 CountryId = 1,
                 Longitude = 1m,
                 Latitude = 1m,
-                CreatedBy =Fixture.CurrentUserId
+                CreatedBy = Fixture.CurrentUserId
             };
             city.Id = (long)cityRepo.Add(city);
 
@@ -218,7 +218,7 @@ namespace Vega.Tests
                 CountryId = 1,
                 Longitude = 1m,
                 Latitude = 1m,
-                CreatedBy =Fixture.CurrentUserId
+                CreatedBy = Fixture.CurrentUserId
             };
             city.Id = (long)cityRepo.Add(city);
 
@@ -234,7 +234,8 @@ namespace Vega.Tests
         {
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 10; i++)
+            {
                 City city = new City()
                 {
                     Name = "ReadTests.ReadAllSort" + i,
@@ -242,12 +243,12 @@ namespace Vega.Tests
                     CountryId = i,
                     Longitude = 1m,
                     Latitude = 1m,
-                    CreatedBy =Fixture.CurrentUserId
+                    CreatedBy = Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
 
-            var cityList = cityRepo.ReadAll(null,"State=@State", new { State = "RS" }, "countryid");
+            var cityList = cityRepo.ReadAll(null, "State=@State", new { State = "RS" }, "countryid");
 
             Assert.Equal((int)cityRepo.Count("State=@State", new { State = "RS" }), cityList.Count());
         }
@@ -266,12 +267,12 @@ namespace Vega.Tests
                     CountryId = i,
                     Longitude = 1m,
                     Latitude = 1m,
-                    CreatedBy =Fixture.CurrentUserId
+                    CreatedBy = Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
 
-            var cityList = cityRepo.ReadAllQuery("SELECT * FROM city WHERE state=@state", new { State = "RQ" } );
+            var cityList = cityRepo.ReadAllQuery("SELECT * FROM city WHERE state=@state", new { State = "RQ" });
 
             Assert.Equal((int)cityRepo.Count("state=@state", new { State = "RQ" }), cityList.Count());
         }
@@ -291,7 +292,7 @@ namespace Vega.Tests
                     Longitude = 1m,
                     Latitude = 1m,
                     CityType = EnumCityType.Metro,
-                    CreatedBy =Fixture.CurrentUserId
+                    CreatedBy = Fixture.CurrentUserId
                 };
                 city.Id = (long)cityRepo.Add(city);
             }
@@ -302,5 +303,58 @@ namespace Vega.Tests
         }
 
 
+        [Fact]
+        public void ReadWithoutIsActiveAfterDelete()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ReadWithoutIsActive",
+                State = "RQ",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CityType = EnumCityType.Metro,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            //add
+            city.Id = (long)cityRepo.Add(city);
+
+            //delete
+            cityRepo.Delete(city.Id, city.VersionNo, Fixture.CurrentUserId);
+
+            //get
+            City deletedCity = cityRepo.ReadOne(city.Id, "Name, State");
+
+            Assert.Null(deletedCity.IsActive);
+        }
+
+        [Fact]
+        public void ReadIsActiveAfterDelete()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ReadWithoutIsActive",
+                State = "RQ",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CityType = EnumCityType.Metro,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            //add
+            city.Id = (long)cityRepo.Add(city);
+
+            //delete
+            cityRepo.Delete(city.Id, city.VersionNo, Fixture.CurrentUserId);
+
+            //get
+            City deletedCity = cityRepo.ReadOne(city.Id);
+
+            Assert.False(deletedCity.IsActive);
+        }
     }
 }

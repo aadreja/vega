@@ -7,10 +7,8 @@
 */
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Data.Common;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -22,7 +20,7 @@ namespace Vega
     /// Vega core library class
     /// </summary>
     /// <typeparam name="T">Type of entity class</typeparam>
-    public class Repository<T> where T : EntityBase, new()
+    public class Repository<T> where T : new ()
     {
         #region Constructors
 
@@ -158,10 +156,11 @@ namespace Vega
         /// Insert Records
         /// </summary>
         /// <param name="entity">Entity to add</param>
+        /// <param name="overrideCreatedUpdatedOn">True in case explicit CreatedUpdatedOn else database datetime</param>
         /// <returns>Id of inserted record</returns>
-        public object Add(T entity)
+        public object Add(T entity, bool overrideCreatedUpdatedOn = false)
         {
-            return Add(entity, null);
+            return Add(entity, null, overrideCreatedUpdatedOn);
         }
 
         /// <summary>
@@ -169,8 +168,9 @@ namespace Vega
         /// </summary>
         /// <param name="entity">Entity to add</param>
         /// <param name="columns">Columns to include in Insert</param>
+        /// <param name="overrideCreatedUpdatedOn">True in case explicit CreatedUpdatedOn else database datetime</param>
         /// <returns>Id of inserted record</returns>
-        public object Add(T entity, string columns)
+        public object Add(T entity, string columns, bool overrideCreatedUpdatedOn = false)
         {
             bool isTransactHere = false;
 
@@ -179,36 +179,34 @@ namespace Vega
 
             try
             {
-                if (!entity.IsActive) entity.IsActive = true; //bydefault record will be active
-
-                AuditTrial audit = null; //to save audit details
+                AuditTrial audit = default; //to save audit details
                 if (TableInfo.NeedsHistory)
                 {
                     //begin transaction
                     isTransactHere = BeginTransaction();
                     audit = new AuditTrial
                     {
-                        CreatedBy = entity.CreatedBy
+                        CreatedBy = !TableInfo.NoCreatedBy ? TableInfo.GetCreatedBy(entity) : default
                     };
                 }
 
                 IDbCommand command = Connection.CreateCommand();
-                DB.CreateAddCommand(command, entity, audit, columns, false);
+                DB.CreateAddCommand(command, entity, audit, columns, false, overrideCreatedUpdatedOn);
                 var keyId = ExecuteScalar(command);
                 //get identity
-                if (TableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsKeyIdEmpty())
+                if (TableInfo.PrimaryKeyAttribute.IsIdentity && TableInfo.IsKeyIdEmpty(entity))
                 {
                     //ExecuteScalar with Identity will always return long, hence converting it to type of Primary Key
-                    entity.KeyId = Convert.ChangeType(keyId, entity.KeyId.GetType());
+                    TableInfo.SetKeyId(entity, Convert.ChangeType(keyId, TableInfo.PrimaryKeyColumn.Property.PropertyType));
                 }
                 if (TableInfo.NeedsHistory)
                 {
                     //Save Audit Trial
-                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
+                    AuditTrialRepository<T> auditTrialRepo = new AuditTrialRepository<T>(Transaction);
                     auditTrialRepo.Add(entity, RecordOperationEnum.Insert, TableInfo, audit);
                     if (isTransactHere) Commit();
                 }
-                return entity.KeyId;
+                return TableInfo.GetKeyId(entity);
             }
             catch
             {
@@ -229,10 +227,11 @@ namespace Vega
         /// Performs update on current entity and returns status
         /// </summary>
         /// <param name="entity">entity object for update</param>
+        /// <param name="overrideCreatedUpdatedOn">True in case explicit CreatedUpdatedOn else database datetime</param>
         /// <returns>True if update successful else false</returns>
-        public bool Update(T entity)
+        public bool Update(T entity, bool overrideCreatedUpdatedOn = false)
         {
-            return Update(entity, null);
+            return Update(entity, null, overrideCreatedUpdatedOn:overrideCreatedUpdatedOn);
         }
 
         /// <summary>
@@ -241,8 +240,9 @@ namespace Vega
         /// <param name="entity">entity object for update</param>
         /// <param name="columns">specific columns to update, comma seperated</param>
         /// <param name="oldEntity">previous entity object for audit trial. Default null.</param>
+        /// <param name="overrideCreatedUpdatedOn">True in case explicit CreatedUpdatedOn else database datetime</param>
         /// <returns>True if update successful else false</returns>
-        public bool Update(T entity, string columns, T oldEntity = null)
+        public bool Update(T entity, string columns, T oldEntity = default, bool overrideCreatedUpdatedOn = false)
         {
             bool isTransactHere = false;
             bool isConOpen = IsConnectionOpen();
@@ -252,21 +252,22 @@ namespace Vega
                 AuditTrial audit = null;
                 if (TableInfo.NeedsHistory)
                 {
-                    audit = new AuditTrial
+                    audit = new AuditTrial()
                     {
-                        CreatedBy = entity.UpdatedBy
+                        CreatedBy = !TableInfo.NoUpdatedBy ? TableInfo.GetUpdatedBy(entity) : default
                     };
 
                     isTransactHere = BeginTransaction();
+
                     if (oldEntity == null)
                     {
-                        oldEntity = ReadOne(entity.KeyId);
+                        oldEntity = ReadOne(TableInfo.GetKeyId(entity));
                     }
                 }
 
                 IDbCommand command = Connection.CreateCommand();
 
-                bool isUpdateNeeded = DB.CreateUpdateCommand(command, entity, oldEntity, audit, columns);
+                bool isUpdateNeeded = DB.CreateUpdateCommand(command, entity, oldEntity, audit, columns, overrideCreatedUpdatedOn:overrideCreatedUpdatedOn);
 
                 if (isUpdateNeeded)
                 {
@@ -277,12 +278,14 @@ namespace Vega
                         //record not found or concurrency violation
                         throw new VersionNotFoundException("Record doesn't exists or modified by another user");
                     }
-                    entity.VersionNo++; //increment versionno when save is successful
+
+                    if(!TableInfo.NoVersionNo)
+                        TableInfo.SetVersionNo(entity, TableInfo.GetVersionNo(entity) + 1); //increment versionno when save is successful
 
                     if (TableInfo.NeedsHistory)
                     {
                         //Save History
-                        AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
+                        AuditTrialRepository<T> auditTrialRepo = new AuditTrialRepository<T>(Transaction);
                         auditTrialRepo.Add(entity, RecordOperationEnum.Update, TableInfo, audit);
                         if (isTransactHere) Commit();
                     }
@@ -322,7 +325,7 @@ namespace Vega
         /// <param name="versionNo">Version of deleting record</param>
         /// <param name="updatedBy">Updated By User Id</param>
         /// <returns>deletion status</returns>
-        public bool Delete(object id, Int32 versionNo, object updatedBy)
+        public bool Delete(object id, int? versionNo, object updatedBy)
         {
             return Delete(id, versionNo, updatedBy, false);
         }
@@ -345,7 +348,7 @@ namespace Vega
         /// <param name="versionNo">Version of deleting record</param>
         /// <param name="updatedBy">Updated By User Id</param>
         /// <returns>deletion status</returns>
-        public bool HardDelete(object id, Int32 versionNo, object updatedBy)
+        public bool HardDelete(object id, int? versionNo, object updatedBy)
         {
             return Delete(id, versionNo, updatedBy, true);
         }
@@ -358,7 +361,7 @@ namespace Vega
         /// <param name="updatedBy">Updated By User Id</param>
         /// <param name="isHardDelete">true to perform harddelete else false for soft delete(i.e mark isactive=false)</param>
         /// <returns>deletion status</returns>
-        bool Delete(object id, Int32 versionNo, object updatedBy, bool isHardDelete)
+        bool Delete(object id, int? versionNo, object updatedBy, bool isHardDelete)
         {
             bool isTransactHere = false;
             bool isConOpen = IsConnectionOpen();
@@ -417,7 +420,7 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     //Save History
-                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
+                    AuditTrialRepository<T> auditTrialRepo = new AuditTrialRepository<T>(Transaction);
 
                     auditTrialRepo.Add(id, versionNo, updatedBy, RecordOperationEnum.Delete, TableInfo);
 
@@ -446,7 +449,7 @@ namespace Vega
         /// <param name="id">record id</param>
         /// <param name="updatedBy">Updated By user id</param>
         /// <returns>true if recovered else false</returns>
-        public bool Recover(object id, int updatedBy)
+        public bool Recover(object id, object updatedBy)
         {
             return Recover(id, 0, updatedBy);
         }
@@ -458,7 +461,7 @@ namespace Vega
         /// <param name="versionNo">rowversion for concurrency check</param>
         /// <param name="updatedBy">Updated By user id</param>
         /// <returns></returns>
-        public bool Recover(object id, Int32 versionNo, int updatedBy)
+        public bool Recover(object id, int versionNo, object updatedBy)
         {
             if (TableInfo.NoIsActive)
             {
@@ -513,7 +516,7 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     //Save History
-                    AuditTrialRepository auditTrialRepo = new AuditTrialRepository(Transaction);
+                    AuditTrialRepository<T> auditTrialRepo = new AuditTrialRepository<T>(Transaction);
 
                     auditTrialRepo.Add(id, versionNo, updatedBy, RecordOperationEnum.Recover, TableInfo);
 
@@ -604,7 +607,7 @@ namespace Vega
                 if (!isConOpen) Connection.Close();
             }
 
-            return null;
+            return default;
         }
 
         /// <summary>
@@ -617,7 +620,7 @@ namespace Vega
         public T ReadOne(string criteria=null, object parameters=null, string columns = null)
         {
             if(!ValidateParameters(criteria, parameters))
-                return null;
+                return default;
 
             bool hasWhere = criteria.ToLowerInvariant().Contains("where");
 
@@ -647,7 +650,7 @@ namespace Vega
                 if (!isConOpen) Connection.Close();
             }
 
-            return null;
+            return default;
         }
 
         /// <summary>
@@ -803,7 +806,8 @@ namespace Vega
         /// <returns>List of audit for this record</returns>
         public IEnumerable<T> ReadHistory(object id)
         {
-            AuditTrialRepository auditRepo = new AuditTrialRepository(Connection);
+            //Remove EntityBase 12-Apr
+            AuditTrialRepository<T> auditRepo = new AuditTrialRepository<T>(Connection);
 
             return auditRepo.ReadAll<T>(TableInfo.Name, id);
         }

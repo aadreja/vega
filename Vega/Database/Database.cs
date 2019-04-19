@@ -120,12 +120,12 @@ namespace Vega
 
         #region Create CRUD commands
 
-        internal virtual void CreateAddCommand(IDbCommand command, EntityBase entity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false)
+        internal virtual void CreateAddCommand(IDbCommand command, object entity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false, bool overrideCreatedUpdatedOn = false)
         {
             TableAttribute tableInfo = EntityCache.Get(entity.GetType());
 
-            if (!tableInfo.NoCreatedBy && entity.IsCreatedByEmpty())
-                throw new MissingFieldException("CreatedBy is required");
+            if (tableInfo.NeedsHistory && tableInfo.IsCreatedByEmpty(entity))
+                throw new MissingFieldException("CreatedBy is required when Audit Trail is enabled");
 
             List<string> columns = new List<string>();
 
@@ -133,17 +133,17 @@ namespace Vega
             else columns.AddRange(tableInfo.DefaultInsertColumns);//Get columns from Entity attributes loaded in TableInfo
 
             bool isPrimaryKeyEmpty = false;
-            if (tableInfo.PrimaryKeyAttribute.IsIdentity && entity.IsKeyIdEmpty())
+            if (tableInfo.PrimaryKeyAttribute.IsIdentity && tableInfo.IsKeyIdEmpty(entity))
             {
                 isPrimaryKeyEmpty = true;
                 //if identity remove keyfield if added in field list
                 columns.Remove(tableInfo.PrimaryKeyColumn.Name);
             }
-            else if (entity.KeyId is Guid && entity.IsKeyIdEmpty())
+            else if (tableInfo.PrimaryKeyColumn.Property.PropertyType == typeof(Guid) && tableInfo.IsKeyIdEmpty(entity))
             {
                 isPrimaryKeyEmpty = true;
                 //if not identity and key not generated, generate before save
-                entity.KeyId = Guid.NewGuid();
+                tableInfo.SetKeyId(entity, Guid.NewGuid());
             }
 
             #region append common columns
@@ -155,17 +155,25 @@ namespace Vega
                     if (!columns.Contains(Config.ISACTIVE_COLUMN.Name))
                         columns.Add(Config.ISACTIVE_COLUMN.Name);
 
-                    command.AddInParameter("@" + Config.ISACTIVE_COLUMN.Name, Config.ISACTIVE_COLUMN.ColumnDbType, true);
+                    bool isActive = tableInfo.GetIsActive(entity) ?? true;
+                    //when IsActive is not set then true for insert
+                    command.AddInParameter("@" + Config.ISACTIVE_COLUMN.Name, Config.ISACTIVE_COLUMN.ColumnDbType, isActive);
 
-                    if (tableInfo.NeedsHistory) audit.AppendDetail(Config.ISACTIVE_COLUMN.Name, true, DbType.Boolean);
+                    if (tableInfo.NeedsHistory)
+                        audit.AppendDetail(Config.ISACTIVE_COLUMN.Name, isActive, DbType.Boolean);
+
+                    tableInfo.SetIsActive(entity, isActive); //Set IsActive value
                 }
 
                 if (!tableInfo.NoVersionNo)
                 {
+                    int versionNo = tableInfo.GetVersionNo(entity) ?? 1;  //set defualt versionno 1 for Insert
                     if (!columns.Contains(Config.VERSIONNO_COLUMN.Name))
                         columns.Add(Config.VERSIONNO_COLUMN.Name);
 
-                    command.AddInParameter("@" + Config.VERSIONNO_COLUMN.Name, Config.VERSIONNO_COLUMN.ColumnDbType, 1);
+                    command.AddInParameter("@" + Config.VERSIONNO_COLUMN.Name, Config.VERSIONNO_COLUMN.ColumnDbType, versionNo);
+
+                    tableInfo.SetVersionNo(entity, versionNo); //Set VersionNo value
                 }
 
                 if (!tableInfo.NoCreatedBy)
@@ -173,7 +181,7 @@ namespace Vega
                     if (!columns.Contains(Config.CREATEDBY_COLUMN.Name))
                         columns.Add(Config.CREATEDBY_COLUMN.Name);
 
-                    command.AddInParameter("@" + Config.CREATEDBY_COLUMN.Name, Config.CREATEDBY_COLUMN.ColumnDbType, entity.CreatedBy);
+                    command.AddInParameter("@" + Config.CREATEDBY_COLUMN.Name, Config.CREATEDBY_COLUMN.ColumnDbType, tableInfo.GetCreatedBy(entity));
                 }
 
                 if (!tableInfo.NoCreatedOn & !columns.Contains(Config.CREATEDON_COLUMN.Name))
@@ -186,7 +194,7 @@ namespace Vega
                     if (!columns.Contains(Config.UPDATEDBY_COLUMN.Name))
                         columns.Add(Config.UPDATEDBY_COLUMN.Name);
 
-                    command.AddInParameter("@" + Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, entity.CreatedBy);
+                    command.AddInParameter("@" + Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, tableInfo.GetCreatedBy(entity));
                 }
 
                 if (!tableInfo.NoUpdatedOn & !columns.Contains(Config.UPDATEDON_COLUMN.Name))
@@ -201,12 +209,35 @@ namespace Vega
             List<string> parameters = columns.Select(c => "@" + c).ToList();
 
             int pIndex = parameters.FindIndex(c => c == "@" + Config.CREATEDON_COLUMN.Name);
+            //ritesh
             if (pIndex >= 0)
-                parameters[pIndex] = CURRENTDATETIMESQL;
+            {
+                var createdOn = Helper.GetDateTimeOrDatabaseDateTimeSQL(tableInfo.GetCreatedOn(entity), this, overrideCreatedUpdatedOn);
+                if (createdOn is string)
+                {
+                    parameters[pIndex] = (string)createdOn;
+                }
+                else
+                {
+                    command.AddInParameter(parameters[pIndex], Config.CREATEDON_COLUMN.ColumnDbType, createdOn);
+                }
+                //parameters[pIndex] = (string)Helper.GetDateTimeOrDatabaseDateTimeSQL(tableInfo.GetCreatedOn(entity), this, overrideCreatedUpdatedOn);
+            }
 
             pIndex = parameters.FindIndex(c => c == "@" + Config.UPDATEDON_COLUMN.Name);
             if (pIndex >= 0)
-                parameters[pIndex] = CURRENTDATETIMESQL;
+            {
+                var updatedOn = Helper.GetDateTimeOrDatabaseDateTimeSQL(tableInfo.GetUpdatedOn(entity), this, overrideCreatedUpdatedOn);
+                if (updatedOn is string)
+                {
+                    parameters[pIndex] = (string)updatedOn;
+                }
+                else
+                {
+                    command.AddInParameter(parameters[pIndex], Config.CREATEDON_COLUMN.ColumnDbType, updatedOn);
+                }
+                //parameters[pIndex] = (string)Helper.GetDateTimeOrDatabaseDateTimeSQL(tableInfo.GetUpdatedOn(entity), this, overrideCreatedUpdatedOn);
+            }
 
             StringBuilder commandText = new StringBuilder();
             commandText.Append($"INSERT INTO {tableInfo.FullName} ({string.Join(",", columns)}) VALUES({string.Join(",", parameters)});");
@@ -243,13 +274,13 @@ namespace Vega
             }
         }
 
-        internal virtual bool CreateUpdateCommand(IDbCommand command, EntityBase entity, EntityBase oldEntity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false)
+        internal virtual bool CreateUpdateCommand(IDbCommand command, object entity, object oldEntity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false, bool overrideCreatedUpdatedOn = false)
         {
             bool isUpdateNeeded = false;
 
             TableAttribute tableInfo = EntityCache.Get(entity.GetType());
 
-            if (!tableInfo.NoUpdatedBy && entity.IsUpdatedByEmpty())
+            if (!tableInfo.NoUpdatedBy && tableInfo.IsUpdatedByEmpty(entity))
                 throw new MissingFieldException("Updated By is required");
 
             List<string> columns = new List<string>();
@@ -287,11 +318,20 @@ namespace Vega
                 {
                     commandText.Append($"{columns[i]} = @{columns[i]}");
                     commandText.Append(",");
-                    command.AddInParameter("@" + columns[i], Config.UPDATEDBY_COLUMN.ColumnDbType, entity.UpdatedBy);
+                    command.AddInParameter("@" + columns[i], Config.UPDATEDBY_COLUMN.ColumnDbType, tableInfo.GetUpdatedBy(entity));
                 }
                 else if (columns[i].Equals(Config.UPDATEDON_COLUMN.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    commandText.Append($"{columns[i]} = {CURRENTDATETIMESQL}");
+                    var updatedOn = Helper.GetDateTimeOrDatabaseDateTimeSQL(tableInfo.GetUpdatedOn(entity), this, overrideCreatedUpdatedOn);
+                    if (updatedOn is string)
+                    {
+                        commandText.Append($"{columns[i]} = {CURRENTDATETIMESQL}");
+                    }
+                    else
+                    {
+                        commandText.Append($"{columns[i]} = @{columns[i]}");
+                        command.AddInParameter("@" + columns[i], Config.UPDATEDON_COLUMN.ColumnDbType, updatedOn);
+                    }
                     commandText.Append(",");
                 }
                 else
@@ -347,12 +387,12 @@ namespace Vega
             commandText.RemoveLastComma(); //Remove last comma if exists
 
             commandText.Append($" WHERE {tableInfo.PrimaryKeyColumn.Name}=@{tableInfo.PrimaryKeyColumn.Name}");
-            command.AddInParameter("@" + tableInfo.PrimaryKeyColumn.Name, tableInfo.PrimaryKeyColumn.ColumnDbType, entity.KeyId);
+            command.AddInParameter("@" + tableInfo.PrimaryKeyColumn.Name, tableInfo.PrimaryKeyColumn.ColumnDbType, tableInfo.GetKeyId(entity));
 
             if (Config.VegaConfig.DbConcurrencyCheck && !tableInfo.NoVersionNo)
             {
                 commandText.Append($" AND {Config.VERSIONNO_COLUMN.Name}=@{Config.VERSIONNO_COLUMN.Name}");
-                command.AddInParameter("@" + Config.VERSIONNO_COLUMN.Name, Config.VERSIONNO_COLUMN.ColumnDbType, entity.VersionNo);
+                command.AddInParameter("@" + Config.VERSIONNO_COLUMN.Name, Config.VERSIONNO_COLUMN.ColumnDbType, tableInfo.GetVersionNo(entity));
             }
 
             command.CommandType = CommandType.Text;

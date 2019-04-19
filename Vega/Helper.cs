@@ -7,6 +7,7 @@
 */
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Globalization;
@@ -21,6 +22,7 @@ namespace Vega
     /// </summary>
     public static class Helper
     {
+        
         #region constructor
 
         static Helper()
@@ -331,6 +333,19 @@ namespace Vega
             return converter.ConvertFromString(value);
         }
 
+        internal static object GetDateTimeOrDatabaseDateTimeSQL(DateTime? dateTime, Database db, bool overRideCreatedUpdatedOn)
+        {
+            if(!overRideCreatedUpdatedOn || dateTime == null || dateTime == default(DateTime))
+                return db.CURRENTDATETIMESQL;
+            else
+                return dateTime;
+
+            //if (dateTime != null && default(DateTime).Ticks != dateTime.Ticks && DateTime.Now.Ticks > dateTime.Ticks)
+            //    return dateTime;
+            //else
+            //    return db.CURRENTDATETIMESQL;
+        }
+
         #endregion
 
         #region Configuration Helper Methods
@@ -449,5 +464,8 @@ namespace Vega
         }
 
         #endregion
+
+        
     }
+
 }

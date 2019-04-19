@@ -318,9 +318,10 @@ namespace Vega.SampleApp
                         master.ExecuteNonQuery($"CREATE DATABASE {Common.DBName} ON (NAME = N'{Common.DBName}', FILENAME = '{dbFileName}')");
                     }
                 }
-                catch
+                catch(SqlException ex)
                 {
-                    throw;
+                    if(!ex.Message.Equals("Database 'vegasample' already exists. Choose a different database name."))
+                        throw;
                 }
             }
 

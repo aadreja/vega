@@ -27,7 +27,7 @@ namespace Vega.Tests
                 State = "GU",
                 Latitude = 10.65m,
                 Longitude = 11.50m,
-                CreatedBy =Fixture.CurrentUserId
+                CreatedBy = Fixture.CurrentUserId
             };
 
             //cleanup audittrial table

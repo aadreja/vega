@@ -93,7 +93,7 @@ namespace Vega
     /// Reader Cache
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class ReaderCache<T> where T : EntityBase, new()
+    internal class ReaderCache<T> where T : new()
     {
         static ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
         static Dictionary<ReaderKey, Func<IDataReader, T>> readers = new Dictionary<ReaderKey, Func<IDataReader, T>>();
@@ -148,7 +148,7 @@ namespace Vega
             }
         }
 
-        private static Func<IDataReader, T> ReaderToObject(IDataReader rdr) 
+        private static Func<IDataReader, T> ReaderToObject(IDataReader rdr)
         {
             MethodInfo rdrGetValueMethod = rdr.GetType().GetMethod("get_Item", new Type[] { typeof(int) });
 
@@ -163,7 +163,6 @@ namespace Vega
             Label tryBlock = il.BeginExceptionBlock();
 
             LocalBuilder valueCopy = il.DeclareLocal(typeof(object)); //declare local variable to store object value. loc_1
-            int valueCopyLocal = valueCopy.LocalIndex; 
 
             il.DeclareLocal(typeof(int)); //declare local variable to store index //loc_2
             il.Emit(OpCodes.Ldc_I4_0); //load 0 in index

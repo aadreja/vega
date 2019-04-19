@@ -6,15 +6,10 @@
             http://www.vegaorm.com
 */
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
 
 namespace Vega
 {
+
     /// <summary>
     /// Entity parent class. All entities must be inherited from this abstract class
     /// </summary>
@@ -31,8 +26,8 @@ namespace Vega
 
         #region fields
 
-        private int versionNo = 1;
-        private int pastVersionNo;
+        private int? versionNo = 1;
+        private int? pastVersionNo;
 
         #endregion
 
@@ -68,7 +63,7 @@ namespace Vega
         /// Gets or Set CreatedOn Property
         /// </summary>
         [Column(Title = "Created On")]
-        public virtual DateTime CreatedOn { get; set; }
+        public virtual DateTime? CreatedOn { get; set; }
 
         /// <summary>
         /// Gets or Set UpdatedBy Property
@@ -87,13 +82,13 @@ namespace Vega
         /// Gets or Set UpdatedOn Property
         /// </summary>
         [Column(Title = "Updated On")]
-        public virtual DateTime UpdatedOn { get; set; }
+        public virtual DateTime? UpdatedOn { get; set; }
 
         /// <summary>
         /// Gets or Set VersionNo Property
         /// </summary>
         [Column(Title = "Version")]
-        public virtual int VersionNo
+        public virtual int? VersionNo
         {
             get { return versionNo; }
             set
@@ -106,8 +101,9 @@ namespace Vega
         /// <summary>
         /// Gets or Set IsActive Property
         /// </summary>
+        /// TODO: to be discussed
         [Column(Title = "Is Active")]
-        public virtual bool IsActive { get; set; }
+        public virtual bool? IsActive { get; set; }
 
         ///// <summary>
         ///// Gets operation type

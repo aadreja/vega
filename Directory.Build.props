@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-	<VersionPrefix>1.0.6</VersionPrefix>
+	<VersionPrefix>1.0.7</VersionPrefix>
     <Authors>Ritesh Sutaria</Authors>
     <Copyright>2018 Ritesh Sutaria</Copyright>
 	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
