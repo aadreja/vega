@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net461</TargetFrameworks>
+    <!--;netstandard2.0-->
+    <AssemblyName>SampleApp</AssemblyName>
+    <RootNamespace>SampleApp</RootNamespace>
+    <Description>Vega - fastest .net orm with enterprise features tests</Description>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net461|AnyCPU'">
+    <DefineConstants>TRACE;DEBUG;MSSQL;NET461</DefineConstants>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <!--<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
+    <DefineConstants>TRACE;DEBUG;PGSQL;netstandard2.0</DefineConstants>
+  </PropertyGroup>-->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="1.60.6" />
+    <PackageReference Include="Vega" Version="1.0.6" />
+  </ItemGroup>
+  <!--
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
+  </ItemGroup>
+  -->
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="del vegasample.mdf&#xD;&#xA;del vegasample_log.ldf" />
+  </Target>
+</Project>
