@@ -18,5 +18,5 @@ test: on
 deploy:
 - provider: NuGet
   api_key:
-    secure: kqzjRF67st/zgfypgAdu9aPDIuTAiQjYPYuE7Jfjj0MLhY1eKxZDhQyUTqdu1M7g
+    secure: oy2gsamo6qfdzw44hf3a6brkkoere6rujpizzd6txifgpa
   artifact: /^Vega.*\.nupkg$/
