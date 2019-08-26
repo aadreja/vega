@@ -46,6 +46,26 @@ namespace Vega.Tests
         }
 
         [Fact]
+        public void CreateTableWithPrimaryKeyVarchar()
+        {
+            EntityCache.Clear(); //clear entity cache
+            Repository<Organization> orgRepo = new Repository<Organization>(Fixture.Connection);
+            orgRepo.DropTable();
+            orgRepo.CreateTable();
+            Assert.True(orgRepo.IsTableExists());
+        }
+
+        [Fact]
+        public void CreateTableWithCompositePrimaryKeyVarchar()
+        {
+            EntityCache.Clear(); //clear entity cache
+            Repository<Address> addRepo = new Repository<Address>(Fixture.Connection);
+            addRepo.DropTable();
+            addRepo.CreateTable();
+            Assert.True(addRepo.IsTableExists());
+        }
+
+        [Fact]
         public void CreateIndex()
         {
             EntityCache.Clear(); //clear entity cache

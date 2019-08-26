@@ -356,5 +356,32 @@ namespace Vega.Tests
 
             Assert.False(deletedCity.IsActive);
         }
+
+        [Fact]
+        public void ReadCompositePrimaryKeys()
+        {
+            Repository<Organization> orgRepo = new Repository<Organization>(Fixture.Connection);
+
+            Organization org = new Organization()
+            {
+                CustomerCode = "0002",
+                Name = "ReadTests.ReadWithoutEntityBase",
+                AccountNum=123,
+                Address=new Address()
+                {
+                    AddressLine1="line 1",
+                    AddressLine2="line 2",
+                    AddressType = "Home",
+                    Latitude="1.1",
+                    Longitude ="1.2",
+                    Town="Ahmedabad"
+                },
+                ItcontactPerson="Abcd",
+                ItcontactPersonEmail="a@a.com",
+                ItcontactPersonMobile="9898066521"
+            };
+
+            orgRepo.Add(org);
+        }
     }
 }

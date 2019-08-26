@@ -60,9 +60,9 @@ namespace Vega.Tests
     {
         [PrimaryKey(true)]
         public long Id { get; set; }
-        [Column(ColumnDbType = System.Data.DbType.String, NumericPrecision =4000)]
+        [Column(ColumnDbType = System.Data.DbType.String, Size =4000)]
         public string Name { get; set; }
-        [Column(ColumnDbType = System.Data.DbType.String, NumericPrecision = 50)]
+        [Column(ColumnDbType = System.Data.DbType.String, Size = 50)]
         public string State { get; set; }
         public decimal Longitude { get; set; }
         public decimal Latitude { get; set; }
@@ -84,4 +84,46 @@ namespace Vega.Tests
         public string Username { get; set; }
     }
 
+    [Table(IsNoDefaultFields = true, NeedsHistory = false)]
+    public class Organization
+    {
+        [PrimaryKey(false)]
+        [Column(Size = 50)]
+        public string CustomerCode { get; set; }
+
+        public string Name { get; set; }
+        public string ItcontactPerson { get; set; }
+        public string ItcontactPersonEmail { get; set; }
+        public string ItcontactPersonMobile { get; set; }
+        public int AccountNum { get; set; }
+
+        [IgnoreColumn]
+        public Address Address { get; set; }
+    }
+
+    [Table(IsNoDefaultFields = true, NeedsHistory = false)]
+    public class Address
+    {
+        [PrimaryKey(true)]
+        public long Id { get; set; }
+        [PrimaryKey]
+        [Column(Size = 100)]
+        public string AddressType { get; set; }
+        public string AddressLine1 { get; set; }
+        public string AddressLine2 { get; set; }
+        public string Town { get; set; }
+        public string Latitude { get; set; }
+        public string Longitude { get; set; }
+    }
+
+    [Table(IsNoDefaultFields = true, NeedsHistory = false)]
+    public class Society
+    {
+        [PrimaryKey(true)]
+        [Column]
+        public int Id { get; set; }
+
+        [Column(Size = 50)]
+        public string Name { get; set; }
+    }
 }

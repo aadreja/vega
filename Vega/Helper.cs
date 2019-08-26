@@ -282,7 +282,7 @@ namespace Vega
         {
             if (pString[pString.Length - 1] == ',')
             {
-                pString.Remove(pString.Length - 1, 1);
+                pString = pString.Remove(pString.Length - 1, 1);
             }
             return pString;
         }

@@ -99,20 +99,21 @@ namespace Vega
             TableAttribute tableInfo = EntityCache.Get(entity);
 
             StringBuilder createSQL = new StringBuilder($"CREATE TABLE {tableInfo.FullName} (");
-
+            string primaryKeyCols = string.Empty;
             for (int i = 0; i < tableInfo.Columns.Count; i++)
             {
                 ColumnAttribute col = tableInfo.Columns.ElementAt(i).Value;
 
-                if (tableInfo.PrimaryKeyColumn.Name == col.Name)
+                if (col.IsPrimaryKey)
                 {
-                    if (tableInfo.PrimaryKeyAttribute.IsIdentity)
+                    primaryKeyCols += col.Name + ",";
+                    if (col.PrimaryKeyInfo.IsIdentity)
                     {
-                        createSQL.Append($"{col.Name} INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT");
+                        createSQL.Append($"{col.Name} INTEGER NOT NULL AUTOINCREMENT");
                     }
                     else
                     {
-                        createSQL.Append($"{col.Name} {DbTypeString[col.ColumnDbType]} NOT NULL PRIMARY KEY");
+                        createSQL.Append($"{col.Name} {DbTypeString[col.ColumnDbType]} NOT NULL");
                     }
                     createSQL.Append(",");
                 }
@@ -122,7 +123,12 @@ namespace Vega
                 }
                 else
                 {
-                    createSQL.Append($"{col.Name} {GetDBTypeWithSize(col.ColumnDbType, col.NumericPrecision, col.NumericScale)}");
+                    createSQL.Append($"{col.Name} {GetDBTypeWithSize(col.ColumnDbType, col.Size, col.NumericScale)}");
+
+                    if (IsNullableType(col.Property.PropertyType))
+                    {
+                        createSQL.Append(" NULL ");
+                    }
 
                     if (col.Name == Config.CREATEDON_COLUMN.Name || col.Name == Config.UPDATEDON_COLUMN.Name)
                     {
@@ -130,6 +136,13 @@ namespace Vega
                     }
                     createSQL.Append(",");
                 }
+            }
+
+            if (!string.IsNullOrEmpty(primaryKeyCols))
+            {
+                primaryKeyCols = primaryKeyCols.RemoveLastComma();
+
+                createSQL.Append($"PRIMARY KEY ({primaryKeyCols})");
             }
             createSQL.RemoveLastComma(); //Remove last comma if exists
 

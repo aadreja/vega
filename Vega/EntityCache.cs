@@ -72,22 +72,31 @@ namespace Vega
             //AuditTrial table attribute is configured based on configuration 
             if (entity == typeof(AuditTrial))
             {
-                result = GetAuditTrialTableAttribute();
-
-                try
-                {
-                    cacheLock.EnterWriteLock();
-                    Entities[entity] = result;
-                }
-                finally
-                {
-                    cacheLock.ExitWriteLock();
-                }
-
-                return result;
+                result = PrepareAuditTrialTableAttribute();
             }
-            
-            result = (TableAttribute)entity.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault();
+            else
+            {
+                result = PrepareTableAttribute(entity);
+            }
+
+            try
+            {
+                cacheLock.EnterWriteLock();
+                Entities[entity] = result;
+            }
+            finally
+            {
+                cacheLock.ExitWriteLock();
+            }
+
+            return result;
+        }
+
+        
+        //to prepare TableAttribute 
+        internal static TableAttribute PrepareTableAttribute(Type entity)
+        {
+            TableAttribute result = (TableAttribute)entity.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault();
             if (result == null)
             {
                 result = new TableAttribute
@@ -108,39 +117,6 @@ namespace Vega
             //find all properties
             var properties = entity.GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-            //find primary key column attribute
-            var primaryKeyProperty = properties.FirstOrDefault(p => p.GetCustomAttributes(typeof(PrimaryKeyAttribute), false).Count() == 1);
-
-            ColumnAttribute primaryKeyColumn = null;
-            if (primaryKeyProperty != null)
-            {
-                result.PrimaryKeyAttribute = (PrimaryKeyAttribute)primaryKeyProperty.GetCustomAttributes(typeof(PrimaryKeyAttribute)).FirstOrDefault();
-
-                //find column attribute on this property
-                primaryKeyColumn = (ColumnAttribute)primaryKeyProperty.GetCustomAttributes(typeof(ColumnAttribute)).FirstOrDefault();
-                if (primaryKeyColumn == null)
-                {
-                    //if no column attribute defined assume Propertyname is key column name
-                    primaryKeyColumn = new ColumnAttribute
-                    {
-                        Name = primaryKeyProperty.Name,
-                        ColumnDbType = TypeCache.TypeToDbType[primaryKeyProperty.PropertyType]
-                    };
-                }
-
-                primaryKeyColumn.SetPropertyInfo(primaryKeyProperty, entity);
-                
-                result.PrimaryKeyColumn = primaryKeyColumn;
-
-                //check for virtual foreign key
-                var virtualForeignKeys = (IEnumerable<ForeignKey>)primaryKeyProperty.GetCustomAttributes(typeof(ForeignKey));
-                if(virtualForeignKeys != null && virtualForeignKeys.Count() > 0)
-                {
-                    if (result.VirtualForeignKeys == null) result.VirtualForeignKeys = new List<ForeignKey>();
-                    result.VirtualForeignKeys.AddRange(virtualForeignKeys);
-                }
-            }
-
             foreach (PropertyInfo property in properties)
             {
                 //TODO: check for valid property types to be added in list
@@ -150,7 +126,9 @@ namespace Vega
 
                 //check for ignore property attribute
                 var ignoreInfo = (IgnoreColumnAttribute)property.GetCustomAttribute(typeof(IgnoreColumnAttribute));
+                var primaryKey = (PrimaryKeyAttribute)property.GetCustomAttribute(typeof(PrimaryKeyAttribute));
                 var column = (ColumnAttribute)property.GetCustomAttribute(typeof(ColumnAttribute));
+
 
                 if (column == null) column = new ColumnAttribute();
 
@@ -190,8 +168,21 @@ namespace Vega
                 }
 
                 column.SetPropertyInfo(property, entity);
-                
+
                 column.IgnoreInfo = ignoreInfo ?? new IgnoreColumnAttribute(false);
+
+                //Primary Key details
+                if (primaryKey != null)
+                {
+                    column.PrimaryKeyInfo = primaryKey;
+
+                    var virtualForeignKeys = (IEnumerable<ForeignKey>)property.GetCustomAttributes(typeof(ForeignKey));
+                    if (virtualForeignKeys != null && virtualForeignKeys.Count() > 0)
+                    {
+                        if (result.VirtualForeignKeys == null) result.VirtualForeignKeys = new List<ForeignKey>();
+                        result.VirtualForeignKeys.AddRange(virtualForeignKeys);
+                    }
+                }
 
                 if (result.NoCreatedBy && (column.Name.Equals(Config.VegaConfig.CreatedByColumnName, StringComparison.OrdinalIgnoreCase)
                     || column.Name.Equals(Config.VegaConfig.CreatedByNameColumnName, StringComparison.OrdinalIgnoreCase)))
@@ -222,20 +213,16 @@ namespace Vega
                 }
             }
 
-            try
+            if(result.Columns.LongCount(p=>p.Value.IsPrimaryKey && p.Value.PrimaryKeyInfo.IsIdentity) > 1)
             {
-                cacheLock.EnterWriteLock();
-                Entities[entity] = result;
-            }
-            finally
-            {
-                cacheLock.ExitWriteLock();
+                throw new NotSupportedException("Primary key with multiple Identity is not supported on " + result.Name);
             }
 
             return result;
         }
 
-        internal static TableAttribute GetAuditTrialTableAttribute()
+        //to prepare AuditTableAttribute 
+        internal static TableAttribute PrepareAuditTrialTableAttribute()
         {
             //TODO: Remove Unnecessary code
 
@@ -252,14 +239,6 @@ namespace Vega
             };
 
             var type = typeof(AuditTrial);
-            var pkProperty = typeof(AuditTrial).GetProperty("AuditTrailId");
-            result.PrimaryKeyAttribute = (PrimaryKeyAttribute)pkProperty.GetCustomAttributes(typeof(PrimaryKeyAttribute)).FirstOrDefault();
-            result.PrimaryKeyColumn = new ColumnAttribute()
-            {
-                Name = Config.VegaConfig.AuditKeyColumnName,
-                ColumnDbType = DbType.Int64,
-            };
-            result.PrimaryKeyColumn.SetPropertyInfo(pkProperty, typeof(AuditTrial));
 
             foreach (PropertyInfo property in type.GetProperties())
             {
@@ -303,6 +282,14 @@ namespace Vega
                 column.SetPropertyInfo(property, typeof(AuditTrial));
                 result.DefaultInsertColumns.Add(column.Name);
                 result.DefaultReadColumns.Add(column.Name);
+
+                if(property.Name == "AuditTrailId")
+                {
+                    column.PrimaryKeyInfo = (PrimaryKeyAttribute)property.
+                        GetCustomAttributes(typeof(PrimaryKeyAttribute)).
+                        FirstOrDefault();
+                }
+
                 result.Columns[column.Name] = column;
             }
             return result;
@@ -321,8 +308,7 @@ namespace Vega
         /// <returns>Cloned object</returns>
         internal static T CloneObjectWithIL<T>(T entity)
         {
-            Delegate cloneIL;
-            if (!CachedCloneIL.TryGetValue(typeof(T), out cloneIL))
+            if (!CachedCloneIL.TryGetValue(typeof(T), out Delegate cloneIL))
             {
                 // Create ILGenerator
                 DynamicMethod dymMethod = new DynamicMethod("DoClone", typeof(T), new Type[] { typeof(T) }, true);

@@ -38,11 +38,11 @@ namespace Vega
         {
             get
             {
-                return EntityCache.Get(GetType()).PrimaryKeyColumn.GetAction(this);
+                return EntityCache.Get(GetType()).PkColumn.GetAction(this);
             }
             set
             {
-                EntityCache.Get(GetType()).PrimaryKeyColumn.SetAction(this, value);
+                EntityCache.Get(GetType()).PkColumn.SetAction(this, value);
             }
         }
 

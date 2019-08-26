@@ -277,5 +277,86 @@ namespace Vega.Tests
             Assert.Equal(overrideDate, countryRepo.ReadOne<DateTime>(id, "CreatedOn"));
             Assert.Equal(overrideDate, countryRepo.ReadOne<DateTime>(id, "UpdatedOn"));
         }
+
+        [Theory]
+        [InlineData("India", "IN")]
+        [InlineData("China", "CN")]
+        public void MultipleInserts(string countryName, string shortCode)
+        {
+            Country country = new Country
+            {
+                Name = countryName,
+                ShortCode = shortCode,
+                Independence = new DateTime(1947, 8, 15),//15th August, 1947
+                CreatedBy = Fixture.CurrentUserId,
+            };
+
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
+            var id = countryRepo.Add(country);
+
+            Assert.Equal(countryName, countryRepo.ReadOne<string>(id, "Name"));
+        }
+
+
+        [Fact]
+        public void InsertWhenColumnAttributeIsWithoutPassingName()
+        {
+            Society soc = new Society()
+            {
+                Name = "Bajipura"
+            };
+
+            Repository<Society> socRepo = new Repository<Society>(Fixture.Connection);
+            int id = (int)socRepo.Add(soc);
+
+            Assert.Equal("Bajipura", socRepo.ReadOne<string>(id, "Name"));
+        }
+
+        [Fact]
+        public void InsertWhenPrimaryKeyIsString()
+        {
+            Organization org = new Organization()
+            {
+                CustomerCode = "005",
+                Name = "Bajipura",
+                AccountNum=123,
+                Address = new Address()
+                {
+                    AddressLine1="line 1"
+                }
+            };
+
+            Repository<Organization> orgRepo = new Repository<Organization>(Fixture.Connection);
+            string id = (string)orgRepo.Add(org);
+
+            Assert.Equal("Bajipura", orgRepo.ReadOne<string>(id, "Name"));
+        }
+
+        [Fact]
+        public void InsertWhenCompositePrimaryKey()
+        {
+            Address address = new Address()
+            {
+                AddressType = "Home",
+                AddressLine1 = "line 1",
+                AddressLine2 = "line 2",
+            };
+
+            Repository<Address> addRepo = new Repository<Address>(Fixture.Connection);
+            long id = (long)addRepo.Add(address);
+
+            Exception ex = Assert.Throws<InvalidOperationException>(() => addRepo.ReadOne<string>(id, "AddressLine1"));
+
+            address = new Address()
+            {
+                Id = id,
+                AddressType = "Home"
+            };
+
+            Assert.Equal("line 1", addRepo.ReadOne<string>(address, "AddressLine1"));
+        }
+
     }
+
+    
 }

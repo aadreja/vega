@@ -194,10 +194,10 @@ namespace Vega
                 DB.CreateAddCommand(command, entity, audit, columns, false, overrideCreatedUpdatedOn);
                 var keyId = ExecuteScalar(command);
                 //get identity
-                if (TableInfo.PrimaryKeyAttribute.IsIdentity && TableInfo.IsKeyIdEmpty(entity))
+                if (TableInfo.IsKeyIdentity() && TableInfo.IsIdentityKeyIdEmpty(entity))
                 {
                     //ExecuteScalar with Identity will always return long, hence converting it to type of Primary Key
-                    TableInfo.SetKeyId(entity, Convert.ChangeType(keyId, TableInfo.PrimaryKeyColumn.Property.PropertyType));
+                    TableInfo.SetKeyId(entity, TableInfo.PkIdentityColumn, Convert.ChangeType(keyId, TableInfo.PkIdentityColumn.Property.PropertyType));
                 }
                 if (TableInfo.NeedsHistory)
                 {
@@ -206,7 +206,19 @@ namespace Vega
                     auditTrialRepo.Add(entity, RecordOperationEnum.Insert, TableInfo, audit);
                     if (isTransactHere) Commit();
                 }
-                return TableInfo.GetKeyId(entity);
+
+                if (TableInfo.PkColumnList.Count > 1)
+                {
+                    //when composite key try to return identity column
+                    if (TableInfo.IsKeyIdentity())
+                        return TableInfo.GetKeyId(entity, TableInfo.PkIdentityColumn);
+                    else //return first key value
+                        return TableInfo.GetKeyId(entity, TableInfo.PkColumnList[0]);
+                }
+                else
+                {
+                    return TableInfo.GetKeyId(entity);
+                }
             }
             catch
             {
@@ -398,8 +410,29 @@ namespace Vega
                         command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, updatedBy);
                     }
                 }
-                commandText.Append($" WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}");
-                command.AddInParameter(TableInfo.PrimaryKeyColumn.Name, TableInfo.PrimaryKeyColumn.ColumnDbType, id);
+
+                commandText.Append($" WHERE ");
+
+                if (TableInfo.PkColumnList.Count > 1)
+                {
+                    if (!(id is T))
+                    {
+                        throw new InvalidOperationException("Entity has multiple primary keys. Pass entity setting Primary Key attributes.");
+                    }
+
+                    int index = 0;
+                    foreach (ColumnAttribute pkCol in TableInfo.PkColumnList)
+                    {
+                        commandText.Append($" {(index > 0 ? " AND " : "")} {pkCol.Name}=@{pkCol.Name}");
+                        command.AddInParameter("@" + pkCol.Name, pkCol.ColumnDbType, TableInfo.GetKeyId(id, pkCol));
+                        index++;
+                    }
+                }
+                else
+                {
+                    commandText.Append($" {TableInfo.PkColumn.Name}=@{TableInfo.PkColumn.Name}");
+                    command.AddInParameter(TableInfo.PkColumn.Name, TableInfo.PkColumn.ColumnDbType, id);
+                }
 
                 if (versionNo > 0)
                 {
@@ -494,8 +527,28 @@ namespace Vega
                     command.AddInParameter(Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, updatedBy);
                 }
 
-                commandText.Append($" WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}");
-                command.AddInParameter(TableInfo.PrimaryKeyColumn.Name, TableInfo.PrimaryKeyColumn.ColumnDbType, id);
+                commandText.Append($" WHERE ");
+
+                if (TableInfo.PkColumnList.Count > 1)
+                {
+                    if (!(id is T))
+                    {
+                        throw new InvalidOperationException("Entity has multiple primary keys. Pass entity setting Primary Key attributes.");
+                    }
+
+                    int index = 0;
+                    foreach (ColumnAttribute pkCol in TableInfo.PkColumnList)
+                    {
+                        commandText.Append($" {(index > 0 ? " AND " : "")} {pkCol.Name}=@{pkCol.Name}");
+                        command.AddInParameter("@" + pkCol.Name, pkCol.ColumnDbType, TableInfo.GetKeyId(id, pkCol));
+                        index++;
+                    }
+                }
+                else
+                {
+                    commandText.Append($" {TableInfo.PkColumn.Name}=@{TableInfo.PkColumn.Name}");
+                    command.AddInParameter(TableInfo.PkColumn.Name, TableInfo.PkColumn.ColumnDbType, id);
+                }
 
                 if (versionNo > 0)
                 {
@@ -547,9 +600,7 @@ namespace Vega
         public bool Exists(object id)
         {
             IDbCommand command = Connection.CreateCommand();
-            command.CommandType = CommandType.Text;
-            command.CommandText = $"SELECT 1 FROM {TableInfo.FullName} WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}";
-            command.AddInParameter(TableInfo.PrimaryKeyColumn.Name, TableInfo.PrimaryKeyColumn.ColumnDbType, id);
+            DB.CreateSelectCommandForReadOne<T>(command, id, "1");
             return ExecuteScalar(command) != null;
         }
 
@@ -584,18 +635,16 @@ namespace Vega
         public T ReadOne(object id, string columns = null)
         {
             //Get columns from Entity attributes loaded in TableInfo
-            if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
+            if (string.IsNullOrEmpty(columns)) columns = string.Join(",", TableInfo.DefaultReadColumns);
 
-            IDbCommand cmd = Connection.CreateCommand();
-            cmd.CommandType = CommandType.Text;
-            cmd.CommandText = $"SELECT {columns} FROM {TableInfo.FullName} WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}";
-            cmd.AddInParameter(TableInfo.PrimaryKeyColumn.Name, TableInfo.PrimaryKeyColumn.ColumnDbType, id);
+            IDbCommand command = Connection.CreateCommand();
+            DB.CreateSelectCommandForReadOne<T>(command, id, columns);
 
             bool isConOpen = IsConnectionOpen();
 
             if (!isConOpen) Connection.Open();
 
-            using (IDataReader rdr = ExecuteReader(cmd))
+            using (IDataReader rdr = ExecuteReader(command))
             {
                 var func = ReaderCache<T>.GetFromCache(rdr);
 
@@ -662,10 +711,9 @@ namespace Vega
         /// <returns>Value if record found otherwise null or default</returns>
         public R ReadOne<R>(object id, string column)
         {
-            IDbCommand cmd = Connection.CreateCommand();
-            cmd.CommandText = $"SELECT {column} FROM {TableInfo.FullName} WHERE {TableInfo.PrimaryKeyColumn.Name}=@{TableInfo.PrimaryKeyColumn.Name}";
-            cmd.AddInParameter(TableInfo.PrimaryKeyColumn.Name, TableInfo.PrimaryKeyColumn.ColumnDbType, id);
-            return Query<R>(cmd);
+            IDbCommand command = Connection.CreateCommand();
+            DB.CreateSelectCommandForReadOne<T>(command, id, column);
+            return Query<R>(command);
         }
 
         /// <summary>
@@ -775,7 +823,7 @@ namespace Vega
 
             if (!isQuery)
             {
-                query.Append($"SELECT COUNT({(TableInfo.PrimaryKeyColumn != null ? TableInfo.PrimaryKeyColumn.Name : "0")}) FROM {TableInfo.FullName}");
+                query.Append($"SELECT COUNT(0) FROM {TableInfo.FullName}");
                 if (!string.IsNullOrEmpty(queryorCriteria)) query.Append(" WHERE " + queryorCriteria);
                 if (!TableInfo.NoIsActive) DB.AppendStatusCriteria(query, status);
             }
@@ -928,7 +976,7 @@ namespace Vega
             ValidateParameters(criteria, parameters);
 
             //Get columns from Entity attributes loaded in TableInfo
-            if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
+            if (string.IsNullOrEmpty(columns)) columns = string.Join(",", TableInfo.DefaultReadColumns);
 
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandType = CommandType.Text;

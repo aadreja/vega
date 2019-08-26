@@ -100,15 +100,20 @@ namespace Vega
 
             StringBuilder createSQL = new StringBuilder($"CREATE TABLE {tableInfo.FullName} (");
 
+            string primaryKeyCols = string.Empty;
+
             for (int i = 0; i < tableInfo.Columns.Count; i++)
             {
                 ColumnAttribute col = tableInfo.Columns.ElementAt(i).Value;
 
-                if (tableInfo.PrimaryKeyColumn.Name == col.Name)
+                if (col.IsPrimaryKey)
                 {
-                    createSQL.Append($"{col.Name} {DbTypeString[col.ColumnDbType]} NOT NULL PRIMARY KEY ");
+                    primaryKeyCols += col.Name + ",";
 
-                    if (tableInfo.PrimaryKeyAttribute.IsIdentity)
+                    //13-May-15 Ritesh - fixed bug when primary key type is varchar size was ignored
+                    createSQL.Append($"{col.Name} {GetDBTypeWithSize(col.ColumnDbType, col.Size)} NOT NULL ");
+
+                    if (col.PrimaryKeyInfo.IsIdentity)
                     {
                         createSQL.Append(" IDENTITY ");
                     }
@@ -120,7 +125,12 @@ namespace Vega
                 }
                 else
                 {
-                    createSQL.Append($"{col.Name} {GetDBTypeWithSize(col.ColumnDbType, col.NumericPrecision, col.NumericScale)}");
+                    createSQL.Append($"{col.Name} {GetDBTypeWithSize(col.ColumnDbType, col.Size, col.NumericScale)}");
+
+                    if (IsNullableType(col.Property.PropertyType))
+                    {
+                        createSQL.Append(" NULL ");
+                    }
 
                     if (col.Name == Config.CREATEDON_COLUMN.Name || col.Name == Config.UPDATEDON_COLUMN.Name)
                     {
@@ -129,6 +139,14 @@ namespace Vega
                     createSQL.Append(",");
                 }
             }
+            
+            if (!string.IsNullOrEmpty(primaryKeyCols))
+            {
+                primaryKeyCols = primaryKeyCols.RemoveLastComma();
+
+                createSQL.Append($"PRIMARY KEY CLUSTERED({primaryKeyCols})");
+            }
+
             createSQL.RemoveLastComma(); //Remove last comma if exists
 
             createSQL.Append(");");

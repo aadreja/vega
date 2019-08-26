@@ -133,17 +133,21 @@ namespace Vega
             else columns.AddRange(tableInfo.DefaultInsertColumns);//Get columns from Entity attributes loaded in TableInfo
 
             bool isPrimaryKeyEmpty = false;
-            if (tableInfo.PrimaryKeyAttribute.IsIdentity && tableInfo.IsKeyIdEmpty(entity))
+
+            foreach(ColumnAttribute pkCol in tableInfo.Columns.Where(p=>p.Value.IsPrimaryKey).Select(p=>p.Value))
             {
-                isPrimaryKeyEmpty = true;
-                //if identity remove keyfield if added in field list
-                columns.Remove(tableInfo.PrimaryKeyColumn.Name);
-            }
-            else if (tableInfo.PrimaryKeyColumn.Property.PropertyType == typeof(Guid) && tableInfo.IsKeyIdEmpty(entity))
-            {
-                isPrimaryKeyEmpty = true;
-                //if not identity and key not generated, generate before save
-                tableInfo.SetKeyId(entity, Guid.NewGuid());
+                if (pkCol.PrimaryKeyInfo.IsIdentity && tableInfo.IsKeyIdEmpty(entity, pkCol))
+                {
+                    isPrimaryKeyEmpty = true;
+                    //if identity remove keyfield if added in field list
+                    columns.Remove(pkCol.Name);
+                }
+                else if (pkCol.Property.PropertyType == typeof(Guid) && tableInfo.IsKeyIdEmpty(entity, pkCol))
+                {
+                    isPrimaryKeyEmpty = true;
+                    //if not identity and key not generated, generate before save
+                    tableInfo.SetKeyId(entity, pkCol, Guid.NewGuid());
+                }
             }
 
             #region append common columns
@@ -209,7 +213,6 @@ namespace Vega
             List<string> parameters = columns.Select(c => "@" + c).ToList();
 
             int pIndex = parameters.FindIndex(c => c == "@" + Config.CREATEDON_COLUMN.Name);
-            //ritesh
             if (pIndex >= 0)
             {
                 var createdOn = Helper.GetDateTimeOrDatabaseDateTimeSQL(tableInfo.GetCreatedOn(entity), this, overrideCreatedUpdatedOn);
@@ -242,7 +245,7 @@ namespace Vega
             StringBuilder commandText = new StringBuilder();
             commandText.Append($"INSERT INTO {tableInfo.FullName} ({string.Join(",", columns)}) VALUES({string.Join(",", parameters)});");
 
-            if (tableInfo.PrimaryKeyAttribute.IsIdentity && isPrimaryKeyEmpty)
+            if (tableInfo.IsKeyIdentity() && isPrimaryKeyEmpty)
             {
                 //add query to get inserted id
                 commandText.Append(LASTINSERTEDROWIDSQL);
@@ -305,7 +308,9 @@ namespace Vega
             }
 
             //remove primarykey, createdon and createdby columns if exists
-            columns.RemoveAll(c => c == tableInfo.PrimaryKeyColumn.Name || c == Config.CREATEDON_COLUMN.Name || c == Config.CREATEDBY_COLUMN.Name);
+            columns.RemoveAll(c => tableInfo.PkColumnList.Select(p=>p.Name).Contains(c));
+            columns.RemoveAll(c => c == Config.CREATEDON_COLUMN.Name || 
+                                    c == Config.CREATEDBY_COLUMN.Name);
 
             for (int i = 0; i < columns.Count(); i++)
             {
@@ -386,8 +391,22 @@ namespace Vega
             }
             commandText.RemoveLastComma(); //Remove last comma if exists
 
-            commandText.Append($" WHERE {tableInfo.PrimaryKeyColumn.Name}=@{tableInfo.PrimaryKeyColumn.Name}");
-            command.AddInParameter("@" + tableInfo.PrimaryKeyColumn.Name, tableInfo.PrimaryKeyColumn.ColumnDbType, tableInfo.GetKeyId(entity));
+            commandText.Append(" WHERE ");
+            if (tableInfo.PkColumnList.Count > 1)
+            {
+                int index = 0;
+                foreach (ColumnAttribute pkCol in tableInfo.PkColumnList)
+                {
+                    commandText.Append($" {(index > 0 ? " AND " : "")} {pkCol.Name}=@{pkCol.Name}");
+                    command.AddInParameter("@" + pkCol.Name, pkCol.ColumnDbType, tableInfo.GetKeyId(entity, pkCol));
+                    index++;
+                }
+            }
+            else
+            {
+                commandText.Append($" {tableInfo.PkColumn.Name}=@{tableInfo.PkColumn.Name}");
+                command.AddInParameter("@" + tableInfo.PkColumn.Name, tableInfo.PkColumn.ColumnDbType, tableInfo.GetKeyId(entity));
+            }
 
             if (Config.VegaConfig.DbConcurrencyCheck && !tableInfo.NoVersionNo)
             {
@@ -399,6 +418,36 @@ namespace Vega
             command.CommandText = commandText.ToString();
 
             return isUpdateNeeded;
+        }
+
+        internal virtual void CreateSelectCommandForReadOne<T>(IDbCommand command, object id, string columns)
+        {
+            TableAttribute tableInfo = EntityCache.Get(typeof(T));
+            command.CommandType = CommandType.Text;
+
+            if (tableInfo.PkColumnList.Count > 1)
+            {
+                if (!(id is T))
+                {
+                    throw new InvalidOperationException("Entity has multiple primary keys. Pass entity setting Primary Key attributes.");
+                }
+
+                StringBuilder commandText = new StringBuilder($"SELECT {columns} FROM {tableInfo.FullName} WHERE ");
+
+                int index = 0;
+                foreach (ColumnAttribute pkCol in tableInfo.PkColumnList)
+                {
+                    commandText.Append($" {(index > 0 ? " AND " : "")} {pkCol.Name}=@{pkCol.Name}");
+                    command.AddInParameter("@" + pkCol.Name, pkCol.ColumnDbType, tableInfo.GetKeyId(id, pkCol));
+                    index++;
+                }
+                command.CommandText = commandText.ToString();
+            }
+            else
+            {
+                command.CommandText = $"SELECT {columns} FROM {tableInfo.FullName} WHERE {tableInfo.PkColumn.Name}=@{tableInfo.PkColumn.Name}";
+                command.AddInParameter(tableInfo.PkColumn.Name, tableInfo.PkColumn.ColumnDbType, id);
+            }
         }
 
         internal virtual StringBuilder CreateSelectCommand(IDbCommand command, string query, object parameters = null)
@@ -500,16 +549,16 @@ namespace Vega
                 {
                     //when multiple orderbycolumn - apply '>=' or '<=' till second last column
                     if (orderByDirection[i] == "ASC")
-                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} AND {tableInfo.PrimaryKeyColumn.Name} > @p_{tableInfo.PrimaryKeyColumn.Name}) OR {orderByColumns[i]} >{applyEquals} @p_{orderByColumns[i]})");
+                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} {GetPrimaryColumnCriteriaForPagedQuery(tableInfo,">")}) OR {orderByColumns[i]} >{applyEquals} @p_{orderByColumns[i]})");
                     else
-                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} AND {tableInfo.PrimaryKeyColumn.Name} < @p_{tableInfo.PrimaryKeyColumn.Name}) OR ({orderByColumns[i]} IS NULL OR {orderByColumns[i]} <{applyEquals} @p_{orderByColumns[i]}))");
+                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} {GetPrimaryColumnCriteriaForPagedQuery(tableInfo, "<")}) OR ({orderByColumns[i]} IS NULL OR {orderByColumns[i]} <{applyEquals} @p_{orderByColumns[i]}))");
                 }
                 else if (navigation == PageNavigationEnum.Previous)
                 {
                     if (orderByDirection[i] == "ASC")
-                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} AND {tableInfo.PrimaryKeyColumn.Name} < @p_{tableInfo.PrimaryKeyColumn.Name}) OR ({orderByColumns[i]} IS NULL OR {orderByColumns[i]} <{applyEquals} @p_{orderByColumns[i]}))");
+                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} {GetPrimaryColumnCriteriaForPagedQuery(tableInfo, "<")}) OR ({orderByColumns[i]} IS NULL OR {orderByColumns[i]} <{applyEquals} @p_{orderByColumns[i]}))");
                     else
-                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} AND {tableInfo.PrimaryKeyColumn.Name} > @p_{tableInfo.PrimaryKeyColumn.Name}) OR {orderByColumns[i]} >{applyEquals} @p_{orderByColumns[i]})");
+                        pagedCriteria.Append($" AND (({orderByColumns[i]} = @p_{orderByColumns[i]} {GetPrimaryColumnCriteriaForPagedQuery(tableInfo, ">")}) OR {orderByColumns[i]} >{applyEquals} @p_{orderByColumns[i]})");
                 }
 
                 if (navigation == PageNavigationEnum.Next || navigation == PageNavigationEnum.Previous)
@@ -543,18 +592,56 @@ namespace Vega
             if (navigation == PageNavigationEnum.Next || navigation == PageNavigationEnum.Previous)
             {
                 //add LastKeyId Parameter
-                command.AddInParameter("@p_" + tableInfo.PrimaryKeyColumn.Name, tableInfo.PrimaryKeyColumn.ColumnDbType, lastKeyId);
+
+                if (tableInfo.PkColumnList.Count > 1)
+                {
+                    if (!(lastKeyId is T))
+                    {
+                        throw new InvalidOperationException("Entity has multiple primary keys. Pass entity setting Primary Key attributes.");
+                    }
+
+                    int index = 0;
+                    foreach (ColumnAttribute pkCol in tableInfo.PkColumnList)
+                    {
+                        command.AddInParameter("@p_" + pkCol.Name, pkCol.ColumnDbType, tableInfo.GetKeyId(lastKeyId, pkCol));
+                        index++;
+                    }
+                }
+                else
+                {
+                    command.AddInParameter("@p_" + tableInfo.PkColumn.Name, tableInfo.PkColumn.ColumnDbType, lastKeyId);
+                }
             }
 
             //add keyfield in orderby clause. Direction will be taken from 1st orderby column
             if (navigation == PageNavigationEnum.Last || navigation == PageNavigationEnum.Previous)
             {
                 //reverse sort as we are going backward
-                pagedOrderBy.Append($",{tableInfo.PrimaryKeyColumn.Name} {(orderByDirection[0] == "ASC" ? "DESC" : "ASC")}");
+                if (tableInfo.PkColumnList.Count > 1)
+                {
+                    foreach (ColumnAttribute pkCol in tableInfo.PkColumnList)
+                    {
+                        pagedOrderBy.Append($",{pkCol.Name} {(orderByDirection[0] == "ASC" ? "DESC" : "ASC")}");
+                    }
+                }
+                else
+                {
+                    pagedOrderBy.Append($",{tableInfo.PkColumn.Name} {(orderByDirection[0] == "ASC" ? "DESC" : "ASC")}");
+                }
             }
             else
             {
-                pagedOrderBy.Append($",{tableInfo.PrimaryKeyColumn.Name} {orderByDirection[0]}");
+                if (tableInfo.PkColumnList.Count > 1)
+                {
+                    foreach (ColumnAttribute pkCol in tableInfo.PkColumnList)
+                    {
+                        pagedOrderBy.Append($",{pkCol.Name} {orderByDirection[0]}");
+                    }
+                }
+                else
+                {
+                    pagedOrderBy.Append($",{tableInfo.PkColumn.Name} {orderByDirection[0]}");
+                }
             }
 
             command.CommandType = CommandType.Text;
@@ -571,6 +658,17 @@ namespace Vega
         #endregion
 
         #region other methods
+
+        internal string GetPrimaryColumnCriteriaForPagedQuery(TableAttribute tableInfo, string op)
+        {
+            StringBuilder result = new StringBuilder();
+            foreach(ColumnAttribute pkCol in tableInfo.PkColumnList)
+            {
+                result.Append($" AND {pkCol.Name} {op} @p_{pkCol.Name} ");
+            }
+            return result.ToString();
+        }
+
         internal void AppendStatusCriteria(StringBuilder commandText, RecordStatusEnum status = RecordStatusEnum.All)
         {
             if (status == RecordStatusEnum.All) return; //nothing to do
@@ -613,6 +711,22 @@ namespace Vega
             }
             else
                 return DbTypeString[type];
+        }
+
+        internal bool IsNullableType(Type type)
+        {
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+            if (type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         #endregion

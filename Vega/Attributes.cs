@@ -154,28 +154,63 @@ namespace Vega
 
         internal List<string> DefaultReadColumns { get; set; }
 
-        internal PrimaryKeyAttribute PrimaryKeyAttribute { get; set; }
-
-        ColumnAttribute primaryKey; //do not use this
-        internal ColumnAttribute PrimaryKeyColumn
+        internal ColumnAttribute PkColumn
         {
             get
             {
-                if (primaryKey == null)
-                    throw new InvalidOperationException("Primary Key attribute not defined");
-
-                return primaryKey;
+                long pkCount = Columns.LongCount(p => p.Value.IsPrimaryKey);
+                if (pkCount == 0)
+                {
+                    throw new InvalidOperationException("This method cannot be used as no primary defined on this entity");
+                }
+                else if (pkCount > 1)
+                {
+                    throw new InvalidOperationException("This method cannot be used as more then one primary exists on this entity");
+                }
+                else
+                {
+                    return Columns.FirstOrDefault(p => p.Value.IsPrimaryKey).Value;
+                }
             }
-            set
+        }
+
+        internal ColumnAttribute PkIdentityColumn
+        {
+            get
             {
-                primaryKey = value;
+                long pkCount = Columns.LongCount(p => p.Value.IsPrimaryKey && p.Value.PrimaryKeyInfo.IsIdentity);
+                if (pkCount == 0)
+                {
+                    throw new InvalidOperationException("This method cannot be used as no primary identity is defined on this entity");
+                }
+                else if (pkCount > 1)
+                {
+                    throw new InvalidOperationException("This method cannot be used as multiple primary identity is defined on this entity");
+                }
+                else
+                {
+                    return Columns.Where(p => p.Value.IsPrimaryKey && p.Value.PrimaryKeyInfo.IsIdentity).
+                        Select(p => p.Value).
+                        FirstOrDefault();
+                }
+            }
+        }
+
+        internal List<ColumnAttribute> PkColumnList
+        {
+            get
+            {
+                if (Columns.LongCount(p => p.Value.IsPrimaryKey) == 0)
+                    return new List<ColumnAttribute>();
+                else
+                    return Columns.Where(p => p.Value.IsPrimaryKey).Select(p => p.Value).ToList();
             }
         }
 
         #endregion
 
         #region helper to replace entity base
-        //IsCreatedByEmpty
+
 
         bool IsKeyFieldEmpty(object id, string fieldName)
         {
@@ -195,9 +230,40 @@ namespace Vega
                 throw new Exception(id.GetType().Name + " data type not supported for " + fieldName);
         }
 
+        internal bool IsKeyIdEmpty(object entity, ColumnAttribute pkColumn)
+        {
+            return IsKeyFieldEmpty(pkColumn.GetAction(entity), pkColumn.Title);
+        }
+
         internal bool IsKeyIdEmpty(object entity)
         {
-            return IsKeyFieldEmpty(PrimaryKeyColumn.GetAction(entity), PrimaryKeyColumn.Title);
+            if (Columns.Where(p=>p.Value.IsPrimaryKey).Count()==0)
+                return true;
+
+            bool result = false;
+            foreach (ColumnAttribute c in Columns.Where(p => p.Value.IsPrimaryKey).Select(a=>a.Value))
+            {
+                result = IsKeyFieldEmpty(c.GetAction(entity), c.Title);
+
+                if (result)
+                    break;
+            }
+            return result;
+        }
+
+        internal bool IsIdentityKeyIdEmpty(object entity)
+        {
+            if (Columns.Where(p => p.Value.IsPrimaryKey && p.Value.PrimaryKeyInfo.IsIdentity).Count() == 0)
+                return true;
+
+            ColumnAttribute pkIdentityCol = Columns.Where(p => p.Value.IsPrimaryKey && p.Value.PrimaryKeyInfo.IsIdentity).Select(p=>p.Value).FirstOrDefault();
+            return IsKeyFieldEmpty(pkIdentityCol.GetAction(entity), pkIdentityCol.Title);
+        }
+
+        internal bool IsKeyIdentity()
+        {
+            //TODO: Test Pending
+            return Columns.Where(p => p.Value.IsPrimaryKey).LongCount(p => p.Value.PrimaryKeyInfo.IsIdentity) > 0;
         }
 
         internal bool IsCreatedByEmpty(object entity)
@@ -212,12 +278,22 @@ namespace Vega
 
         internal object GetKeyId(object entity)
         {
-            return PrimaryKeyColumn.GetAction(entity);
+            return PkColumn.GetAction(entity);
+        }
+
+        internal object GetKeyId(object entity, ColumnAttribute pkColumn)
+        {
+            return pkColumn.GetAction(entity);
         }
 
         internal void SetKeyId(object entity, object id)
         {
-            PrimaryKeyColumn.SetAction(entity, id);
+            PkColumn.SetAction(entity, id);
+        }
+
+        internal void SetKeyId(object entity, ColumnAttribute pkColumn, object id)
+        {
+            pkColumn.SetAction(entity, id);
         }
 
         internal object GetCreatedBy(object entity)
@@ -420,9 +496,9 @@ namespace Vega
         DbType columnDbType;
 
         /// <summary>
-        /// Numeric Precision i.e. Numeric(10)
+        /// Size of column for varchar, nvarchar and text, Numeric
         /// </summary>
-        public int NumericPrecision { get; set; }
+        public int Size { get; set; }
 
         /// <summary>
         /// Numeric Scale i.e. Numeric(10,2)
@@ -437,7 +513,11 @@ namespace Vega
         internal MethodInfo SetMethod { get; set; }
         internal MethodInfo GetMethod { get; set; }
         internal IgnoreColumnAttribute IgnoreInfo { get; set; }
-
+        internal PrimaryKeyAttribute PrimaryKeyInfo { get; set; }
+        internal bool IsPrimaryKey
+        {
+            get { return PrimaryKeyInfo != null; }
+        }
         internal Action<object, object> SetAction { get; set; }
         internal Func<object, object> GetAction { get; set; }
 
@@ -456,7 +536,7 @@ namespace Vega
 
         internal string GetDBTypeWithPrecisionAndScale(IDbConnection con)
         {
-            return DBCache.Get(con).DbTypeString[columnDbType] + "(" + NumericPrecision + "," + NumericScale + ")";
+            return DBCache.Get(con).DbTypeString[columnDbType] + "(" + Size + "," + NumericScale + ")";
         }
 
         #endregion

@@ -22,10 +22,10 @@ namespace Vega
 
         public RecordOperationEnum OperationType { get; set; }
 
-        [Column(ColumnDbType = DbType.String, NumericPrecision = 255)]
+        [Column(ColumnDbType = DbType.String, Size = 255)]
         public string TableName { get; set; }
 
-        [Column(ColumnDbType = DbType.String, NumericPrecision = 50)]
+        [Column(ColumnDbType = DbType.String, Size = 50)]
         public string RecordId { get; set; }
 
         public string Details { get; set; }

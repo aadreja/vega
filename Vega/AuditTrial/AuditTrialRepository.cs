@@ -105,7 +105,7 @@ namespace Vega
                         tableInfo.SetCreatedOn(current, audit.CreatedOn);
 
                     //Remove EntityBase 12-Apr-19
-                    tableInfo.PrimaryKeyColumn.SetAction(current, audit.RecordId.ConvertTo(tableInfo.PrimaryKeyColumn.Property.PropertyType));
+                    tableInfo.PkColumn.SetAction(current, audit.RecordId.ConvertTo(tableInfo.PkColumn.Property.PropertyType));
                 }
                 else
                 {

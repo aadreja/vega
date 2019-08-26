@@ -26,7 +26,7 @@ namespace Vega.Tests
 #elif SQLITE
             Connection = new System.Data.SQLite.SQLiteConnection("Data Source=.\\test.db;Version=3;");
 #else
-            if(IsAppVeyor)
+            if (IsAppVeyor)
                 Connection = new SqlConnection("Server=(local)\\SQL2016;Database=master;User ID=sa;Password=Password12!");
             else
                 Connection = new SqlConnection("Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
@@ -56,6 +56,9 @@ namespace Vega.Tests
 
             Repository<Job> jobRepo = new Repository<Job>(Connection);
             jobRepo.CreateTable();
+
+            Repository<Society> socRepo = new Repository<Society>(Connection);
+            socRepo.CreateTable();
         }
 
         public IDbConnection Connection { get; set; }
@@ -81,6 +84,9 @@ namespace Vega.Tests
             Repository<Job> jobRepo = new Repository<Job>(Connection);
             jobRepo.DropTable();
 
+            Repository<Society> socRepo = new Repository<Society>(Connection);
+            socRepo.DropTable();
+
             Connection?.Dispose();
         }
 
@@ -102,14 +108,6 @@ namespace Vega.Tests
                 return 1;
             }
         }
-
-        //public Guid CurrentUserId
-        //{
-        //    get
-        //    {
-        //        return new Guid("C1DA3BA6-8763-4993-A081-38037B76F7EA");
-        //    }
-        //}
     }
 
     public class TestPriorityAttribute : Attribute
