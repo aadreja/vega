@@ -319,11 +319,7 @@ namespace Vega.Tests
             {
                 CustomerCode = "005",
                 Name = "Bajipura",
-                AccountNum=123,
-                Address = new Address()
-                {
-                    AddressLine1="line 1"
-                }
+                AccountNum=123
             };
 
             Repository<Organization> orgRepo = new Repository<Organization>(Fixture.Connection);
@@ -347,6 +343,7 @@ namespace Vega.Tests
 
             Exception ex = Assert.Throws<InvalidOperationException>(() => addRepo.ReadOne<string>(id, "AddressLine1"));
 
+            //for search
             address = new Address()
             {
                 Id = id,

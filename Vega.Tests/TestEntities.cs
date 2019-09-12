@@ -89,6 +89,7 @@ namespace Vega.Tests
     {
         [PrimaryKey(false)]
         [Column(Size = 50)]
+        [ForeignKey("address", "customercode", false)]
         public string CustomerCode { get; set; }
 
         public string Name { get; set; }
@@ -101,7 +102,7 @@ namespace Vega.Tests
         public Address Address { get; set; }
     }
 
-    [Table(IsNoDefaultFields = true, NeedsHistory = false)]
+    [Table(NeedsHistory = false, NoVersionNo =false, NoIsActive =true, NoCreatedBy =true, NoCreatedOn =true, NoUpdatedBy =true, NoUpdatedOn =true)]
     public class Address
     {
         [PrimaryKey(true)]
@@ -114,6 +115,8 @@ namespace Vega.Tests
         public string Town { get; set; }
         public string Latitude { get; set; }
         public string Longitude { get; set; }
+        public string CustomerCode { get; set; }
+        public int VersionNo { get; set; }
     }
 
     [Table(IsNoDefaultFields = true, NeedsHistory = false)]
@@ -125,5 +128,27 @@ namespace Vega.Tests
 
         [Column(Size = 50)]
         public string Name { get; set; }
+    }
+
+    [Table(IsNoDefaultFields = false, NeedsHistory = false)]
+    public class Center
+    {
+        [PrimaryKey(true)]
+        [Column]
+        public int Id { get; set; }
+
+        [PrimaryKey]
+        [Column(Size = 20)]
+        public string CenterType { get; set; }
+
+        [Column(Size = 50)]
+        public string CenterName { get; set; }
+
+        public bool IsActive { get; set; }
+        public int VersionNo { get; set; }
+        public int CreatedBy { get; set; }
+        public int UpdatedBy { get; set; }
+        public DateTime CreatedOn { get; set; }
+        public DateTime UpdatedOn { get; set; }
     }
 }

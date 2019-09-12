@@ -115,5 +115,34 @@ namespace Vega.Tests
             Assert.Contains("Virtual Foreign Key", ex.Message);
 
         }
+
+        [Fact]
+        public void ForeignKeyTestWhenPrimaryKeyIsVarchar()
+        {
+            Organization org = new Organization()
+            {
+                CustomerCode = "FKTest001",
+                Name = "Bajipura 1",
+                AccountNum = 123,
+                Address = new Address()
+                {
+                    CustomerCode = "FKTest001",
+                    AddressType = "Home",
+                    AddressLine1 = "line 1"
+                }
+            };
+
+            Repository<Organization> orgRepo = new Repository<Organization>(Fixture.Connection);
+            //Add master Record
+            string id = (string)orgRepo.Add(org);
+
+            //Add Child Record
+            Repository<Address> addRepo = new Repository<Address>(Fixture.Connection);
+            long addressId = (long)addRepo.Add(org.Address);
+
+            //now try to delete Organization record
+            Exception ex = Assert.Throws<Exception>(() => orgRepo.Delete(org.CustomerCode, Fixture.CurrentUserId));
+            Assert.Contains("Virtual Foreign Key", ex.Message);
+        }
     }
 }

@@ -218,6 +218,11 @@ namespace Vega
                 throw new NotSupportedException("Primary key with multiple Identity is not supported on " + result.Name);
             }
 
+            if (result.Columns.LongCount(p => p.Value.IsPrimaryKey) > 1 && result.NeedsHistory)
+            {
+                throw new NotSupportedException($"History for {result.Name} is not supported as it has composite Primary key");
+            }
+
             return result;
         }
 

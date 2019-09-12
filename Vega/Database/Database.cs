@@ -172,6 +172,8 @@ namespace Vega
                 if (!tableInfo.NoVersionNo)
                 {
                     int versionNo = tableInfo.GetVersionNo(entity) ?? 1;  //set defualt versionno 1 for Insert
+                    if (versionNo == 0) versionNo = 1; //set defualt versionno 1 for Insert even if its zero or null
+
                     if (!columns.Contains(Config.VERSIONNO_COLUMN.Name))
                         columns.Add(Config.VERSIONNO_COLUMN.Name);
 

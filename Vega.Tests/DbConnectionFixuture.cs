@@ -59,6 +59,15 @@ namespace Vega.Tests
 
             Repository<Society> socRepo = new Repository<Society>(Connection);
             socRepo.CreateTable();
+
+            Repository<Organization> orgRepo = new Repository<Organization>(Connection);
+            orgRepo.CreateTable();
+
+            Repository<Address> addRepo = new Repository<Address>(Connection);
+            addRepo.CreateTable();
+
+            Repository<Center> centerRepo = new Repository<Center>(Connection);
+            centerRepo.CreateTable();
         }
 
         public IDbConnection Connection { get; set; }
@@ -86,6 +95,15 @@ namespace Vega.Tests
 
             Repository<Society> socRepo = new Repository<Society>(Connection);
             socRepo.DropTable();
+
+            Repository<Organization> orgRepo = new Repository<Organization>(Connection);
+            orgRepo.DropTable();
+
+            Repository<Address> addRepo = new Repository<Address>(Connection);
+            addRepo.DropTable();
+
+            Repository<Center> centerRepo = new Repository<Center>(Connection);
+            centerRepo.DropTable();
 
             Connection?.Dispose();
         }

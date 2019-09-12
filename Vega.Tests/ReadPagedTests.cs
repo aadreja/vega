@@ -978,6 +978,92 @@ namespace Vega.Tests
         }
 #endif
 
+        [Fact]
+        public void NoQueryNoOffsetMultipleOrderByWithCriteriaTestCompositePrimaryKey()
+        {
+            Repository<Address> addRepo = new Repository<Address>(Fixture.Connection);
+
+            addRepo.DropTable();
+            addRepo.CreateTable();
+
+            int counter = 1000;
+
+            for (int i = 1; i <= counter; i++)
+            {
+                Address city = new Address()
+                {
+                    AddressLine1 = "Line1PagedNoCriteriaTest." + i.ToString().PadLeft(5, '0'),
+                    AddressLine2 = "Line2PagedNoCriteriaTest." + i.ToString().PadLeft(5, '0'),
+                    AddressType = i % 5 == 0 ? "HOME" : "OFFICE",
+                    CustomerCode = i % 2 == 0 ? "P0001" : "P0002",
+                    Town = "Ahmedabad",
+                    
+                };
+                city.Id = (long)addRepo.Add(city);
+            }
+
+            var parameters = new { AddressType = "OFFICE" };
+
+            //order by country ASC, name ASC
+            //First Page
+            List<Address> addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.First, null, "addresstype=@addresstype", null, null, parameters).ToList();
+            Assert.Equal(50, addList.Count);
+            Assert.Equal("P0001", addList[0].CustomerCode);
+            Assert.Equal("Line1PagedNoCriteriaTest.00002", addList[0].AddressLine1);
+            Assert.Equal("Line1PagedNoCriteriaTest.00124", addList[49].AddressLine1);
+
+            //Next Page
+            addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.Next, null, "addresstype=@addresstype", new object[] { addList[49].CustomerCode, addList[49].AddressLine1 }, new Address() { Id= addList[49].Id, AddressType="HOME" }, parameters).ToList();
+            Assert.Equal(50, addList.Count);
+            Assert.Equal("P0001", addList[0].CustomerCode);
+            Assert.Equal("Line1PagedNoCriteriaTest.00126", addList[0].AddressLine1);
+            Assert.Equal("Line1PagedNoCriteriaTest.00248", addList[49].AddressLine1);
+
+            //Last Page
+            addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.Last, null, "addresstype=@addresstype", null, null, parameters).ToList();
+
+            Assert.Equal(50, addList.Count);
+            Assert.Equal("P0002", addList[0].CustomerCode);
+            Assert.Equal("Line1PagedNoCriteriaTest.00877", addList[0].AddressLine1);
+            Assert.Equal("Line1PagedNoCriteriaTest.00999", addList[49].AddressLine1);
+
+            //Previous Page
+            addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.Previous, null, "addresstype=@addresstype", new object[] { addList[0].CustomerCode, addList[0].AddressLine1 }, new Address() { Id = addList[0].Id, AddressType = "HOME" }, parameters).ToList();
+            Assert.Equal(50, addList.Count);
+            Assert.Equal("P0002", addList[0].CustomerCode);
+            Assert.Equal("Line1PagedNoCriteriaTest.00751", addList[0].AddressLine1);
+            Assert.Equal("Line1PagedNoCriteriaTest.00873", addList[49].AddressLine1);
+
+            //order by countryid desc, name asc
+            //First Page
+            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.First, null, "addresstype=@addresstype", null, null, parameters).ToList();
+            Assert.Equal(50, addList.Count);
+            Assert.Equal("P0002", addList[0].CustomerCode);
+            Assert.Equal("Line1PagedNoCriteriaTest.00001", addList[0].AddressLine1);
+            Assert.Equal("Line1PagedNoCriteriaTest.00123", addList[49].AddressLine1);
+
+            //Next Page
+            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.Next, null, "addresstype=@addresstype", new object[] { addList[49].CustomerCode, addList[49].AddressLine1 }, new Address() { Id = addList[49].Id, AddressType="HOME" }, parameters).ToList();
+            Assert.Equal(50, addList.Count);
+            Assert.Equal("P0002", addList[0].CustomerCode);
+            Assert.Equal("Line1PagedNoCriteriaTest.00127", addList[0].AddressLine1);
+            Assert.Equal("Line1PagedNoCriteriaTest.00249", addList[49].AddressLine1);
+
+            //Last Page
+            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.Last, null, "addresstype=@addresstype", null, null, parameters).ToList();
+
+            Assert.Equal(50, addList.Count);
+            Assert.Equal("P0001", addList[0].CustomerCode);
+            Assert.Equal("Line1PagedNoCriteriaTest.00876", addList[0].AddressLine1);
+            Assert.Equal("Line1PagedNoCriteriaTest.00998", addList[49].AddressLine1);
+
+            //Previous Page
+            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.Previous, null, "addresstype=@addresstype", new object[] { addList[0].CustomerCode, addList[0].AddressLine1 }, new Address() { Id = addList[0].Id, AddressType = "HOME" }, parameters).ToList();
+            Assert.Equal(50, addList.Count);
+            Assert.Equal("P0001", addList[0].CustomerCode);
+            Assert.Equal("Line1PagedNoCriteriaTest.00752", addList[0].AddressLine1);
+            Assert.Equal("Line1PagedNoCriteriaTest.00874", addList[49].AddressLine1);
+        }
     }
 
 }

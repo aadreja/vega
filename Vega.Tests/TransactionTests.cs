@@ -154,6 +154,56 @@ namespace Vega.Tests
                 Console.WriteLine(ex.Message);
             }
         }
+
+
+        [Fact]
+        public void MultipleEntityCompositePrimaryKey()
+        {
+            Repository<Organization> orgRepo = new Repository<Organization>(Fixture.Connection);
+
+            try
+            {
+                //add organization record
+                Organization org = new Organization()
+                {
+                    CustomerCode = "T005",
+                    Name = "Bajipura",
+                    AccountNum = 123
+                };
+
+                //add address record
+                Address address = new Address()
+                {
+                    CustomerCode = "T005",
+                    AddressType = "Home",
+                    AddressLine1 = "line 1",
+                    AddressLine2 = "line 2",
+                };
+
+                orgRepo.BeginTransaction();
+
+                Repository<Address> addRepo = new Repository<Address>(orgRepo.Transaction);
+
+                orgRepo.Add(org);
+                address.Id = (long)addRepo.Add(address);
+
+                //check before commit
+                Assert.Equal(org.CustomerCode, orgRepo.ReadOne<string>(org.CustomerCode, "customercode"));
+                Assert.Equal(address.Id, addRepo.ReadOne<long>( new Address() { Id= address.Id, AddressType = "Home"} , "id"));
+
+                orgRepo.Commit();
+
+                //check after commit
+                Assert.Equal(org.CustomerCode, orgRepo.ReadOne<string>(org.CustomerCode, "customercode"));
+                Assert.Equal(address.Id, addRepo.ReadOne<long>(new Address() { Id = address.Id, AddressType = "Home" }, "id"));
+            }
+            catch (Exception ex)
+            {
+                orgRepo.Rollback();
+                Console.WriteLine(ex.Message);
+                Assert.True(false);
+            }
+        }
     }
 
 }

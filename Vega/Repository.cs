@@ -717,6 +717,35 @@ namespace Vega
         }
 
         /// <summary>
+        /// Read value of for a given query
+        /// </summary>
+        /// <param name="query">query</param>
+        /// <returns>Value if record found otherwise null or default</returns>
+        public T ReadOne(string query)
+        {
+            IDbCommand command = Connection.CreateCommand();
+            command.CommandType = CommandType.Text;
+            command.CommandText = query;
+
+            bool isConOpen = IsConnectionOpen();
+
+            if (!isConOpen) Connection.Open();
+
+            using (IDataReader rdr = ExecuteReader(command))
+            {
+                var func = ReaderCache<T>.GetFromCache(rdr);
+
+                if (rdr != null && rdr.Read())
+                {
+                    return func(rdr);
+                }
+                rdr.Close();
+                if (!isConOpen) Connection.Close();
+            }
+
+            return default;
+        }
+        /// <summary>
         /// Read all records: fastest
         /// </summary>
         /// <param name="status">optional get Active, InActive or all Records Default: All records</param>

@@ -360,28 +360,53 @@ namespace Vega.Tests
         [Fact]
         public void ReadCompositePrimaryKeys()
         {
-            Repository<Organization> orgRepo = new Repository<Organization>(Fixture.Connection);
-
-            Organization org = new Organization()
+            Address address = new Address()
             {
-                CustomerCode = "0002",
-                Name = "ReadTests.ReadWithoutEntityBase",
-                AccountNum=123,
-                Address=new Address()
-                {
-                    AddressLine1="line 1",
-                    AddressLine2="line 2",
-                    AddressType = "Home",
-                    Latitude="1.1",
-                    Longitude ="1.2",
-                    Town="Ahmedabad"
-                },
-                ItcontactPerson="Abcd",
-                ItcontactPersonEmail="a@a.com",
-                ItcontactPersonMobile="9898066521"
+                AddressLine1 = "line 1",
+                AddressLine2 = "line 2",
+                AddressType = "Home",
+                Latitude = "1.1",
+                Longitude = "1.2",
+                Town = "Ahmedabad"
             };
 
-            orgRepo.Add(org);
+            Repository<Address> addRepo = new Repository<Address>(Fixture.Connection);
+            long id = (long)addRepo.Add(address);
+
+            //to read we need address object search as we have composite primary key
+            address = new Address()
+            {
+                Id = id,
+                AddressType = "Home"
+            };
+            Assert.Equal("line 1", addRepo.ReadOne<string>(address, "AddressLine1"));
         }
+
+        [Fact]
+        public void ReadOneQuery()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ReadOneQuery",
+                State = "RQ",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CityType = EnumCityType.Metro,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            //add
+            city.Id = (long)cityRepo.Add(city);
+            
+            City cityResult = cityRepo.ReadOne("select top 1 * from city");
+
+            Assert.Equal("ReadTests.ReadOneQuery", cityResult.Name);
+        }
+
+
+
+
     }
 }

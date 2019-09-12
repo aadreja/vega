@@ -129,5 +129,59 @@ namespace Vega.Tests
             countryRepo.Update(country, "independence", overrideCreatedUpdatedOn:true);
             Assert.Equal(overrideDate, countryRepo.ReadOne<DateTime>(id, "UpdatedOn"));
         }
+
+        [Fact]
+        public void UpdateNoEntityBase()
+        {
+            Employee employee = new Employee
+            {
+                EmployeeName = "Ramesh",
+                Department = "Accounts",
+                DOB = new DateTime(1980, 7, 22)
+            };
+
+            Repository<Employee> empRepo = new Repository<Employee>(Fixture.Connection);
+
+            var id = empRepo.Add(employee);
+
+            employee = empRepo.ReadOne(id);
+
+            employee.Department = "IT";
+
+            empRepo.Update(employee, "department");
+            Assert.Equal("IT", empRepo.ReadOne<string>(id, "department"));
+        }
+
+        [Fact]
+        public void UpdateWhenCompositePrimaryKey()
+        {
+            Address address1 = new Address()
+            {
+                AddressType = "Home",
+                AddressLine1 = "Address 1 line 1",
+                AddressLine2 = "Address 1 line 2",
+            };
+
+            Address address2 = new Address()
+            {
+                AddressType = "Home",
+                AddressLine1 = "Address 2 line 1",
+                AddressLine2 = "Address 2 line 2",
+            };
+
+            Repository<Address> addRepo = new Repository<Address>(Fixture.Connection);
+            address1.Id = (long)addRepo.Add(address1);
+            address2.Id = (long)addRepo.Add(address2);
+
+            //update
+            address1.AddressLine1 = "Updated Address 1 line 1";
+            address2.AddressLine1 = "Updated Address 2 line 1";
+
+            Assert.True(addRepo.Update(address1));
+            Assert.True(addRepo.Update(address2));
+
+            Assert.Equal("Updated Address 1 line 1", addRepo.ReadOne<string>(address1, "AddressLine1"));
+            Assert.Equal("Updated Address 2 line 1", addRepo.ReadOne<string>(address2, "AddressLine1"));
+        }
     }
 }
