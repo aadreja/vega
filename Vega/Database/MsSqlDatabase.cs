@@ -178,7 +178,7 @@ namespace Vega
         {
             StringBuilder query = new StringBuilder();
 
-            query.Append($"SELECT TOP 1 1 FROM {vfk.FullTableName} WHERE {vfk.ColumnName}=@Id");
+            query.Append($"SELECT TOP 1 {vfk.ColumnName} FROM {vfk.FullTableName} WHERE {vfk.ColumnName}=@Id");
 
             if (vfk.ContainsIsActive)
                 query.Append($" AND {Config.VegaConfig.IsActiveColumnName}={BITTRUEVALUE}");

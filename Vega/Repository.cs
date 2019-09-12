@@ -857,7 +857,7 @@ namespace Vega
                 if (!TableInfo.NoIsActive) DB.AppendStatusCriteria(query, status);
             }
             else
-                query.Append(queryorCriteria);
+                query.Append($"SELECT COUNT(0) FROM ({queryorCriteria}) as a");
 
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandType = CommandType.Text;
