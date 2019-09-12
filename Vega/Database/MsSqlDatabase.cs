@@ -151,6 +151,10 @@ namespace Vega
 
             createSQL.Append(");");
 
+            if (tableInfo.IsKeyIdentity())
+            {
+                createSQL.Append($"SET IDENTITY_INSERT {tableInfo.FullName} OFF");
+            }
             return createSQL.ToString();
         }
 

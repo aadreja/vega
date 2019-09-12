@@ -400,13 +400,9 @@ namespace Vega.Tests
             //add
             city.Id = (long)cityRepo.Add(city);
             
-            City cityResult = cityRepo.ReadOne("select top 1 * from city");
+            City cityResult = cityRepo.ReadOne("select top 1 * from city WHERE id=" + city.Id);
 
             Assert.Equal("ReadTests.ReadOneQuery", cityResult.Name);
         }
-
-
-
-
     }
 }
