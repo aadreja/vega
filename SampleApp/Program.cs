@@ -10,9 +10,27 @@ namespace SampleApp
     {
         static ConsoleColor defaultColor;
 
+        static object GetDyncParameter(int i)
+        {
+            if(i==0)
+                    return new { Id = 1 };
+            else
+                return new { Id = "abc" };
+        }
+
         static void Main(string[] args)
         {
-            
+            var t = new { Id = 1 };
+            Console.WriteLine("Type {0} Hash {1}", t.GetType().Name, t.GetHashCode());
+
+            var t1 = new { Id = "abc" };
+            Console.WriteLine("Type {0} Hash {1}", t1.GetType().Name, t1.GetHashCode());
+
+            var t2 = new { Id = 2 };
+            Console.WriteLine("Type {0} Hash {1}", t2.GetType().Name, t2.GetHashCode());
+
+            var t3 = new { Id = "xyz" };
+            Console.WriteLine("Type {0} Hash {1}", t3.GetType().Name, t3.GetHashCode());
 
             defaultColor = Console.ForegroundColor;
 

@@ -270,10 +270,86 @@ namespace Vega
         }
     }
 
+    internal struct ParameterKey : IEquatable<ParameterKey>
+    {
+        private readonly int length;
+        private readonly object dynamicObject;
+        private readonly string[] names;
+        private readonly PropertyInfo[] properytInfo;
+        private readonly Type[] types;
+        private readonly int hashCode;
+
+        public override int GetHashCode()
+        {
+            return hashCode;
+        }
+
+        internal ParameterKey(int hashCode, object dynamicObject)
+        {
+            this.hashCode = hashCode;
+            this.dynamicObject = dynamicObject;
+            this.properytInfo = dynamicObject.GetType().GetProperties();
+            this.length = properytInfo.Length;
+
+            names = new string[length];
+            types = new Type[length];
+            for (int i = 0; i < length; i++)
+            {
+                names[i] = properytInfo[i].Name;
+                types[i] = properytInfo[i].PropertyType;
+            }
+        }
+
+        public override string ToString()
+        {
+            // to be used in the debugger
+            if (names != null)
+            {
+                return string.Join(", ", names);
+            }
+            if (dynamicObject != null)
+            {
+                var sb = new StringBuilder();
+                int index = 0;
+                for (int i = 0; i < length; i++)
+                {
+                    if (i != 0) sb.Append(", ");
+                    sb.Append(properytInfo[index++].Name);
+                }
+                return sb.ToString();
+            }
+            return base.ToString();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is ParameterKey && Equals((ParameterKey)obj);
+        }
+
+        public bool Equals(ParameterKey other)
+        {
+            if (hashCode != other.hashCode || length != other.length)
+            {
+                return false; //clearly different
+            }
+            for (int i = 0; i < length; i++)
+            {
+                if ((names?[i] ?? properytInfo?[i].Name) != (other.names?[i] ?? other.properytInfo?[i].Name)
+                    ||
+                    (types?[i] ?? properytInfo?[i].PropertyType) != (other.types?[i] ?? properytInfo?[i].PropertyType)
+                    )
+                {
+                    return false; // different column name or type
+                }
+            }
+            return true;
+        }
+    }
+
     internal class ParameterCache
     {
-        static Dictionary<Type, Action<object, IDbCommand>> dynamicParameters = new Dictionary<Type, Action<object, IDbCommand>>();
-        static MethodInfo addInParameter;
+        static Dictionary<ParameterKey, Action<object, IDbCommand>> dynamicParameters = new Dictionary<ParameterKey, Action<object, IDbCommand>>();
+        static readonly MethodInfo addInParameter;
         static ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
 
         static ParameterCache()
@@ -283,14 +359,33 @@ namespace Vega
             addInParameter = typeof(Helper).GetMethod("AddInParameter");
         }
 
+        static int GetParameterHash(object dynamicObject)
+        {
+            unchecked
+            {
+                int hash = 31; //any prime number
+                PropertyInfo[] propertyInfo = dynamicObject.GetType().GetProperties();
+                for (int i = 0; i < propertyInfo.Length; i++)
+                {
+                    object propertyName = propertyInfo[i].Name;
+                    object propertyType = propertyInfo[i].PropertyType;
+
+                    //prime numbers to generate hash
+                    hash = (-97 * ((hash * 29) + propertyName.GetHashCode())) + propertyType.GetHashCode();
+                }
+                return hash;
+            }
+        }
+
         internal static Action<object, IDbCommand> GetFromCache(object param, IDbCommand cmd)
         {
-            Type pType = param.GetType();
+            ParameterKey key = new ParameterKey(GetParameterHash(param), param);
+            
             Action<object, IDbCommand> action;
             try
             {
                 cacheLock.EnterReadLock();
-                if (dynamicParameters.TryGetValue(pType, out action)) return action;
+                if (dynamicParameters.TryGetValue(key, out action)) return action;
             }
             finally
             {
@@ -302,7 +397,7 @@ namespace Vega
             try
             {
                 cacheLock.EnterWriteLock();
-                return dynamicParameters[pType] = action;
+                return dynamicParameters[key] = action;
             }
             finally
             {

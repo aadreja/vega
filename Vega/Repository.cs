@@ -1379,6 +1379,9 @@ namespace Vega
             {
                 string query = DB.VirtualForeignKeyCheckQuery(vfk);
 
+                string uniqueParameterName = vfk.TableName + "_" + vfk.ColumnName;
+
+                //@{ vfk.TableName}_{ vfk.ColumnName}
                 if (Count(query, new { Id = keyId }) > 0)
                 {
                     throw new Exception($"Virtual Foreign Key Violation. Table:{vfk.FullTableName} Column:{(!string.IsNullOrEmpty(vfk.DisplayName) ? vfk.DisplayName : vfk.ColumnName)}");
