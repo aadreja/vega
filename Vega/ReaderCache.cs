@@ -368,7 +368,8 @@ namespace Vega
                 for (int i = 0; i < propertyInfo.Length; i++)
                 {
                     object propertyName = propertyInfo[i].Name;
-                    object propertyType = propertyInfo[i].PropertyType;
+                    //dynamic property will always return System.Object as property type. Get Type from the value
+                    Type propertyType = GetTypeOfDynamicProperty(propertyInfo[i], dynamicObject);
 
                     //prime numbers to generate hash
                     hash = (-97 * ((hash * 29) + propertyName.GetHashCode())) + propertyType.GetHashCode();
@@ -422,7 +423,8 @@ namespace Vega
 
                 //dbtype
                 //dynamic property will always return System.Object as property type. Get Type from the value
-                Type type = property.GetValue(param).GetType();
+                Type type = GetTypeOfDynamicProperty(property, param);
+                    
                 if (type.IsEnum) type = Enum.GetUnderlyingType(type);
 
                 if(TypeCache.TypeToDbType.TryGetValue(type, out DbType dbType))
@@ -446,6 +448,25 @@ namespace Vega
 
             var actionType = System.Linq.Expressions.Expression.GetActionType(typeof(object), typeof(IDbCommand));
             return (Action<object, IDbCommand>)method.CreateDelegate(actionType);
+        }
+
+        private static Type GetTypeOfDynamicProperty(PropertyInfo property, object dynamicObject)
+        {
+            //dynamic property will always return System.Object as property type. Get Type from the value
+
+            Type type = property.PropertyType;
+
+            if (type == typeof(object))
+                type = property.GetValue(dynamicObject)?.GetType() ?? typeof(object);
+            else
+            {
+                if (property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    type = Nullable.GetUnderlyingType(property.PropertyType);
+                else
+                    type = property.PropertyType;
+            }
+
+            return type;
         }
     }
 }

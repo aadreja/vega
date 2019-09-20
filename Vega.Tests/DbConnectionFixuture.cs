@@ -34,7 +34,7 @@ namespace Vega.Tests
             //Configure Vega
             Configuration configuration = new Configuration
             {
-                CreatedUpdatedByColumnType = DbType.Int32
+                CreatedUpdatedByColumnType = DbType.Int32,
             };
             Config.Configure(configuration);
 
@@ -68,6 +68,21 @@ namespace Vega.Tests
 
             Repository<Center> centerRepo = new Repository<Center>(Connection);
             centerRepo.CreateTable();
+        }
+
+        public void SetAuditTrailType(bool isKeyValue)
+        {
+            if (isKeyValue)
+            {
+                Config.VegaConfig.AuditTrailType = typeof(AuditTrailKeyValue);
+                Config.VegaConfig.AuditTrailRepositoryType = typeof(AuditTrailKeyValueRepository<>);
+            }
+            else
+            {
+                Config.VegaConfig.AuditTrailType = typeof(AuditTrail);
+                Config.VegaConfig.AuditTrailRepositoryType = typeof(AuditTrailRepository<>);
+            }
+            Config.Configure(Config.VegaConfig);
         }
 
         public IDbConnection Connection { get; set; }
@@ -124,6 +139,22 @@ namespace Vega.Tests
             get
             {
                 return 1;
+            }
+        }
+
+        public void CleanupAuditTable()
+        {
+            try
+            {
+                Repository<City> cityRepo = new Repository<City>(Connection);
+                cityRepo.ExecuteNonQuery("DELETE FROM audittrail");
+
+                if (Config.VegaConfig.AuditTrailType.Name == "AuditTrailKeyValue")
+                    cityRepo.ExecuteNonQuery("DELETE FROM audittraildetail");
+            }
+            catch
+            {
+                //nothing to do
             }
         }
     }

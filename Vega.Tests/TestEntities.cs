@@ -32,7 +32,7 @@ namespace Vega.Tests
         public string DepartmentName { get; set; }
     }
 
-    [Table(IsNoDefaultFields=true)]
+    [Table(IsNoDefaultFields=true, NeedsHistory =true)]
     public class Employee
     {
         [PrimaryKey(true)]
@@ -151,4 +151,6 @@ namespace Vega.Tests
         public DateTime CreatedOn { get; set; }
         public DateTime UpdatedOn { get; set; }
     }
+
+    
 }

@@ -120,7 +120,7 @@ namespace Vega
 
         #region Create CRUD commands
 
-        internal virtual void CreateAddCommand(IDbCommand command, object entity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false, bool overrideCreatedUpdatedOn = false)
+        internal virtual void CreateAddCommand(IDbCommand command, object entity, IAuditTrail audit = null, string columnNames = null, bool doNotAppendCommonFields = false, bool overrideCreatedUpdatedOn = false)
         {
             TableAttribute tableInfo = EntityCache.Get(entity.GetType());
 
@@ -164,7 +164,7 @@ namespace Vega
                     command.AddInParameter("@" + Config.ISACTIVE_COLUMN.Name, Config.ISACTIVE_COLUMN.ColumnDbType, isActive);
 
                     if (tableInfo.NeedsHistory)
-                        audit.AppendDetail(Config.ISACTIVE_COLUMN.Name, isActive, DbType.Boolean);
+                        audit.AppendDetail(Config.ISACTIVE_COLUMN.Name, isActive, DbType.Boolean, null);
 
                     tableInfo.SetIsActive(entity, isActive); //Set IsActive value
                 }
@@ -273,13 +273,13 @@ namespace Vega
                     dbType = columnInfo.ColumnDbType;
                     columnValue = columnInfo.GetAction(entity);
 
-                    if (tableInfo.NeedsHistory) audit.AppendDetail(columns[i], columnValue, dbType);
+                    if (tableInfo.NeedsHistory) audit.AppendDetail(columns[i], columnValue, dbType, null);
                 }
                 command.AddInParameter("@" + columns[i], dbType, columnValue);
             }
         }
 
-        internal virtual bool CreateUpdateCommand(IDbCommand command, object entity, object oldEntity, AuditTrial audit = null, string columnNames = null, bool doNotAppendCommonFields = false, bool overrideCreatedUpdatedOn = false)
+        internal virtual bool CreateUpdateCommand(IDbCommand command, object entity, object oldEntity, IAuditTrail audit = null, string columnNames = null, bool doNotAppendCommonFields = false, bool overrideCreatedUpdatedOn = false)
         {
             bool isUpdateNeeded = false;
 
@@ -357,28 +357,29 @@ namespace Vega
                         includeInUpdate = oldEntity == null; //include in update when oldEntity not available
 
                         //compare with old object to check whether update is needed or not
+                        object oldColumnValue = null;
                         if (oldEntity != null)
                         {
-                            object oldObjectValue = columnInfo.GetAction(oldEntity);
+                            oldColumnValue = columnInfo.GetAction(oldEntity);
 
-                            if (oldObjectValue != null && columnValue != null)
+                            if (oldColumnValue != null && columnValue != null)
                             {
-                                if (!oldObjectValue.Equals(columnValue)) //add to xml only if property is modified
+                                if (!oldColumnValue.Equals(columnValue)) //add to history only if property is modified
                                 {
                                     includeInUpdate = true;
                                 }
                             }
-                            else if (oldObjectValue == null && columnValue != null)
+                            else if (oldColumnValue == null && columnValue != null)
                             {
                                 includeInUpdate = true;
                             }
-                            else if (oldObjectValue != null)
+                            else if (oldColumnValue != null)
                             {
                                 includeInUpdate = true;
                             }
                         }
 
-                        if (tableInfo.NeedsHistory && includeInUpdate) audit.AppendDetail(columns[i], columnValue, dbType);
+                        if (tableInfo.NeedsHistory && includeInUpdate) audit.AppendDetail(columns[i], columnValue, dbType, oldColumnValue);
                     }
 
                     if (includeInUpdate)

@@ -179,15 +179,13 @@ namespace Vega
 
             try
             {
-                AuditTrial audit = default; //to save audit details
+                IAuditTrail audit = default; //to save audit details
                 if (TableInfo.NeedsHistory)
                 {
                     //begin transaction
                     isTransactHere = BeginTransaction();
-                    audit = new AuditTrial
-                    {
-                        CreatedBy = !TableInfo.NoCreatedBy ? TableInfo.GetCreatedBy(entity) : default
-                    };
+                    audit = (IAuditTrail)Activator.CreateInstance(Config.VegaConfig.AuditTrailType);
+                    audit.CreatedBy = !TableInfo.NoCreatedBy ? TableInfo.GetCreatedBy(entity) : default;
                 }
 
                 IDbCommand command = Connection.CreateCommand();
@@ -201,9 +199,11 @@ namespace Vega
                 }
                 if (TableInfo.NeedsHistory)
                 {
-                    //Save Audit Trial
-                    AuditTrialRepository<T> auditTrialRepo = new AuditTrialRepository<T>(Transaction);
-                    auditTrialRepo.Add(entity, RecordOperationEnum.Insert, TableInfo, audit);
+                    //Save Audit Trail
+                    
+                    IAuditTrailRepository<T> auditTrailRepo = (IAuditTrailRepository<T>)Activator.CreateInstance(Config.VegaConfig.AuditTrialRepositoryGenericType<T>(), new object[] { Transaction });
+
+                    auditTrailRepo.Add(entity, RecordOperationEnum.Insert, audit);
                     if (isTransactHere) Commit();
                 }
 
@@ -251,7 +251,7 @@ namespace Vega
         /// </summary>
         /// <param name="entity">entity object for update</param>
         /// <param name="columns">specific columns to update, comma seperated</param>
-        /// <param name="oldEntity">previous entity object for audit trial. Default null.</param>
+        /// <param name="oldEntity">previous entity object for audit trail. Default null.</param>
         /// <param name="overrideCreatedUpdatedOn">True in case explicit CreatedUpdatedOn else database datetime</param>
         /// <returns>True if update successful else false</returns>
         public bool Update(T entity, string columns, T oldEntity = default, bool overrideCreatedUpdatedOn = false)
@@ -261,13 +261,11 @@ namespace Vega
             if (!isConOpen) Connection.Open();
             try
             {
-                AuditTrial audit = null;
+                IAuditTrail audit = default;
                 if (TableInfo.NeedsHistory)
                 {
-                    audit = new AuditTrial()
-                    {
-                        CreatedBy = !TableInfo.NoUpdatedBy ? TableInfo.GetUpdatedBy(entity) : default
-                    };
+                    audit = (IAuditTrail)Activator.CreateInstance(Config.VegaConfig.AuditTrailType);
+                    audit.CreatedBy = !TableInfo.NoCreatedBy ? TableInfo.GetCreatedBy(entity) : default;
 
                     isTransactHere = BeginTransaction();
 
@@ -297,8 +295,9 @@ namespace Vega
                     if (TableInfo.NeedsHistory)
                     {
                         //Save History
-                        AuditTrialRepository<T> auditTrialRepo = new AuditTrialRepository<T>(Transaction);
-                        auditTrialRepo.Add(entity, RecordOperationEnum.Update, TableInfo, audit);
+                        IAuditTrailRepository<T> auditTrailRepo = (IAuditTrailRepository<T>)Activator.CreateInstance(Config.VegaConfig.AuditTrialRepositoryGenericType<T>(), new object[] { Transaction });
+
+                        auditTrailRepo.Add(entity, RecordOperationEnum.Update, audit);
                         if (isTransactHere) Commit();
                     }
                 }
@@ -453,9 +452,9 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     //Save History
-                    AuditTrialRepository<T> auditTrialRepo = new AuditTrialRepository<T>(Transaction);
+                    IAuditTrailRepository<T> auditTrailRepo = (IAuditTrailRepository<T>)Activator.CreateInstance(Config.VegaConfig.AuditTrialRepositoryGenericType<T>(), new object[] { Transaction });
 
-                    auditTrialRepo.Add(id, versionNo, updatedBy, RecordOperationEnum.Delete, TableInfo);
+                    auditTrailRepo.Add(id, versionNo, updatedBy, RecordOperationEnum.Delete);
 
                     if (isTransactHere) Commit();
                 }
@@ -569,9 +568,8 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     //Save History
-                    AuditTrialRepository<T> auditTrialRepo = new AuditTrialRepository<T>(Transaction);
-
-                    auditTrialRepo.Add(id, versionNo, updatedBy, RecordOperationEnum.Recover, TableInfo);
+                    IAuditTrailRepository<T> auditTrailRepo = (IAuditTrailRepository<T>)Activator.CreateInstance(Config.VegaConfig.AuditTrialRepositoryGenericType<T>(), new object[] { Transaction });
+                    auditTrailRepo.Add(id, versionNo, updatedBy, RecordOperationEnum.Recover);
 
                     if (isTransactHere) Commit();
                 }
@@ -660,6 +658,20 @@ namespace Vega
         }
 
         /// <summary>
+        /// Read value of one column for a given record
+        /// </summary>
+        /// <typeparam name="R">Type of value</typeparam>
+        /// <param name="id">record id</param>
+        /// <param name="column">column name</param>
+        /// <returns>Value if record found otherwise null or default</returns>
+        public R ReadOne<R>(object id, string column)
+        {
+            IDbCommand command = Connection.CreateCommand();
+            DB.CreateSelectCommandForReadOne<T>(command, id, column);
+            return Query<R>(command);
+        }
+
+        /// <summary>
         /// Returns First Record with specific criteria
         /// </summary>
         /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
@@ -702,30 +714,22 @@ namespace Vega
             return default;
         }
 
-        /// <summary>
-        /// Read value of one column for a given record
-        /// </summary>
-        /// <typeparam name="R">Type of value</typeparam>
-        /// <param name="id">record id</param>
-        /// <param name="column">column name</param>
-        /// <returns>Value if record found otherwise null or default</returns>
-        public R ReadOne<R>(object id, string column)
-        {
-            IDbCommand command = Connection.CreateCommand();
-            DB.CreateSelectCommandForReadOne<T>(command, id, column);
-            return Query<R>(command);
-        }
+        
 
         /// <summary>
         /// Read value of for a given query
         /// </summary>
         /// <param name="query">query</param>
+        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
         /// <returns>Value if record found otherwise null or default</returns>
-        public T ReadOne(string query)
+        public T ReadOneQuery(string query, object parameters = null)
         {
             IDbCommand command = Connection.CreateCommand();
             command.CommandType = CommandType.Text;
             command.CommandText = query;
+
+            if (parameters != null)
+                ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
 
             bool isConOpen = IsConnectionOpen();
 
@@ -782,18 +786,18 @@ namespace Vega
         /// <summary>
         /// Read all records: fastest
         /// </summary>
-        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <param name="columns">specific columns to retrieve, null or * for all columns. Default: all columns</param>
         /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
         /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
         /// <param name="orderBy">optional order by e.g. "department ASC"</param>
         /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
         /// <returns>IEnumerable list of entities</returns>
-        public IEnumerable<T> ReadAll(string columns = null, string criteria = null, object parameters = null, string orderBy = null, RecordStatusEnum status = RecordStatusEnum.All)
+        public IEnumerable<T> ReadAll(string columns, string criteria = null, object parameters = null, string orderBy = null, RecordStatusEnum status = RecordStatusEnum.All)
         {
             ValidateParameters(criteria, parameters);
 
             //Get columns from Entity attributes loaded in TableInfo
-            if (string.IsNullOrEmpty(columns)) columns = String.Join(",", TableInfo.DefaultReadColumns);
+            if (string.IsNullOrEmpty(columns) || columns.Trim() == "*") columns = string.Join(",", TableInfo.DefaultReadColumns);
 
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandType = CommandType.Text;
@@ -884,9 +888,8 @@ namespace Vega
         public IEnumerable<T> ReadHistory(object id)
         {
             //Remove EntityBase 12-Apr
-            AuditTrialRepository<T> auditRepo = new AuditTrialRepository<T>(Connection);
-
-            return auditRepo.ReadAll<T>(TableInfo.Name, id);
+            IAuditTrailRepository<T> auditTrailRepo = (IAuditTrailRepository<T>)Activator.CreateInstance(Config.VegaConfig.AuditTrialRepositoryGenericType<T>(), new object[] { Connection });
+            return auditTrailRepo.ReadAll(id);
         }
 
         #endregion
@@ -1379,9 +1382,6 @@ namespace Vega
             {
                 string query = DB.VirtualForeignKeyCheckQuery(vfk);
 
-                string uniqueParameterName = vfk.TableName + "_" + vfk.ColumnName;
-
-                //@{ vfk.TableName}_{ vfk.ColumnName}
                 if (Count(query, new { Id = keyId }) > 0)
                 {
                     throw new Exception($"Virtual Foreign Key Violation. Table:{vfk.FullTableName} Column:{(!string.IsNullOrEmpty(vfk.DisplayName) ? vfk.DisplayName : vfk.ColumnName)}");
@@ -1391,6 +1391,8 @@ namespace Vega
         }
 
         #endregion
+
+        #region Parameters
 
         private bool ValidateParameters(string criteria, object parameters)
         {
@@ -1421,5 +1423,8 @@ namespace Vega
             }
             return true;
         }
+
+        #endregion
+
     }
 }

@@ -6,7 +6,9 @@
             http://www.vegaorm.com
 */
 
+using System;
 using System.Data;
+using System.Linq;
 
 namespace Vega
 {
@@ -49,15 +51,20 @@ namespace Vega
             UserKeyField = "userid";
             UserFullNameDbColumn = "fullname";
 
-            //4. Audit table configuration
-            AuditTableName = "audittrial";
-            AuditKeyColumnName = "audittrialid";
+            //4. Audit table configuration. Default is AuditTrailKeyValue
+            AuditTrailType = typeof(AuditTrailKeyValue);
+            AuditTrailRepositoryType = typeof(AuditTrailKeyValueRepository<>);
+
+            /*
+            AuditTableName = "audittrail";
+            AuditKeyColumnName = "audittrailid";
             AuditOperationTypeColumnName = "operationtype";
             AuditTableNameColumnName = "tablename";
             AuditRecordIdColumnName = "recordid";
             AuditRecordVersionColumnName = "recordversionno";
             AuditDetailsColumnName = "details";
             AuditRecordIdIndexName = "idx_recordid";
+            */
         }
 
         #region 1. Framework Configuration
@@ -163,6 +170,27 @@ namespace Vega
         #region 4. Audit Table Configuration
 
         /// <summary>
+        /// Type of AuditTrail entity. Default is AuditTrailKeyValue
+        /// You can override using Dependency Injection by creating your own entity using IAuditTrail and IAuditTrailRepository interface 
+        /// e.g.  config.AuditTrailType = typeof(AuditTrailKeyValue)
+        /// </summary>
+        public Type AuditTrailType { get; set; }
+
+        /// <summary>
+        /// Type of AuditTrailRepository. Default is AuditTrailKeyValueRepository
+        /// You can override using Dependency Injection by creating your own entity using IAuditTrailRepository interface
+        /// Since their is dynamic Entity for AuditTrailRepository use empty Entity.
+        /// e.g. config.AuditTrailRepositoryType = typeof(AuditTrailKeyValueRepository&lt;&gt;)
+        /// </summary>
+        public Type AuditTrailRepositoryType { get; set; }
+
+        internal Type AuditTrialRepositoryGenericType<T>()
+        {
+            return Config.VegaConfig.AuditTrailRepositoryType.MakeGenericType(typeof(T));
+        }
+
+        /*
+        /// <summary>
         /// Audit Table name
         /// </summary>
         public string AuditTableName { get; set; }
@@ -194,6 +222,7 @@ namespace Vega
         /// Audit indexname
         /// </summary>
         public string AuditRecordIdIndexName { get; set; }
+        */
 
         #endregion
 
@@ -213,6 +242,15 @@ namespace Vega
         /// <param name="configuration"></param>
         public static void Configure(Configuration configuration)
         {
+            if (!typeof(IAuditTrail).IsAssignableFrom(configuration.AuditTrailType))
+            {
+                throw new InvalidCastException(configuration.AuditTrailType.Name + " must implement IAuditTrail");
+            }
+            
+            if(!(configuration.AuditTrailRepositoryType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IAuditTrailRepository<>))))
+            {
+                throw new InvalidCastException(configuration.AuditTrailRepositoryType.Name + " must implement IAuditTrailRepository");
+            }
             VegaConfig = configuration;
             Parse();
         }

@@ -1,25 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Vega;
+﻿using System.Linq;
 using Xunit;
 
 namespace Vega.Tests
 {
-    
-    public class AuditTests : IClassFixture<DbConnectionFixuture>
+
+    public class AuditTrailKeyValueTests : IClassFixture<DbConnectionFixuture>
     {
         DbConnectionFixuture Fixture;
 
-        public AuditTests(DbConnectionFixuture fixture)
+        public AuditTrailKeyValueTests(DbConnectionFixuture fixture)
         {
+            fixture.SetAuditTrailType(true); //as keyvalue 
             Fixture = fixture;
         }
 
         [Fact]
-        public void AuditTrial()
+        public void AuditTrailKeyValue()
         {
             City city = new City
             {
@@ -30,15 +26,13 @@ namespace Vega.Tests
                 CreatedBy = Fixture.CurrentUserId
             };
 
-            //cleanup audittrial table
+            //cleanup auditTrail table
+            Fixture.CleanupAuditTable();
+
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
-
-            var id = cityRepo.Add(city);
-            cityRepo.ExecuteNonQuery("DELETE FROM " + Config.VegaConfig.AuditTableName);
-
+           
             //add record
-            city.Id = 0;
-            id = cityRepo.Add(city);
+            var id = cityRepo.Add(city);
 
             //now update record
             city.State = "MH";
@@ -62,10 +56,20 @@ namespace Vega.Tests
 
             Assert.Equal(1, cityHistory.Last().CountryId);
             Assert.Equal("MH", cityHistory.Last().State);
+
+            var auditRepo = new AuditTrailKeyValueRepository<City>(Fixture.Connection);
+            var history = auditRepo.ReadAllAuditTrail(id);
+            Assert.Equal(3, history.Count());
+            Assert.Equal("GU", history.First().lstAuditTrailDetail.Find(h => h.ColumnName == "State").NewValue.ToString());
+            Assert.Null(history.First().lstAuditTrailDetail.Find(h => h.ColumnName == "State").OldValue);
+
+            Assert.Equal("MH", history.ElementAt(1).lstAuditTrailDetail.Find(h => h.ColumnName == "State").NewValue.ToString());
+            Assert.Equal("GU", history.ElementAt(1).lstAuditTrailDetail.Find(h => h.ColumnName == "State").OldValue.ToString());
+
         }
 
         [Fact]
-        public void AuditEscapeString()
+        public void AuditTrailKeyValueNoEntityBase()
         {
             string strComplex = "So far, we've been writing regular ex&nbsp;pressions that partially match pieces across all the text. " +
                         "Sometimes this isn't desirable, imagine for example we wanted to match the word \"success\"" +
@@ -77,32 +81,37 @@ namespace Vega.Tests
                         "Error: unsuccessful operation\". And if you combine both the hat and the dollar sign, you create a pattern that matches the whole line " +
                         "completely at the beginning and end.";
 
-            City city = new City
+            Employee emp = new Employee
             {
-                Name = strComplex,
-                State = "RJ",
-                Latitude = 56.65m,
-                Longitude = 16.50m,
-                CreatedBy =Fixture.CurrentUserId
+                EmployeeName = strComplex,
+                Department = "RJ",
+                DOB = null,
             };
 
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            Fixture.CleanupAuditTable();
 
-            var id = cityRepo.Add(city);
-
-            //cleanup audit table
-            cityRepo.ExecuteNonQuery("DELETE FROM " + Config.VegaConfig.AuditTableName);
+            Repository<Employee> empRepo = new Repository<Employee>(Fixture.Connection);
 
             //add record
-            city.Id = 0;
-            id = cityRepo.Add(city);
+            var id = empRepo.Add(emp);
 
             //read history
-            var cityHistory = cityRepo.ReadHistory(id);
+            var empHistory = empRepo.ReadHistory(id);
 
-            Assert.Single(cityHistory);
-            Assert.Equal(strComplex, cityHistory.First().Name);
-            Assert.Equal("RJ", cityHistory.First().State);
+            Assert.Single(empHistory);
+            Assert.Equal(strComplex, empHistory.First().EmployeeName);
+            Assert.Equal("RJ", empHistory.First().Department);
+            Assert.Null(empHistory.First().DOB);
+
+            AuditTrailKeyValueRepository<Employee> auditRepo = new AuditTrailKeyValueRepository<Employee>(Fixture.Connection);
+
+            //read history
+            var history = auditRepo.ReadAllAuditTrail(id);
+
+            Assert.Single(history);
+            Assert.Equal(strComplex, history.First().lstAuditTrailDetail.Find(p=>p.ColumnName== "EmployeeName").NewValue.ToString());
+            Assert.Equal("RJ", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "Department").NewValue.ToString());
+            Assert.Null(history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "DOB"));
         }
     }
 }

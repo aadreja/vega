@@ -7,13 +7,11 @@
 */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
 using System.Threading;
 
 namespace Vega
@@ -69,15 +67,16 @@ namespace Vega
                 cacheLock.ExitReadLock();
             }
 
-            //AuditTrial table attribute is configured based on configuration 
-            if (entity == typeof(AuditTrial))
-            {
-                result = PrepareAuditTrialTableAttribute();
-            }
-            else
-            {
+            //Ritesh - 18-Sep-19 - AuditTrail will now based on interface IAuditTrail
+            //AuditTrail table attribute is configured based on configuration 
+            //if (entity == typeof(AuditTrail))
+            //{
+            //    result = PrepareAuditTrailTableAttribute();
+            //}
+            //else
+            //{
                 result = PrepareTableAttribute(entity);
-            }
+            //}
 
             try
             {
@@ -226,14 +225,13 @@ namespace Vega
             return result;
         }
 
+        //TODO: Remove this method Later as AuditTrail will be based on interface IAuditTrail
         //to prepare AuditTableAttribute 
-        internal static TableAttribute PrepareAuditTrialTableAttribute()
+        /* internal static TableAttribute PrepareAuditTrailTableAttribute()
         {
-            //TODO: Remove Unnecessary code
-
             TableAttribute result = new TableAttribute
             {
-                Name = Config.VegaConfig.AuditTableName,
+                Name = "audittrail",
                 NeedsHistory = false,
                 NoCreatedBy = false,
                 NoCreatedOn = false,
@@ -243,7 +241,7 @@ namespace Vega
                 NoIsActive = true
             };
 
-            var type = typeof(AuditTrial);
+            var type = typeof(AuditTrail);
 
             foreach (PropertyInfo property in type.GetProperties())
             {
@@ -251,17 +249,17 @@ namespace Vega
                 column = column ?? new ColumnAttribute();
 
                 if (property.Name == "AuditTrailId")
-                    column.Name = Config.VegaConfig.AuditKeyColumnName;
+                    column.Name = "audittrailid";
                 else if (property.Name == "OperationType")
-                    column.Name = Config.VegaConfig.AuditOperationTypeColumnName;
+                    column.Name = "operationtype";
                 else if (property.Name == "TableName")
-                    column.Name = Config.VegaConfig.AuditTableNameColumnName;
+                    column.Name = "tablename";
                 else if (property.Name == "RecordId")
-                    column.Name = Config.VegaConfig.AuditRecordIdColumnName;
+                    column.Name = "recordid";
                 else if (property.Name == "Details")
-                    column.Name = Config.VegaConfig.AuditDetailsColumnName;
+                    column.Name = "details";
                 else if (property.Name == "RecordVersionNo")
-                    column.Name = Config.VegaConfig.AuditRecordVersionColumnName;
+                    column.Name = "recordversionno";
                 else if (property.Name.Equals("CreatedBy", StringComparison.OrdinalIgnoreCase))
                     column.Name = Config.VegaConfig.CreatedByColumnName;
                 else if (property.Name.Equals("CreatedOn"))
@@ -284,7 +282,7 @@ namespace Vega
                     }
                 }
 
-                column.SetPropertyInfo(property, typeof(AuditTrial));
+                column.SetPropertyInfo(property, typeof(AuditTrail));
                 result.DefaultInsertColumns.Add(column.Name);
                 result.DefaultReadColumns.Add(column.Name);
 
@@ -299,6 +297,7 @@ namespace Vega
             }
             return result;
         }
+        */
 
         #region clone object using IL
 

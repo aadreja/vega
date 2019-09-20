@@ -176,7 +176,7 @@ namespace Vega.Tests
         {
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
-            var cityList = cityRepo.ReadAll();
+            var cityList = cityRepo.ReadAll("*");
 
             Assert.Equal(cityList.Count(), cityRepo.Count());
         }
@@ -395,9 +395,34 @@ namespace Vega.Tests
             //add
             city.Id = (long)cityRepo.Add(city);
             
-            City cityResult = cityRepo.ReadOne("select top 1 * from city WHERE id=" + city.Id);
+            City cityResult = cityRepo.ReadOneQuery("SELECT TOP 1 * FROM city WHERE id=" + city.Id);
 
             Assert.Equal("ReadTests.ReadOneQuery", cityResult.Name);
+        }
+
+        [Fact]
+        public void ReadWithNullParameterValue()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ReadOneQuery",
+                State = "RQ",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CityType = EnumCityType.Metro,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            //add
+            city.Id = (long)cityRepo.Add(city);
+
+            int? country = null;
+
+            City cityResult = cityRepo.ReadOneQuery("SELECT * from city WHERE countryid=@countryid", new { countryid = country });
+
+            Assert.Null(cityResult);
         }
     }
 }
