@@ -52,8 +52,8 @@ namespace Vega
             UserFullNameDbColumn = "fullname";
 
             //4. Audit table configuration. Default is AuditTrailKeyValue
-            AuditTrailType = typeof(AuditTrailKeyValue);
-            AuditTrailRepositoryType = typeof(AuditTrailKeyValueRepository<>);
+            AuditTrailType = typeof(AuditTrail);
+            AuditTrailRepositoryType = typeof(AuditTrailRepository<>);
 
             /*
             AuditTableName = "audittrail";
