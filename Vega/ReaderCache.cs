@@ -89,10 +89,6 @@ namespace Vega
         }
     }
 
-    /// <summary>
-    /// Reader Cache
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
     internal class ReaderCache<T> where T : new()
     {
         static ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
@@ -120,7 +116,7 @@ namespace Vega
         /// </summary>
         /// <param name="reader">Reader</param>
         /// <returns>dynamic function to set entity values from reader</returns>
-        public static Func<IDataReader, T> GetFromCache(IDataReader reader)
+        internal static Func<IDataReader, T> GetFromCache(IDataReader reader)
         {
             int hash = GetReaderHash(reader);
 
@@ -148,7 +144,7 @@ namespace Vega
             }
         }
 
-        private static Func<IDataReader, T> ReaderToObject(IDataReader rdr)
+        internal static Func<IDataReader, T> ReaderToObject(IDataReader rdr)
         {
             MethodInfo rdrGetValueMethod = rdr.GetType().GetMethod("get_Item", new Type[] { typeof(int) });
 
@@ -195,9 +191,29 @@ namespace Vega
                     il.Emit(OpCodes.Ldloc_0); //load T result
                     il.Emit(OpCodes.Ldloc_1); //TODO: dynamic location using valueCopyLocal
 
-                    //14-Apr-2018 - add an unbox instruction to convert the boxed value type into the actual value on the stack.
-                    //Unbox only for ValueType
-                    if (columnInfo.Property.PropertyType.IsValueType)
+                    //when Enum are without number values
+                    if (columnInfo.Property.PropertyType.IsEnum)
+                    {
+                        Type numericType = Enum.GetUnderlyingType(columnInfo.Property.PropertyType);
+                        if (rdr.GetFieldType(i) == typeof(string))
+                        {
+                            LocalBuilder stringEnumLocal = il.DeclareLocal(typeof(string));
+
+                            il.Emit(OpCodes.Castclass, typeof(string)); // stack is now [...][string]
+                            il.Emit(OpCodes.Stloc, stringEnumLocal); // stack is now [...]
+                            il.Emit(OpCodes.Ldtoken, columnInfo.Property.PropertyType); // stack is now [...][enum-type-token]
+                            il.EmitCall(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle)), null);// stack is now [...][enum-type]
+                            il.Emit(OpCodes.Ldloc, stringEnumLocal); // stack is now [...][enum-type][string]
+                            il.Emit(OpCodes.Ldc_I4_1); // stack is now [...][enum-type][string][true]
+                            il.EmitCall(OpCodes.Call, enumParse, null); // stack is now [...][enum-as-object]
+                            il.Emit(OpCodes.Unbox_Any, columnInfo.Property.PropertyType); // stack is now [...][typed-value]
+                        }
+                        else
+                        {
+                            ConvertValueToEnum(il, rdr.GetFieldType(i), columnInfo.Property.PropertyType, numericType);
+                        }
+                    }
+                    else if (columnInfo.Property.PropertyType.IsValueType)
                         il.Emit(OpCodes.Unbox_Any, rdr.GetFieldType(i)); //type cast
 
                     // for nullable type fields
@@ -223,9 +239,115 @@ namespace Vega
 
             il.Emit(OpCodes.Ldloc, result);
             il.Emit(OpCodes.Ret);
+            
 
             var funcType = System.Linq.Expressions.Expression.GetFuncType(typeof(IDataReader), typeof(T));
             return (Func<IDataReader, T>)method.CreateDelegate(funcType);
+        }
+
+        //Thanks to StackExchange.Dapper (https://github.com/StackExchange/Dapper)
+        private static void ConvertValueToEnum(ILGenerator il, Type from, Type to, Type via)
+        {
+            MethodInfo op;
+            if (from == (via ?? to))
+            {
+                il.Emit(OpCodes.Unbox_Any, to); // stack is now [target][target][typed-value]
+            }
+            else if ((op = GetOperator(from, to)) != null)
+            {
+                // this is handy for things like decimal <===> double
+                il.Emit(OpCodes.Unbox_Any, from); // stack is now [target][target][data-typed-value]
+                il.Emit(OpCodes.Call, op); // stack is now [target][target][typed-value]
+            }
+            else
+            {
+                bool handled = false;
+                OpCode opCode = default;
+                switch (Type.GetTypeCode(from))
+                {
+                    case TypeCode.Boolean:
+                    case TypeCode.Byte:
+                    case TypeCode.SByte:
+                    case TypeCode.Int16:
+                    case TypeCode.UInt16:
+                    case TypeCode.Int32:
+                    case TypeCode.UInt32:
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                    case TypeCode.Single:
+                    case TypeCode.Double:
+                        handled = true;
+                        switch (Type.GetTypeCode(via ?? to))
+                        {
+                            case TypeCode.Byte:
+                                opCode = OpCodes.Conv_Ovf_I1_Un; break;
+                            case TypeCode.SByte:
+                                opCode = OpCodes.Conv_Ovf_I1; break;
+                            case TypeCode.UInt16:
+                                opCode = OpCodes.Conv_Ovf_I2_Un; break;
+                            case TypeCode.Int16:
+                                opCode = OpCodes.Conv_Ovf_I2; break;
+                            case TypeCode.UInt32:
+                                opCode = OpCodes.Conv_Ovf_I4_Un; break;
+                            case TypeCode.Boolean: // boolean is basically an int, at least at this level
+                            case TypeCode.Int32:
+                                opCode = OpCodes.Conv_Ovf_I4; break;
+                            case TypeCode.UInt64:
+                                opCode = OpCodes.Conv_Ovf_I8_Un; break;
+                            case TypeCode.Int64:
+                                opCode = OpCodes.Conv_Ovf_I8; break;
+                            case TypeCode.Single:
+                                opCode = OpCodes.Conv_R4; break;
+                            case TypeCode.Double:
+                                opCode = OpCodes.Conv_R8; break;
+                            default:
+                                handled = false;
+                                break;
+                        }
+                        break;
+                }
+                if (handled)
+                {
+                    il.Emit(OpCodes.Unbox_Any, from); // stack is now [target][target][col-typed-value]
+                    il.Emit(opCode); // stack is now [target][target][typed-value]
+                    if (to == typeof(bool))
+                    { // compare to zero; I checked "csc" - this is the trick it uses; nice
+                        il.Emit(OpCodes.Ldc_I4_0);
+                        il.Emit(OpCodes.Ceq);
+                        il.Emit(OpCodes.Ldc_I4_0);
+                        il.Emit(OpCodes.Ceq);
+                    }
+                }
+                else
+                {
+                    il.Emit(OpCodes.Ldtoken, via ?? to); // stack is now [target][target][value][member-type-token]
+                    il.EmitCall(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle)), null); // stack is now [target][target][value][member-type]
+                    il.EmitCall(OpCodes.Call, typeof(Convert).GetMethod(nameof(Convert.ChangeType), new Type[] { typeof(object), typeof(Type) }), null); // stack is now [target][target][boxed-member-type-value]
+                    il.Emit(OpCodes.Unbox_Any, to); // stack is now [target][target][typed-value]
+                }
+            }
+        }
+
+        private static MethodInfo GetOperator(Type from, Type to)
+        {
+            if (to == null) return null;
+            MethodInfo[] fromMethods, toMethods;
+            return ResolveOperator(fromMethods = from.GetMethods(BindingFlags.Static | BindingFlags.Public), from, to, "op_Implicit")
+                ?? ResolveOperator(toMethods = to.GetMethods(BindingFlags.Static | BindingFlags.Public), from, to, "op_Implicit")
+                ?? ResolveOperator(fromMethods, from, to, "op_Explicit")
+                ?? ResolveOperator(toMethods, from, to, "op_Explicit");
+        }
+
+        private static MethodInfo ResolveOperator(MethodInfo[] methods, Type from, Type to, string name)
+        {
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (methods[i].Name != name || methods[i].ReturnType != to) continue;
+                var args = methods[i].GetParameters();
+                if (args.Length != 1 || args[0].ParameterType != from) continue;
+                return methods[i];
+            }
+            return null;
         }
 
         /// <summary>
@@ -268,6 +390,9 @@ namespace Vega
             }
             throw toThrow;
         }
+
+        static readonly MethodInfo
+                    enumParse = typeof(Enum).GetMethod(nameof(Enum.Parse), new Type[] { typeof(Type), typeof(string), typeof(bool) });
     }
 
     internal struct ParameterKey : IEquatable<ParameterKey>
@@ -346,6 +471,8 @@ namespace Vega
         }
     }
 
+    //rewrite to optimize class as too much reflection in GetParameterHash
+    //as of now used reflection to addparameters
     internal class ParameterCache
     {
         static Dictionary<ParameterKey, Action<object, IDbCommand>> dynamicParameters = new Dictionary<ParameterKey, Action<object, IDbCommand>>();
@@ -378,7 +505,7 @@ namespace Vega
             }
         }
 
-        internal static Action<object, IDbCommand> GetFromCache(object param, IDbCommand cmd)
+        internal static Action<object, IDbCommand> GetFromCacheDoNotUse(object param, IDbCommand cmd)
         {
             ParameterKey key = new ParameterKey(GetParameterHash(param), param);
             
@@ -393,7 +520,7 @@ namespace Vega
                 cacheLock.ExitReadLock();
             }
             
-            action = AddParameters(param, cmd);
+            action = AddParametersIL(param, cmd);
 
             try
             {
@@ -406,7 +533,7 @@ namespace Vega
             }
         }
 
-        private static Action<object, IDbCommand> AddParameters(object param, IDbCommand cmd)
+        private static Action<object, IDbCommand> AddParametersIL(object param, IDbCommand cmd)
         {
             Type pType = param.GetType();
             Type[] args = { typeof(object), typeof(IDbCommand) };
@@ -467,6 +594,20 @@ namespace Vega
             }
 
             return type;
+        }
+
+        internal static void AddParameters(object param, IDbCommand cmd)
+        {
+            Type pType = param.GetType();
+            foreach (PropertyInfo property in pType.GetProperties())
+            {
+                Type type = GetTypeOfDynamicProperty(property, param);
+                if (type.IsEnum) type = Enum.GetUnderlyingType(type);
+                if (!TypeCache.TypeToDbType.TryGetValue(type, out DbType dbType))
+                    dbType = DbType.String; //TODO: fix when unkown type
+
+                cmd.AddInParameter(property.Name, dbType, property.GetValue(param));
+            }
         }
     }
 }

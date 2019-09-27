@@ -9,6 +9,11 @@ using System;
 
 namespace Vega
 {
+    [Table(IsNoDefaultFields = false)]
+    internal class EntityDefault : EntityBase
+    {
+        //just to parse default values
+    }
 
     /// <summary>
     /// Entity parent class. All entities must be inherited from this abstract class
@@ -163,20 +168,14 @@ namespace Vega
             return IsKeyFieldEmpty(UpdatedBy, "Updated By");
         }
 
-        bool IsKeyFieldEmpty(object id, string fieldName)
+        internal static bool IsKeyFieldEmpty(object id, string fieldName)
         {
             if (id is null)
                 return true;
             else if (id.IsNumber())
-            {
-                if (Equals(id, Convert.ChangeType(0, id.GetType()))) return true;
-                else return false;
-            }
+                return Equals(id, Convert.ChangeType(0, id.GetType()));
             else if (id is Guid)
-            {
-                if (Equals(id, Guid.Empty)) return true;
-                else return false;
-            }
+                return Equals(id, Guid.Empty);
             else
                 throw new Exception(id.GetType().Name + " data type not supported for " + fieldName);
         }

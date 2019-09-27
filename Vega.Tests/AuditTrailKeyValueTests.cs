@@ -60,11 +60,11 @@ namespace Vega.Tests
             var auditRepo = new AuditTrailKeyValueRepository<City>(Fixture.Connection);
             var history = auditRepo.ReadAllAuditTrail(id);
             Assert.Equal(3, history.Count());
-            Assert.Equal("GU", history.First().lstAuditTrailDetail.Find(h => h.ColumnName == "State").NewValue.ToString());
+            Assert.Equal("GU", history.First().lstAuditTrailDetail.Find(h => h.ColumnName == "State").NewValue);
             Assert.Null(history.First().lstAuditTrailDetail.Find(h => h.ColumnName == "State").OldValue);
 
-            Assert.Equal("MH", history.ElementAt(1).lstAuditTrailDetail.Find(h => h.ColumnName == "State").NewValue.ToString());
-            Assert.Equal("GU", history.ElementAt(1).lstAuditTrailDetail.Find(h => h.ColumnName == "State").OldValue.ToString());
+            Assert.Equal("MH", history.ElementAt(1).lstAuditTrailDetail.Find(h => h.ColumnName == "State").NewValue);
+            Assert.Equal("GU", history.ElementAt(1).lstAuditTrailDetail.Find(h => h.ColumnName == "State").OldValue);
 
         }
 
@@ -109,8 +109,8 @@ namespace Vega.Tests
             var history = auditRepo.ReadAllAuditTrail(id);
 
             Assert.Single(history);
-            Assert.Equal(strComplex, history.First().lstAuditTrailDetail.Find(p=>p.ColumnName== "EmployeeName").NewValue.ToString());
-            Assert.Equal("RJ", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "Department").NewValue.ToString());
+            Assert.Equal(strComplex, history.First().lstAuditTrailDetail.Find(p=>p.ColumnName== "EmployeeName").NewValue);
+            Assert.Equal("RJ", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "Department").NewValue);
             Assert.Null(history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "DOB"));
         }
     }

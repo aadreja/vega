@@ -183,5 +183,47 @@ namespace Vega.Tests
             Assert.Equal("Updated Address 1 line 1", addRepo.ReadOne<string>(address1, "AddressLine1"));
             Assert.Equal("Updated Address 2 line 1", addRepo.ReadOne<string>(address2, "AddressLine1"));
         }
+
+        [Fact]
+        public void UpdateEntityWithoutAttributes()
+        {
+            EntityWithoutTableInfo ewa = new EntityWithoutTableInfo()
+            {
+                Attribute1 = "Attribute1",
+                Attribute2 = "Attribute2"
+            };
+
+            Repository<EntityWithoutTableInfo> ewaRepo = new Repository<EntityWithoutTableInfo>(Fixture.Connection);
+            int id = (int)ewaRepo.Add(ewa);
+
+            ewa = ewaRepo.ReadOne(id);
+
+            ewa.Attribute1 = "Updated Attribute1";
+
+            ewaRepo.Update(ewa);
+            Assert.Equal("Updated Attribute1", ewaRepo.ReadOne(id).Attribute1);
+        }
+
+        [Fact]
+        public void UpdateNoVersion()
+        {
+            EntityWithIsActive soc = new EntityWithIsActive
+            {
+                Attribute1 = "attribute 1",
+                Attribute2 = "attribute 2",
+            };
+
+            Repository<EntityWithIsActive> socRepo = new Repository<EntityWithIsActive>(Fixture.Connection);
+            var id = socRepo.Add(soc);
+
+            soc = socRepo.ReadOne(id);
+
+            soc.Attribute1 = "Updated Attribute1";
+
+            socRepo.Update(soc);
+            Assert.Equal("Updated Attribute1", socRepo.ReadOne(id).Attribute1);
+
+            
+        }
     }
 }

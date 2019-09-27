@@ -6,9 +6,9 @@ using System.Linq;
 namespace Vega
 {
     /// <summary>
-    /// 
+    /// CSV Implementation of AuditTrail CRUD actions
     /// </summary>
-    /// <typeparam name="Entity"></typeparam>
+    /// <typeparam name="Entity">Entity which needs AuditTrail</typeparam>
     public class AuditTrailRepository<Entity> : Repository<AuditTrail>, IAuditTrailRepository<Entity> where Entity : new()
     {
         #region constructors
@@ -59,12 +59,12 @@ namespace Vega
 
 
         /// <summary>
-        /// 
+        /// Add record to AuditTrail. Insert or Update action on a Table
         /// </summary>
-        /// <param name="entity"></param>
-        /// <param name="operation"></param>
-        /// <param name="audit"></param>
-        /// <returns></returns>
+        /// <param name="entity">Entity which was modified</param>
+        /// <param name="operation">Insert or Update operation</param>
+        /// <param name="audit">Audit Trail object of type IAuditTrail</param>
+        /// <returns>true if success, False if fail</returns>
         public bool Add(Entity entity, RecordOperationEnum operation, IAuditTrail audit)
         {
             CreateTableIfNotExist();
@@ -86,14 +86,13 @@ namespace Vega
         }
 
         /// <summary>
-        /// 
+        /// Add record to AuditTrail. Delete or Recover action on a Table
         /// </summary>
-        /// <param name="recordId"></param>
-        /// <param name="recordVersionNo"></param>
-        /// <param name="updatedBy"></param>
-        /// <param name="operation"></param>
-        /// <returns></returns>
-        //for delete & restore
+        /// <param name="recordId">RecordId which was modified</param>
+        /// <param name="recordVersionNo">Record Version o</param>
+        /// <param name="updatedBy">Modified By</param>
+        /// <param name="operation">Delete or Recover operation</param>
+        /// <returns>true if success, False if fail</returns>
         public bool Add(object recordId, int? recordVersionNo, object updatedBy, RecordOperationEnum operation)
         {
             if (operation != RecordOperationEnum.Delete && operation != RecordOperationEnum.Recover)
@@ -119,14 +118,13 @@ namespace Vega
         }
 
         /// <summary>
-        /// 
+        /// Read and Return chain of Record from insert to update till now for a given Record of an Entity
         /// </summary>
         /// <param name="id"></param>
-        /// <returns></returns>
-        //public IEnumerable<T> ReadAll<T>(string tableName, object id) where T : new()
+        /// <returns>List of Entity with modification</returns>
         public IEnumerable<Entity> ReadAll(object id)
         {
-            var lstAudit = ReadAll("*", $"tablename=@TableName AND recordid=@RecordId", new { TableName = entityTableInfo.Name, RecordId = id.ToString() }, Config.VegaConfig.CreatedOnColumnName + " ASC");
+            var lstAudit = ReadAll("*", $"tablename=@TableName AND recordid=@RecordId", new { TableName = entityTableInfo.Name, RecordId = id.ToString() }, Config.CreatedOnColumnName + " ASC");
 
             Entity current = default;
 
@@ -187,15 +185,15 @@ namespace Vega
         }
 
         /// <summary>
-        /// Read all AuditTrail for a given record of a table
+        /// Read and Return chain of AuditTrial with column, old and new values for a given Record
         /// </summary>
         /// <param name="id"></param>
-        /// <returns></returns>
+        /// <returns>List of AuditTrail with column, old and new values</returns>
         public List<IAuditTrail> ReadAllAuditTrail(object id)
         {
             var lstAudit = ReadAll("*", $"tablename=@TableName AND recordid=@RecordId", 
                 new { TableName = entityTableInfo.Name, RecordId = id.ToString() }, 
-                Config.VegaConfig.CreatedOnColumnName + " ASC");
+                Config.CreatedOnColumnName + " ASC");
 
             var result = lstAudit.ToList();
 

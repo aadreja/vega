@@ -60,6 +60,26 @@ namespace Vega.Tests
         }
 
         [Fact]
+        public void ExistsWhere()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ExistsNew",
+                State = "RO",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            city.Id = (long)cityRepo.Add(city);
+
+            Assert.True(cityRepo.ExistsWhere(new { State = "RO" }));
+            Assert.False(cityRepo.ExistsWhere(new { State = "R1" }));
+        }
+
+        [Fact]
         public void ReadCount()
         {
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
@@ -100,7 +120,28 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            City cityReadOne = cityRepo.ReadOne("State=@State", new { State = "RO1" }, "name");
+            City cityReadOne = cityRepo.ReadOne("name", "State=@State", new { State = "RO1" });
+
+            Assert.Equal(city.Name, cityReadOne.Name);
+        }
+
+        [Fact]
+        public void ReadOneNullParameterWithoutCriteria()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ReadOneNullParameterWithoutCriteria",
+                State = "RONPWC",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            city.Id = (long)cityRepo.Add(city);
+
+            City cityReadOne = cityRepo.ReadOne("name", new { State = "RONPWC" });
 
             Assert.Equal(city.Name, cityReadOne.Name);
         }
@@ -121,7 +162,7 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            Assert.Throws<Exception>(() => cityRepo.ReadOne("State=@State", null, "name"));
+            Assert.Throws<Exception>(() => cityRepo.ReadOne("name", "State=@State", null));
         }
 
         [Fact]
@@ -140,7 +181,26 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            City result = cityRepo.ReadOne("State=@state and CountryId=@countryid", new { State = "RO3", CountryId = 1 }, "name");
+            City result = cityRepo.ReadOne("name", "State=@state and CountryId=@countryid", new { State = "RO3", CountryId = 1 });
+        }
+
+        [Fact]
+        public void ReadOneMultipleParameterNoCriteria()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ReadOneMultipleParameter",
+                State = "RO3",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            city.Id = (long)cityRepo.Add(city);
+
+            City result = cityRepo.ReadOne("name",new { State = "RO3", CountryId = 1 });
         }
 
         [Fact]
@@ -167,8 +227,28 @@ namespace Vega.Tests
             Assert.Equal(city.Longitude, cityReadOne.Longitude);
             Assert.Equal(city.Latitude, cityReadOne.Latitude);
 
-            cityReadOne = cityRepo.ReadOne("State=@State", new { State = "RO" });
+            cityReadOne = cityRepo.ReadOne("*", new { State = "RO" });
             Assert.Equal("RO", cityReadOne.State);
+        }
+
+        [Fact]
+        public void ReadOneNoCriteria()
+        {
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadTests.ReadOne",
+                State = "RO",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            city.Id = (long)cityRepo.Add(city);
+
+            city = cityRepo.ReadOne("*", new { State = "RO" });
+            Assert.Equal("RO", city.State);
         }
 
         [Fact]
@@ -176,7 +256,7 @@ namespace Vega.Tests
         {
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
 
-            var cityList = cityRepo.ReadAll("*");
+            var cityList = cityRepo.ReadAll();
 
             Assert.Equal(cityList.Count(), cityRepo.Count());
         }
@@ -394,9 +474,12 @@ namespace Vega.Tests
             };
             //add
             city.Id = (long)cityRepo.Add(city);
-            
-            City cityResult = cityRepo.ReadOneQuery("SELECT TOP 1 * FROM city WHERE id=" + city.Id);
 
+#if MSSQL
+            City cityResult = cityRepo.ReadOneQuery("SELECT TOP 1 * FROM city WHERE id=" + city.Id);
+#else
+            City cityResult = cityRepo.ReadOneQuery("SELECT * FROM city WHERE id=" + city.Id + " LIMIT 1");
+#endif
             Assert.Equal("ReadTests.ReadOneQuery", cityResult.Name);
         }
 

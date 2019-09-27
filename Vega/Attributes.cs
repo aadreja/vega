@@ -211,7 +211,6 @@ namespace Vega
 
         #region helper to replace entity base
 
-
         bool IsKeyFieldEmpty(object id, string fieldName)
         {
             if (id is null)
@@ -298,62 +297,62 @@ namespace Vega
 
         internal object GetCreatedBy(object entity)
         {
-            return Columns[Config.VegaConfig.CreatedByColumnName].GetAction(entity);
+            return Columns[Config.CreatedByColumnName].GetAction(entity);
         }
 
         internal void SetCreatedBy(object entity, object createdBy)
         {
-            Columns[Config.VegaConfig.CreatedByColumnName].SetAction(entity, createdBy);
+            Columns[Config.CreatedByColumnName].SetAction(entity, createdBy);
         }
 
         internal void SetCreatedOn(object entity, DateTime? createdOn)
         {
-            Columns[Config.VegaConfig.CreatedOnColumnName].SetAction(entity, createdOn);
+            Columns[Config.CreatedOnColumnName].SetAction(entity, createdOn);
         }
 
         internal DateTime? GetCreatedOn(object entity)
         {
-            return (DateTime?)Columns[Config.VegaConfig.CreatedOnColumnName].GetAction(entity);
+            return (DateTime?)Columns[Config.CreatedOnColumnName].GetAction(entity);
         }
 
         internal object GetUpdatedBy(object entity)
         {
-            return Columns[Config.VegaConfig.UpdatedByColumnName].GetAction(entity);
+            return Columns[Config.UpdatedByColumnName].GetAction(entity);
         }
 
         internal void SetUpdatedBy(object entity, object updatedBy)
         {
-            Columns[Config.VegaConfig.UpdatedByColumnName].SetAction(entity, updatedBy);
+            Columns[Config.UpdatedByColumnName].SetAction(entity, updatedBy);
         }
 
         internal DateTime? GetUpdatedOn(object entity)
         {
-            return (DateTime?)Columns[Config.VegaConfig.UpdatedOnColumnName].GetAction(entity);
+            return (DateTime?)Columns[Config.UpdatedOnColumnName].GetAction(entity);
         }
 
         internal void SetUpdatedOn(object entity, DateTime? updatedOn)
         {
-            Columns[Config.VegaConfig.UpdatedOnColumnName].SetAction(entity, updatedOn);
+            Columns[Config.UpdatedOnColumnName].SetAction(entity, updatedOn);
         }
 
         internal int? GetVersionNo(object entity)
         {
-            return (int?)Columns[Config.VegaConfig.VersionNoColumnName].GetAction(entity);
+            return (int?)Columns[Config.VersionNoColumnName].GetAction(entity);
         }
 
         internal void SetVersionNo(object entity, int? versionNo)
         {
-            Columns[Config.VegaConfig.VersionNoColumnName].SetAction(entity, versionNo);
+            Columns[Config.VersionNoColumnName].SetAction(entity, versionNo);
         }
 
         internal bool? GetIsActive(object entity)
         {
-            return (bool?)Columns[Config.VegaConfig.IsActiveColumnName].GetAction(entity);
+            return (bool?)Columns[Config.IsActiveColumnName].GetAction(entity);
         }
 
         internal void SetIsActive(object entity, bool? isActive)
         {
-            Columns[Config.VegaConfig.IsActiveColumnName].SetAction(entity, isActive);
+            Columns[Config.IsActiveColumnName].SetAction(entity, isActive);
         }
 
         #endregion

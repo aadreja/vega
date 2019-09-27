@@ -2,6 +2,8 @@
 using System.Data;
 using Vega;
 using Xunit;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Vega.Tests
 {
@@ -16,8 +18,31 @@ namespace Vega.Tests
         }
 
         [Fact]
+        public void SoftDeleteNoVersion()
+        {
+            EntityWithIsActive soc = new EntityWithIsActive
+            {
+                Attribute1 = "attribute 1",
+                Attribute2 = "attribute 2",
+            };
+
+            Repository<EntityWithIsActive> socRepo = new Repository<EntityWithIsActive>(Fixture.Connection);
+            var id = socRepo.Add(soc);
+
+            Assert.Throws<MissingFieldException>(() => socRepo.Delete(id));
+
+            Assert.True(socRepo.Delete(id, Fixture.CurrentUserId));
+
+            soc = socRepo.ReadOne(id);
+
+            Assert.False(soc.IsActive);
+        }
+
+        [Fact]
         public void DeleteWithoutVersionNo()
         {
+             Fixture.CleanupAuditTable();
+
             City city = new City
             {
                 Name = "Ahmedabad",
@@ -31,6 +56,17 @@ namespace Vega.Tests
             var id = cityRepo.Add(city);
 
             Assert.True(cityRepo.Delete(id, Fixture.CurrentUserId));
+
+            city = new City();
+            city = cityRepo.ReadOne(id);
+            Assert.Equal(2, city.VersionNo);
+
+            //read version no from history
+            AuditTrailRepository<City> atRepo = new AuditTrailRepository<City>(Fixture.Connection);
+            List<AuditTrail> lstAudit = atRepo.ReadAllAuditTrail(id).Cast<AuditTrail>().ToList();
+
+            Assert.Equal(1, lstAudit[0].RecordVersionNo);
+            Assert.Equal(2, lstAudit[1].RecordVersionNo);
         }
 
         [Fact]

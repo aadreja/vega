@@ -183,13 +183,13 @@ namespace Vega
             {
                 if (!isConOpen) connection.Open();
 
-                IDbCommand command = connection.CreateCommand();
-                command.CommandType = CommandType.Text;
-                command.CommandText = query;
+                IDbCommand cmd = connection.CreateCommand();
+                cmd.CommandType = CommandType.Text;
+                cmd.CommandText = query;
 
                 DBVersionInfo dbVersion = new DBVersionInfo();
 
-                using (IDataReader rdr = command.ExecuteReader())
+                using (IDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                     {
@@ -208,8 +208,8 @@ namespace Vega
                     rdr.Close();
                 }
 
-                command.CommandText = "SHOW server_version;";
-                using (IDataReader rdr = command.ExecuteReader())
+                cmd.CommandText = "SHOW server_version;";
+                using (IDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                     {

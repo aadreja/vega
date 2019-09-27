@@ -181,7 +181,7 @@ namespace Vega
             query.Append($"SELECT TOP 1 {vfk.ColumnName} FROM {vfk.FullTableName} WHERE {vfk.ColumnName}=@Id");
 
             if (vfk.ContainsIsActive)
-                query.Append($" AND {Config.VegaConfig.IsActiveColumnName}={BITTRUEVALUE}");
+                query.Append($" AND {Config.IsActiveColumnName}={BITTRUEVALUE}");
 
             return query.ToString();
         }
@@ -197,11 +197,11 @@ namespace Vega
             {
                 if (!isConOpen) connection.Open();
 
-                IDbCommand command = connection.CreateCommand();
-                command.CommandType = CommandType.Text;
-                command.CommandText = query;
+                IDbCommand cmd = connection.CreateCommand();
+                cmd.CommandType = CommandType.Text;
+                cmd.CommandText = query;
 
-                using (IDataReader rdr = command.ExecuteReader())
+                using (IDataReader rdr = cmd.ExecuteReader())
                 {
                     DBVersionInfo dbVersion = new DBVersionInfo();
                     if (rdr.Read())

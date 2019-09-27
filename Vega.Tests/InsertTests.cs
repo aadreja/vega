@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Vega;
 using Xunit;
 
@@ -353,6 +355,81 @@ namespace Vega.Tests
             Assert.Equal("line 1", addRepo.ReadOne<string>(address, "AddressLine1"));
         }
 
+        [Fact]
+        public void InsertEntityWithoutAttributes()
+        {
+            EntityWithoutTableInfo ewa = new EntityWithoutTableInfo()
+            {
+                Attribute1 = "Attribute1",
+                Attribute2 = "Attribute2"
+            };
+
+            Repository<EntityWithoutTableInfo> ewaRepo = new Repository<EntityWithoutTableInfo>(Fixture.Connection);
+            int id = (int)ewaRepo.Add(ewa);
+
+            Assert.Equal("Attribute1", ewaRepo.ReadOne<string>(id, "Attribute1"));
+        }
+
+        //Chetan found bugs in AuditTrail
+        [Fact]
+        public void InsertUpdateDeleteUpdateDelete()
+        {
+
+            //cleanup audit table
+            
+            Fixture.CleanupAuditTable();
+
+            Country cnt = new Country()
+            {
+                Name = "India",
+                ShortCode = "IN",
+                Independence = new DateTime(1947, 8, 15),
+                Continent= EnumContinent.Asia,
+                CreatedBy = Fixture.CurrentUserId
+            };
+
+            Repository<Country> contryRepo = new Repository<Country>(Fixture.Connection);
+            var id = contryRepo.Add(cnt);
+
+            cnt = contryRepo.ReadOne(id);
+            Assert.Equal(EnumContinent.Asia, cnt.Continent);
+
+            cnt.UpdatedBy = 2;
+            //should not update as no changes were made
+            Assert.True(contryRepo.Update(cnt));
+
+            try
+            {
+                //try to delete without UpdatedBy column
+                Exception ex = Assert.Throws<MissingFieldException>(() => contryRepo.Delete(id));
+            }
+            catch(Exception ex)
+            {
+
+            }
+
+            Assert.True(contryRepo.Delete(id,2));
+            cnt.VersionNo++;
+            Assert.True(contryRepo.Update(cnt)); //this will be updated as isactive is set to true while in db its false
+            Assert.True(contryRepo.Delete(id, 2));
+
+            AuditTrailRepository<Country> adtRepo = new AuditTrailRepository<Country>(Fixture.Connection);
+            Assert.Equal(4, adtRepo.Count());
+
+            List<AuditTrail> lstAudit = adtRepo.ReadAll().Cast<AuditTrail>().ToList();
+
+            Assert.Equal(1, lstAudit[0].RecordVersionNo);
+            Assert.Equal(1, lstAudit[0].CreatedBy);
+
+            Assert.Equal(2, lstAudit[1].RecordVersionNo);
+            Assert.Equal(2, lstAudit[1].CreatedBy);
+
+            Assert.Equal(3, lstAudit[2].RecordVersionNo);
+            Assert.Equal(1, lstAudit[2].CreatedBy);
+
+            Assert.Equal(4, lstAudit[3].RecordVersionNo);
+            Assert.Equal(2, lstAudit[3].CreatedBy);
+        }
     }
 
     

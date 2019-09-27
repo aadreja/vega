@@ -45,21 +45,21 @@ namespace Vega.Tests
 
             //order by country ASC, name ASC
             //First Page
-            List<City> cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.First, null, "state=@state", null, null, parameters).ToList();
+            List<City> cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.First, null, null, null, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal(1, cityList[0].CountryId);
             Assert.Equal("PagedNoCriteriaTest.00002", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00124", cityList[49].Name);
 
             //Next Page
-            cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.Next, null, "state=@state", new object[] { cityList[49].CountryId, cityList[49].Name }, cityList[49].Id, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.Next, null, new object[] { cityList[49].CountryId, cityList[49].Name }, cityList[49].Id, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal(1, cityList[0].CountryId);
             Assert.Equal("PagedNoCriteriaTest.00126", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00248", cityList[49].Name);
 
             //Last Page
-            cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.Last, null, "state=@state", null, null, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.Last, null, null, null, parameters).ToList();
 
             Assert.Equal(50, cityList.Count);
             Assert.Equal(2, cityList[0].CountryId);
@@ -67,7 +67,7 @@ namespace Vega.Tests
             Assert.Equal("PagedNoCriteriaTest.00999", cityList[49].Name);
 
             //Previous Page
-            cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.Previous, null, "state=@state", new object[] { cityList[0].CountryId, cityList[0].Name }, cityList[0].Id, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.Previous, null, new object[] { cityList[0].CountryId, cityList[0].Name }, cityList[0].Id, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal(2, cityList[0].CountryId);
             Assert.Equal("PagedNoCriteriaTest.00751", cityList[0].Name);
@@ -75,21 +75,21 @@ namespace Vega.Tests
 
             //order by countryid desc, name asc
             //First Page
-            cityList = cityRepo.ReadAllPaged("countryid desc, name", 50, PageNavigationEnum.First, null, "state=@state", null, null, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid desc, name", 50, PageNavigationEnum.First, null, null, null, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal(2, cityList[0].CountryId);
             Assert.Equal("PagedNoCriteriaTest.00001", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00123", cityList[49].Name);
 
             //Next Page
-            cityList = cityRepo.ReadAllPaged("countryid desc,name", 50, PageNavigationEnum.Next, null, "state=@state", new object[] { cityList[49].CountryId, cityList[49].Name }, cityList[49].Id, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid desc,name", 50, PageNavigationEnum.Next, null, new object[] { cityList[49].CountryId, cityList[49].Name }, cityList[49].Id, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal(2, cityList[0].CountryId);
             Assert.Equal("PagedNoCriteriaTest.00127", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00249", cityList[49].Name);
 
             //Last Page
-            cityList = cityRepo.ReadAllPaged("countryid desc,name", 50, PageNavigationEnum.Last, null, "state=@state", null, null, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid desc,name", 50, PageNavigationEnum.Last, null, null, null, parameters).ToList();
 
             Assert.Equal(50, cityList.Count);
             Assert.Equal(1, cityList[0].CountryId);
@@ -97,7 +97,7 @@ namespace Vega.Tests
             Assert.Equal("PagedNoCriteriaTest.00998", cityList[49].Name);
 
             //Previous Page
-            cityList = cityRepo.ReadAllPaged("countryid desc,name", 50, PageNavigationEnum.Previous, null, "state=@state", new object[] { cityList[0].CountryId, cityList[0].Name }, cityList[0].Id, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid desc,name", 50, PageNavigationEnum.Previous, null, new object[] { cityList[0].CountryId, cityList[0].Name }, cityList[0].Id, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal(1, cityList[0].CountryId);
             Assert.Equal("PagedNoCriteriaTest.00752", cityList[0].Name);
@@ -132,51 +132,51 @@ namespace Vega.Tests
 
             //order by ASC
             //First Page
-            List<City> cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.First, null, "state=@state", null, null, parameters).ToList();
+            List<City> cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.First, null, null, null, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00002", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00100", cityList[49].Name);
 
             //Next Page
-            cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.Next, null, "state=@state", new[] { cityList[49].Name }, cityList[49].Id, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.Next, null, new[] { cityList[49].Name }, cityList[49].Id, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00102", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00200", cityList[49].Name);
 
             //Last Page
-            cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.Last, null, "state=@state", null, null, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.Last, null, null, null, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00902", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.01000", cityList[49].Name);
 
             //Previous Page
-            cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.Previous, null, "state=@state", new[] { cityList[0].Name }, cityList[0].Id, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.Previous, null, new[] { cityList[0].Name }, cityList[0].Id, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00802", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00900", cityList[49].Name);
 
             //order by desc
             //First Page
-            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.First, null, "state=@state", null, null, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.First, null, null, null, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.01000", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00902", cityList[49].Name);
 
             //Next Page
-            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.Next, null, "state=@state", new[] { cityList[49].Name }, cityList[49].Id, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.Next, null, new[] { cityList[49].Name }, cityList[49].Id, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00900", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00802", cityList[49].Name);
 
             //Last Page
-            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.Last, null, "state=@state", null, null, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.Last, null, null, null, parameters).ToList();
 
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00100", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00002", cityList[49].Name);
 
             //Previous Page
-            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.Previous, null, "state=@state", new[] { cityList[0].Name }, cityList[0].Id, parameters).ToList();
+            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.Previous, null, new[] { cityList[0].Name }, cityList[0].Id, parameters).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00200", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00102", cityList[49].Name);
@@ -215,7 +215,7 @@ namespace Vega.Tests
             Assert.Equal("PagedNoCriteriaTest.00100", cityList[49].Name);
 
             //Next Page
-            cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.Next, null, null, new object[] { cityList[49].CountryId, cityList[49].Name }, cityList[49].Id).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.Next, "*",  new object[] { cityList[49].CountryId, cityList[49].Name }, cityList[49].Id).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal(1, cityList[0].CountryId);
             Assert.Equal("PagedNoCriteriaTest.00102", cityList[0].Name);
@@ -230,7 +230,7 @@ namespace Vega.Tests
             Assert.Equal("PagedNoCriteriaTest.00999", cityList[49].Name);
 
             //Previous Page
-            cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.Previous, null, null, new object[] { cityList[0].CountryId, cityList[0].Name }, cityList[0].Id).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid,name", 50, PageNavigationEnum.Previous, "*",  new object[] { cityList[0].CountryId, cityList[0].Name }, cityList[0].Id).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal(2, cityList[0].CountryId);
             Assert.Equal("PagedNoCriteriaTest.00801", cityList[0].Name);
@@ -245,7 +245,7 @@ namespace Vega.Tests
             Assert.Equal("PagedNoCriteriaTest.00099", cityList[49].Name);
 
             //Next Page
-            cityList = cityRepo.ReadAllPaged("countryid desc,name", 50, PageNavigationEnum.Next, null, null, new object[] { cityList[49].CountryId, cityList[49].Name }, cityList[49].Id).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid desc,name", 50, PageNavigationEnum.Next, "*", new object[] { cityList[49].CountryId, cityList[49].Name }, cityList[49].Id).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal(2, cityList[0].CountryId);
             Assert.Equal("PagedNoCriteriaTest.00101", cityList[0].Name);
@@ -260,7 +260,7 @@ namespace Vega.Tests
             Assert.Equal("PagedNoCriteriaTest.01000", cityList[49].Name);
 
             //Previous Page
-            cityList = cityRepo.ReadAllPaged("countryid desc,name", 50, PageNavigationEnum.Previous, null, null, new object[] { cityList[0].CountryId, cityList[0].Name }, cityList[0].Id).ToList();
+            cityList = cityRepo.ReadAllPaged("countryid desc,name", 50, PageNavigationEnum.Previous, "*", new object[] { cityList[0].CountryId, cityList[0].Name }, cityList[0].Id).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal(1, cityList[0].CountryId);
             Assert.Equal("PagedNoCriteriaTest.00802", cityList[0].Name);
@@ -299,7 +299,7 @@ namespace Vega.Tests
             Assert.Equal("PagedNoCriteriaTest.00050", cityList[49].Name);
 
             //Next Page
-            cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.Next, null, null, new[] { cityList[49].Name }, cityList[49].Id).ToList();
+            cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.Next, "*", new[] { cityList[49].Name }, cityList[49].Id).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00051", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00100", cityList[49].Name);
@@ -312,7 +312,7 @@ namespace Vega.Tests
             Assert.Equal("PagedNoCriteriaTest.01000", cityList[49].Name);
 
             //Previous Page
-            cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.Previous, null, null, new[] { cityList[0].Name }, cityList[0].Id).ToList();
+            cityList = cityRepo.ReadAllPaged("name", 50, PageNavigationEnum.Previous, "*", new[] { cityList[0].Name }, cityList[0].Id).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00901", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00950", cityList[49].Name);
@@ -325,7 +325,7 @@ namespace Vega.Tests
             Assert.Equal("PagedNoCriteriaTest.00951", cityList[49].Name);
 
             //Next Page
-            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.Next, null, null, new[] { cityList[49].Name }, cityList[49].Id).ToList();
+            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.Next, "*",  new[] { cityList[49].Name }, cityList[49].Id).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00950", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00901", cityList[49].Name);
@@ -338,7 +338,7 @@ namespace Vega.Tests
             Assert.Equal("PagedNoCriteriaTest.00001", cityList[49].Name);
 
             //Previous Page
-            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.Previous, null, null, new[] { cityList[0].Name }, cityList[0].Id).ToList();
+            cityList = cityRepo.ReadAllPaged("name desc", 50, PageNavigationEnum.Previous, "*", new[] { cityList[0].Name }, cityList[0].Id).ToList();
             Assert.Equal(50, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.00100", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.00051", cityList[49].Name);
@@ -733,13 +733,13 @@ namespace Vega.Tests
                 city.Id = (long)cityRepo.Add(city);
             }
 
-            List<City> cityList = cityRepo.ReadAllPaged("name", 1, 10, null, "state=@state", new { state = "DC" }).ToList();
+            List<City> cityList = cityRepo.ReadAllPaged("name", 1, 10, null, new { state = "DC" }).ToList();
 
             Assert.Equal(10, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.0001", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.0019", cityList[9].Name);
 
-            cityList = cityRepo.ReadAllPaged("name", 5, 10, null, "state=@state",  new { state = "RC" }).ToList();
+            cityList = cityRepo.ReadAllPaged("name", 5, 10, null, new { state = "RC" }).ToList();
 
             Assert.Equal(10, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.0082", cityList[0].Name);
@@ -886,13 +886,13 @@ namespace Vega.Tests
             //Setting MSSQL Verion as 2008R2
             cityRepo.DBVersion.Version = new Version("10.50.6560");
 
-            List<City> cityList = cityRepo.ReadAllPaged("name", 1, 10, null, "state=@state", new { state = "DC" }).ToList();
+            List<City> cityList = cityRepo.ReadAllPaged("name", 1, 10, null, new { state = "DC" }).ToList();
 
             Assert.Equal(10, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.0001", cityList[0].Name);
             Assert.Equal("PagedNoCriteriaTest.0019", cityList[9].Name);
 
-            cityList = cityRepo.ReadAllPaged("name", 5, 10, null, "state=@state", new { state = "RC" }).ToList();
+            cityList = cityRepo.ReadAllPaged("name", 5, 10, null, new { state = "RC" }).ToList();
 
             Assert.Equal(10, cityList.Count);
             Assert.Equal("PagedNoCriteriaTest.0082", cityList[0].Name);
@@ -1006,21 +1006,21 @@ namespace Vega.Tests
 
             //order by country ASC, name ASC
             //First Page
-            List<Address> addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.First, null, "addresstype=@addresstype", null, null, parameters).ToList();
+            List<Address> addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.First, "*", null, null, parameters).ToList();
             Assert.Equal(50, addList.Count);
             Assert.Equal("P0001", addList[0].CustomerCode);
             Assert.Equal("Line1PagedNoCriteriaTest.00002", addList[0].AddressLine1);
             Assert.Equal("Line1PagedNoCriteriaTest.00124", addList[49].AddressLine1);
 
             //Next Page
-            addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.Next, null, "addresstype=@addresstype", new object[] { addList[49].CustomerCode, addList[49].AddressLine1 }, new Address() { Id= addList[49].Id, AddressType="HOME" }, parameters).ToList();
+            addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.Next, "*", new object[] { addList[49].CustomerCode, addList[49].AddressLine1 }, new Address() { Id= addList[49].Id, AddressType="HOME" }, parameters).ToList();
             Assert.Equal(50, addList.Count);
             Assert.Equal("P0001", addList[0].CustomerCode);
             Assert.Equal("Line1PagedNoCriteriaTest.00126", addList[0].AddressLine1);
             Assert.Equal("Line1PagedNoCriteriaTest.00248", addList[49].AddressLine1);
 
             //Last Page
-            addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.Last, null, "addresstype=@addresstype", null, null, parameters).ToList();
+            addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.Last, "*", null, null, parameters).ToList();
 
             Assert.Equal(50, addList.Count);
             Assert.Equal("P0002", addList[0].CustomerCode);
@@ -1028,7 +1028,7 @@ namespace Vega.Tests
             Assert.Equal("Line1PagedNoCriteriaTest.00999", addList[49].AddressLine1);
 
             //Previous Page
-            addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.Previous, null, "addresstype=@addresstype", new object[] { addList[0].CustomerCode, addList[0].AddressLine1 }, new Address() { Id = addList[0].Id, AddressType = "HOME" }, parameters).ToList();
+            addList = addRepo.ReadAllPaged("customercode,addressline1", 50, PageNavigationEnum.Previous, "*", new object[] { addList[0].CustomerCode, addList[0].AddressLine1 }, new Address() { Id = addList[0].Id, AddressType = "HOME" }, parameters).ToList();
             Assert.Equal(50, addList.Count);
             Assert.Equal("P0002", addList[0].CustomerCode);
             Assert.Equal("Line1PagedNoCriteriaTest.00751", addList[0].AddressLine1);
@@ -1036,21 +1036,21 @@ namespace Vega.Tests
 
             //order by countryid desc, name asc
             //First Page
-            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.First, null, "addresstype=@addresstype", null, null, parameters).ToList();
+            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.First, "*", null, null, parameters).ToList();
             Assert.Equal(50, addList.Count);
             Assert.Equal("P0002", addList[0].CustomerCode);
             Assert.Equal("Line1PagedNoCriteriaTest.00001", addList[0].AddressLine1);
             Assert.Equal("Line1PagedNoCriteriaTest.00123", addList[49].AddressLine1);
 
             //Next Page
-            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.Next, null, "addresstype=@addresstype", new object[] { addList[49].CustomerCode, addList[49].AddressLine1 }, new Address() { Id = addList[49].Id, AddressType="HOME" }, parameters).ToList();
+            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.Next, "*", new object[] { addList[49].CustomerCode, addList[49].AddressLine1 }, new Address() { Id = addList[49].Id, AddressType="HOME" }, parameters).ToList();
             Assert.Equal(50, addList.Count);
             Assert.Equal("P0002", addList[0].CustomerCode);
             Assert.Equal("Line1PagedNoCriteriaTest.00127", addList[0].AddressLine1);
             Assert.Equal("Line1PagedNoCriteriaTest.00249", addList[49].AddressLine1);
 
             //Last Page
-            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.Last, null, "addresstype=@addresstype", null, null, parameters).ToList();
+            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.Last, "*", null, null, parameters).ToList();
 
             Assert.Equal(50, addList.Count);
             Assert.Equal("P0001", addList[0].CustomerCode);
@@ -1058,7 +1058,7 @@ namespace Vega.Tests
             Assert.Equal("Line1PagedNoCriteriaTest.00998", addList[49].AddressLine1);
 
             //Previous Page
-            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.Previous, null, "addresstype=@addresstype", new object[] { addList[0].CustomerCode, addList[0].AddressLine1 }, new Address() { Id = addList[0].Id, AddressType = "HOME" }, parameters).ToList();
+            addList = addRepo.ReadAllPaged("customercode desc,addressline1", 50, PageNavigationEnum.Previous, "*", new object[] { addList[0].CustomerCode, addList[0].AddressLine1 }, new Address() { Id = addList[0].Id, AddressType = "HOME" }, parameters).ToList();
             Assert.Equal(50, addList.Count);
             Assert.Equal("P0001", addList[0].CustomerCode);
             Assert.Equal("Line1PagedNoCriteriaTest.00752", addList[0].AddressLine1);

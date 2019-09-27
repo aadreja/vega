@@ -193,6 +193,9 @@ namespace Vega.Tests
 
                 orgRepo.Commit();
 
+                //cleanup transaction
+                addRepo.Transaction = null; 
+
                 //check after commit
                 Assert.Equal(org.CustomerCode, orgRepo.ReadOne<string>(org.CustomerCode, "customercode"));
                 Assert.Equal(address.Id, addRepo.ReadOne<long>(new Address() { Id = address.Id, AddressType = "Home" }, "id"));

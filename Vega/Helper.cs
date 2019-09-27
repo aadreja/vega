@@ -53,42 +53,42 @@ namespace Vega
         /// <summary>
         /// Adds out parameter to the command
         /// </summary>
-        /// <param name="command">IDbCommand object</param>
+        /// <param name="cmd">IDbCommand object</param>
         /// <param name="name">Name of parameter</param>
         /// <param name="dbType">DbType of parameter</param>
-        public static void AddOutParameter(this IDbCommand command,
+        public static void AddOutParameter(this IDbCommand cmd,
                                    string name,
                                    DbType dbType)
         {
-            AddParameter(command, name, dbType, ParameterDirection.Output, name, DataRowVersion.Default, null);
+            AddParameter(cmd, name, dbType, ParameterDirection.Output, name, DataRowVersion.Default, null);
         }
 
         /// <summary>
         /// Adds In parameter to the command
         /// </summary>
-        /// <param name="command">IDbCommand object</param>
+        /// <param name="cmd">IDbCommand object</param>
         /// <param name="name">Name of parameter</param>
         /// <param name="dbType">DbType of parameter</param>
         /// <param name="value">Value of parameter</param>
-        public static void AddInParameter(this IDbCommand command,
+        public static void AddInParameter(this IDbCommand cmd,
                                    string name,
                                    DbType dbType,
                                    object value)
         {
-            AddParameter(command, name, dbType, ParameterDirection.Input, String.Empty, DataRowVersion.Default, value);
+            AddParameter(cmd, name, dbType, ParameterDirection.Input, String.Empty, DataRowVersion.Default, value);
         }
 
         /// <summary>
         /// Adds Parameter to the command
         /// </summary>
-        /// <param name="command">IDbCommand object</param>
+        /// <param name="cmd">IDbCommand object</param>
         /// <param name="name">Name of parameter</param>
         /// <param name="dbType">DbType of parameter</param>
         /// <param name="direction">Director: In or Out</param>
         /// <param name="sourceColumn">Name of the source column for loading or returning the System.Data.IDataParameter.Value.</param>
         /// <param name="sourceVersion">System.Data.DataRowVersion to use when loading System.Data.IDataParameter.Value</param>
         /// <param name="value">Value of parameter</param>
-        public static void AddParameter(this IDbCommand command,
+        public static void AddParameter(this IDbCommand cmd,
                                  string name,
                                  DbType dbType,
                                  ParameterDirection direction,
@@ -96,13 +96,13 @@ namespace Vega
                                  DataRowVersion sourceVersion,
                                  object value)
         {
-            AddParameter(command, name, dbType, 0, direction, false, 0, 0, sourceColumn, sourceVersion, value);
+            AddParameter(cmd, name, dbType, 0, direction, false, 0, 0, sourceColumn, sourceVersion, value);
         }
 
         /// <summary>
         /// Adds Parameter to the command
         /// </summary>
-        /// <param name="command">IDbCommand object</param>
+        /// <param name="cmd">IDbCommand object</param>
         /// <param name="name">Name of parameter</param>
         /// <param name="dbType">DbType of parameter</param>
         /// <param name="direction">Director: In or Out</param>
@@ -113,7 +113,7 @@ namespace Vega
         /// <param name="precision">For Numeric data size e.g. Decimal(10)</param>
         /// <param name="scale">For Numeric data scale size e.g. Decimal(10,2)</param>
         /// <param name="value">Value of parameter</param>
-        public static void AddParameter(this IDbCommand command,
+        public static void AddParameter(this IDbCommand cmd,
                                          string name,
                                          DbType dbType,
                                          int size,
@@ -125,9 +125,9 @@ namespace Vega
                                          DataRowVersion sourceVersion,
                                          object value)
         {
-            if (command == null) throw new ArgumentNullException("command");
+            if (cmd == null) throw new ArgumentNullException("command");
 
-            IDbDataParameter parameter = command.CreateParameter();
+            IDbDataParameter parameter = cmd.CreateParameter();
 
             parameter.ParameterName = name;
             parameter.DbType = dbType;
@@ -140,7 +140,7 @@ namespace Vega
             parameter.SourceVersion = sourceVersion;
             parameter.Value = value.ToParameterValue();
 
-            command.Parameters.Add(parameter);
+            cmd.Parameters.Add(parameter);
         }
 
         #endregion

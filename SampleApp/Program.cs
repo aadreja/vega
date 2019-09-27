@@ -99,7 +99,7 @@ namespace SampleApp
                     WriteLine($"City Id={city.Id},Name={city.Name},Type={city.CityType},IsActive={city.IsActive}");
                 }
 
-                cities = cityRepo.ReadAllPaged("name", 1, 5, null, "State=@State", new { State = "GU" }).ToList();
+                cities = cityRepo.ReadAllPaged("name", 1, 5, null, new { State = "GU" }).ToList();
                 WriteLine($"Found {cities.Count} Records where State=GU in Page 1", ConsoleColor.Green);
                 foreach (City city in cities)
                 {
@@ -128,7 +128,7 @@ namespace SampleApp
                     WriteLine($"City Id={city.Id},Name={city.Name},Type={city.CityType},IsActive={city.IsActive}");
                 }
 
-                cities = cityRepo.ReadAllPaged("name", 5, PageNavigationEnum.First, null, "State=@State", null, null, new { State = "GU" }).ToList();
+                cities = cityRepo.ReadAllPaged("name", 5, PageNavigationEnum.First, null, null, null, new { State = "GU" }).ToList();
                 WriteLine($"Found {cities.Count} Records where State=GU in First Page", ConsoleColor.Green);
                 foreach (City city in cities)
                 {

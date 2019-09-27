@@ -84,7 +84,7 @@ namespace Vega
             query.Append($"SELECT {vfk.ColumnName} FROM {vfk.FullTableName} WHERE {vfk.ColumnName}=@Id");
 
             if (vfk.ContainsIsActive)
-                query.Append($" AND {Config.VegaConfig.IsActiveColumnName}={BITTRUEVALUE}");
+                query.Append($" AND {Config.IsActiveColumnName}={BITTRUEVALUE}");
 
             query.Append(" LIMIT 1 ");
 
@@ -120,7 +120,7 @@ namespace Vega
 
         #region Create CRUD commands
 
-        internal virtual void CreateAddCommand(IDbCommand command, object entity, IAuditTrail audit = null, string columnNames = null, bool doNotAppendCommonFields = false, bool overrideCreatedUpdatedOn = false)
+        internal virtual void CreateAddCommand(IDbCommand cmd, object entity, IAuditTrail audit = null, string columnNames = null, bool doNotAppendCommonFields = false, bool overrideCreatedUpdatedOn = false)
         {
             TableAttribute tableInfo = EntityCache.Get(entity.GetType());
 
@@ -161,7 +161,7 @@ namespace Vega
 
                     bool isActive = tableInfo.GetIsActive(entity) ?? true;
                     //when IsActive is not set then true for insert
-                    command.AddInParameter("@" + Config.ISACTIVE_COLUMN.Name, Config.ISACTIVE_COLUMN.ColumnDbType, isActive);
+                    cmd.AddInParameter("@" + Config.ISACTIVE_COLUMN.Name, Config.ISACTIVE_COLUMN.ColumnDbType, isActive);
 
                     if (tableInfo.NeedsHistory)
                         audit.AppendDetail(Config.ISACTIVE_COLUMN.Name, isActive, DbType.Boolean, null);
@@ -177,7 +177,7 @@ namespace Vega
                     if (!columns.Contains(Config.VERSIONNO_COLUMN.Name))
                         columns.Add(Config.VERSIONNO_COLUMN.Name);
 
-                    command.AddInParameter("@" + Config.VERSIONNO_COLUMN.Name, Config.VERSIONNO_COLUMN.ColumnDbType, versionNo);
+                    cmd.AddInParameter("@" + Config.VERSIONNO_COLUMN.Name, Config.VERSIONNO_COLUMN.ColumnDbType, versionNo);
 
                     tableInfo.SetVersionNo(entity, versionNo); //Set VersionNo value
                 }
@@ -187,7 +187,7 @@ namespace Vega
                     if (!columns.Contains(Config.CREATEDBY_COLUMN.Name))
                         columns.Add(Config.CREATEDBY_COLUMN.Name);
 
-                    command.AddInParameter("@" + Config.CREATEDBY_COLUMN.Name, Config.CREATEDBY_COLUMN.ColumnDbType, tableInfo.GetCreatedBy(entity));
+                    cmd.AddInParameter("@" + Config.CREATEDBY_COLUMN.Name, Config.CREATEDBY_COLUMN.ColumnDbType, tableInfo.GetCreatedBy(entity));
                 }
 
                 if (!tableInfo.NoCreatedOn & !columns.Contains(Config.CREATEDON_COLUMN.Name))
@@ -200,7 +200,7 @@ namespace Vega
                     if (!columns.Contains(Config.UPDATEDBY_COLUMN.Name))
                         columns.Add(Config.UPDATEDBY_COLUMN.Name);
 
-                    command.AddInParameter("@" + Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, tableInfo.GetCreatedBy(entity));
+                    cmd.AddInParameter("@" + Config.UPDATEDBY_COLUMN.Name, Config.UPDATEDBY_COLUMN.ColumnDbType, tableInfo.GetCreatedBy(entity));
                 }
 
                 if (!tableInfo.NoUpdatedOn & !columns.Contains(Config.UPDATEDON_COLUMN.Name))
@@ -224,7 +224,7 @@ namespace Vega
                 }
                 else
                 {
-                    command.AddInParameter(parameters[pIndex], Config.CREATEDON_COLUMN.ColumnDbType, createdOn);
+                    cmd.AddInParameter(parameters[pIndex], Config.CREATEDON_COLUMN.ColumnDbType, createdOn);
                 }
                 //parameters[pIndex] = (string)Helper.GetDateTimeOrDatabaseDateTimeSQL(tableInfo.GetCreatedOn(entity), this, overrideCreatedUpdatedOn);
             }
@@ -239,18 +239,18 @@ namespace Vega
                 }
                 else
                 {
-                    command.AddInParameter(parameters[pIndex], Config.CREATEDON_COLUMN.ColumnDbType, updatedOn);
+                    cmd.AddInParameter(parameters[pIndex], Config.CREATEDON_COLUMN.ColumnDbType, updatedOn);
                 }
                 //parameters[pIndex] = (string)Helper.GetDateTimeOrDatabaseDateTimeSQL(tableInfo.GetUpdatedOn(entity), this, overrideCreatedUpdatedOn);
             }
 
-            StringBuilder commandText = new StringBuilder();
-            commandText.Append($"INSERT INTO {tableInfo.FullName} ({string.Join(",", columns)}) VALUES({string.Join(",", parameters)});");
+            StringBuilder cmdText = new StringBuilder();
+            cmdText.Append($"INSERT INTO {tableInfo.FullName} ({string.Join(",", columns)}) VALUES({string.Join(",", parameters)});");
 
             if (tableInfo.IsKeyIdentity() && isPrimaryKeyEmpty)
             {
                 //add query to get inserted id
-                commandText.Append(LASTINSERTEDROWIDSQL);
+                cmdText.Append(LASTINSERTEDROWIDSQL);
             }
 
             //remove common columns and parameters already added above
@@ -258,8 +258,8 @@ namespace Vega
                                     || c == Config.UPDATEDON_COLUMN.Name || c == Config.UPDATEDBY_COLUMN.Name
                                     || c == Config.VERSIONNO_COLUMN.Name || c == Config.ISACTIVE_COLUMN.Name);
 
-            command.CommandType = CommandType.Text;
-            command.CommandText = commandText.ToString();
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandText = cmdText.ToString();
 
             for (int i = 0; i < columns.Count(); i++)
             {
@@ -275,11 +275,11 @@ namespace Vega
 
                     if (tableInfo.NeedsHistory) audit.AppendDetail(columns[i], columnValue, dbType, null);
                 }
-                command.AddInParameter("@" + columns[i], dbType, columnValue);
+                cmd.AddInParameter("@" + columns[i], dbType, columnValue);
             }
         }
 
-        internal virtual bool CreateUpdateCommand(IDbCommand command, object entity, object oldEntity, IAuditTrail audit = null, string columnNames = null, bool doNotAppendCommonFields = false, bool overrideCreatedUpdatedOn = false)
+        internal virtual bool CreateUpdateCommand(IDbCommand cmd, object entity, object oldEntity, IAuditTrail audit = null, string columnNames = null, bool doNotAppendCommonFields = false, bool overrideCreatedUpdatedOn = false)
         {
             bool isUpdateNeeded = false;
 
@@ -293,8 +293,8 @@ namespace Vega
             if (!string.IsNullOrEmpty(columnNames)) columns.AddRange(columnNames.Split(','));
             else columns.AddRange(tableInfo.DefaultUpdateColumns);//Get columns from Entity attributes loaded in TableInfo
 
-            StringBuilder commandText = new StringBuilder();
-            commandText.Append($"UPDATE {tableInfo.FullName} SET ");
+            StringBuilder cmdText = new StringBuilder();
+            cmdText.Append($"UPDATE {tableInfo.FullName} SET ");
 
             //add default columns if doesn't exists
             if (!doNotAppendCommonFields)
@@ -318,28 +318,28 @@ namespace Vega
             {
                 if (columns[i].Equals(Config.VERSIONNO_COLUMN.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    commandText.Append($"{columns[i]} = {columns[i]}+1");
-                    commandText.Append(",");
+                    cmdText.Append($"{columns[i]} = {columns[i]}+1");
+                    cmdText.Append(",");
                 }
                 else if (columns[i].Equals(Config.UPDATEDBY_COLUMN.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    commandText.Append($"{columns[i]} = @{columns[i]}");
-                    commandText.Append(",");
-                    command.AddInParameter("@" + columns[i], Config.UPDATEDBY_COLUMN.ColumnDbType, tableInfo.GetUpdatedBy(entity));
+                    cmdText.Append($"{columns[i]} = @{columns[i]}");
+                    cmdText.Append(",");
+                    cmd.AddInParameter("@" + columns[i], Config.UPDATEDBY_COLUMN.ColumnDbType, tableInfo.GetUpdatedBy(entity));
                 }
                 else if (columns[i].Equals(Config.UPDATEDON_COLUMN.Name, StringComparison.OrdinalIgnoreCase))
                 {
                     var updatedOn = Helper.GetDateTimeOrDatabaseDateTimeSQL(tableInfo.GetUpdatedOn(entity), this, overrideCreatedUpdatedOn);
                     if (updatedOn is string)
                     {
-                        commandText.Append($"{columns[i]} = {CURRENTDATETIMESQL}");
+                        cmdText.Append($"{columns[i]} = {CURRENTDATETIMESQL}");
                     }
                     else
                     {
-                        commandText.Append($"{columns[i]} = @{columns[i]}");
-                        command.AddInParameter("@" + columns[i], Config.UPDATEDON_COLUMN.ColumnDbType, updatedOn);
+                        cmdText.Append($"{columns[i]} = @{columns[i]}");
+                        cmd.AddInParameter("@" + columns[i], Config.UPDATEDON_COLUMN.ColumnDbType, updatedOn);
                     }
-                    commandText.Append(",");
+                    cmdText.Append(",");
                 }
                 else
                 {
@@ -386,47 +386,47 @@ namespace Vega
                     {
                         isUpdateNeeded = true;
 
-                        commandText.Append($"{columns[i]} = @{columns[i]}");
-                        commandText.Append(",");
-                        command.AddInParameter("@" + columns[i], dbType, columnValue);
+                        cmdText.Append($"{columns[i]} = @{columns[i]}");
+                        cmdText.Append(",");
+                        cmd.AddInParameter("@" + columns[i], dbType, columnValue);
                     }
                 }
             }
-            commandText.RemoveLastComma(); //Remove last comma if exists
+            cmdText.RemoveLastComma(); //Remove last comma if exists
 
-            commandText.Append(" WHERE ");
+            cmdText.Append(" WHERE ");
             if (tableInfo.PkColumnList.Count > 1)
             {
                 int index = 0;
                 foreach (ColumnAttribute pkCol in tableInfo.PkColumnList)
                 {
-                    commandText.Append($" {(index > 0 ? " AND " : "")} {pkCol.Name}=@{pkCol.Name}");
-                    command.AddInParameter("@" + pkCol.Name, pkCol.ColumnDbType, tableInfo.GetKeyId(entity, pkCol));
+                    cmdText.Append($" {(index > 0 ? " AND " : "")} {pkCol.Name}=@{pkCol.Name}");
+                    cmd.AddInParameter("@" + pkCol.Name, pkCol.ColumnDbType, tableInfo.GetKeyId(entity, pkCol));
                     index++;
                 }
             }
             else
             {
-                commandText.Append($" {tableInfo.PkColumn.Name}=@{tableInfo.PkColumn.Name}");
-                command.AddInParameter("@" + tableInfo.PkColumn.Name, tableInfo.PkColumn.ColumnDbType, tableInfo.GetKeyId(entity));
+                cmdText.Append($" {tableInfo.PkColumn.Name}=@{tableInfo.PkColumn.Name}");
+                cmd.AddInParameter("@" + tableInfo.PkColumn.Name, tableInfo.PkColumn.ColumnDbType, tableInfo.GetKeyId(entity));
             }
 
-            if (Config.VegaConfig.DbConcurrencyCheck && !tableInfo.NoVersionNo)
+            if (Config.DbConcurrencyCheck && !tableInfo.NoVersionNo)
             {
-                commandText.Append($" AND {Config.VERSIONNO_COLUMN.Name}=@{Config.VERSIONNO_COLUMN.Name}");
-                command.AddInParameter("@" + Config.VERSIONNO_COLUMN.Name, Config.VERSIONNO_COLUMN.ColumnDbType, tableInfo.GetVersionNo(entity));
+                cmdText.Append($" AND {Config.VERSIONNO_COLUMN.Name}=@{Config.VERSIONNO_COLUMN.Name}");
+                cmd.AddInParameter("@" + Config.VERSIONNO_COLUMN.Name, Config.VERSIONNO_COLUMN.ColumnDbType, tableInfo.GetVersionNo(entity));
             }
 
-            command.CommandType = CommandType.Text;
-            command.CommandText = commandText.ToString();
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandText = cmdText.ToString();
 
             return isUpdateNeeded;
         }
 
-        internal virtual void CreateSelectCommandForReadOne<T>(IDbCommand command, object id, string columns)
+        internal virtual void CreateSelectCommandForReadOne<T>(IDbCommand cmd, object id, string columns)
         {
             TableAttribute tableInfo = EntityCache.Get(typeof(T));
-            command.CommandType = CommandType.Text;
+            cmd.CommandType = CommandType.Text;
 
             if (tableInfo.PkColumnList.Count > 1)
             {
@@ -435,63 +435,63 @@ namespace Vega
                     throw new InvalidOperationException("Entity has multiple primary keys. Pass entity setting Primary Key attributes.");
                 }
 
-                StringBuilder commandText = new StringBuilder($"SELECT {columns} FROM {tableInfo.FullName} WHERE ");
+                StringBuilder cmdText = new StringBuilder($"SELECT {columns} FROM {tableInfo.FullName} WHERE ");
 
                 int index = 0;
                 foreach (ColumnAttribute pkCol in tableInfo.PkColumnList)
                 {
-                    commandText.Append($" {(index > 0 ? " AND " : "")} {pkCol.Name}=@{pkCol.Name}");
-                    command.AddInParameter("@" + pkCol.Name, pkCol.ColumnDbType, tableInfo.GetKeyId(id, pkCol));
+                    cmdText.Append($" {(index > 0 ? " AND " : "")} {pkCol.Name}=@{pkCol.Name}");
+                    cmd.AddInParameter("@" + pkCol.Name, pkCol.ColumnDbType, tableInfo.GetKeyId(id, pkCol));
                     index++;
                 }
-                command.CommandText = commandText.ToString();
+                cmd.CommandText = cmdText.ToString();
             }
             else
             {
-                command.CommandText = $"SELECT {columns} FROM {tableInfo.FullName} WHERE {tableInfo.PkColumn.Name}=@{tableInfo.PkColumn.Name}";
-                command.AddInParameter(tableInfo.PkColumn.Name, tableInfo.PkColumn.ColumnDbType, id);
+                cmd.CommandText = $"SELECT {columns} FROM {tableInfo.FullName} WHERE {tableInfo.PkColumn.Name}=@{tableInfo.PkColumn.Name}";
+                cmd.AddInParameter(tableInfo.PkColumn.Name, tableInfo.PkColumn.ColumnDbType, id);
             }
         }
 
-        internal virtual StringBuilder CreateSelectCommand(IDbCommand command, string query, object parameters = null)
+        internal virtual StringBuilder CreateSelectCommand(IDbCommand cmd, string query, object parameters = null)
         {
-            return CreateSelectCommand(command, query, null, parameters);
+            return CreateSelectCommand(cmd, query, null, parameters);
         }
 
-        internal virtual StringBuilder CreateSelectCommand(IDbCommand command, string query, string criteria = null, object parameters = null)
+        internal virtual StringBuilder CreateSelectCommand(IDbCommand cmd, string query, string criteria = null, object parameters = null)
         {
             bool hasWhere = query.ToLowerInvariant().Contains("where");
 
-            StringBuilder commandText = new StringBuilder(query);
+            StringBuilder cmdText = new StringBuilder(query);
 
             if (!string.IsNullOrEmpty(criteria))
             {
                 //add WHERE statement if not exists in query or criteria
                 if (!hasWhere && !criteria.ToLowerInvariant().Contains("where"))
-                    commandText.Append(" WHERE ");
+                    cmdText.Append(" WHERE ");
 
-                commandText.Append(criteria);
+                cmdText.Append(criteria);
             }
 
-            if(parameters != null)
-                ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
+            if (parameters != null)
+                ParameterCache.AddParameters(parameters, cmd);
 
-            return commandText;
+            return cmdText;
         }
 
-        internal virtual void CreateReadAllPagedCommand(IDbCommand command, string query, string orderBy, int pageNo, int pageSize, object parameters = null)
+        internal virtual void CreateReadAllPagedCommand(IDbCommand cmd, string query, string orderBy, int pageNo, int pageSize, object parameters = null)
         {
-            StringBuilder commandText = new StringBuilder();
+            StringBuilder cmdText = new StringBuilder();
 
             if (this is MsSqlDatabase)
             {
-                if (GetDBVersion(command.Connection).Version.Major >= 11) //SQL server 2012 and above supports offset
-                    commandText.Append($@"{query} 
+                if (GetDBVersion(cmd.Connection).Version.Major >= 11) //SQL server 2012 and above supports offset
+                    cmdText.Append($@"{query} 
                                     ORDER BY {orderBy} 
                                     OFFSET {((pageNo - 1) * pageSize)} ROWS 
                                     FETCH NEXT {pageSize} ROWS ONLY");
                 else
-                    commandText.Append($@"SELECT * FROM (
+                    cmdText.Append($@"SELECT * FROM (
                         SELECT ROW_NUMBER() OVER(ORDER BY {orderBy}) AS rownumber, 
                         * FROM ({query}) as sq
                     ) AS q
@@ -499,19 +499,19 @@ namespace Vega
             }
             else
             {
-                commandText.Append($@"{query} 
+                cmdText.Append($@"{query} 
                                 ORDER BY {orderBy}
                                 LIMIT {pageSize}
                                 OFFSET {((pageNo - 1) * pageSize)}");
             }
-            command.CommandType = CommandType.Text;
-            command.CommandText = commandText.ToString();
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandText = cmdText.ToString();
 
             if (parameters != null)
-                ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
+                ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
         }
 
-        internal virtual void CreateReadAllPagedNoOffsetCommand<T>(IDbCommand command, string query, string orderBy, int pageSize, PageNavigationEnum navigation, object[] lastOrderByColumnValues = null, object lastKeyId = null, object parameters = null)
+        internal virtual void CreateReadAllPagedNoOffsetCommand<T>(IDbCommand cmd, string query, string orderBy, int pageSize, PageNavigationEnum navigation, object[] lastOrderByColumnValues = null, object lastKeyId = null, object parameters = null)
         {
             string[] orderByColumns = orderBy.Split(',');
             string[] orderByDirection = new string[orderByColumns.Length];
@@ -575,7 +575,7 @@ namespace Vega
                     else
                         TypeCache.TypeToDbType.TryGetValue(lastOrderByColumnValues[i].GetType(), out dbType);
 
-                    command.AddInParameter("@p_" + orderByColumns[i], dbType, lastOrderByColumnValues[i]);
+                    cmd.AddInParameter("@p_" + orderByColumns[i], dbType, lastOrderByColumnValues[i]);
                 }
 
                 if (i > 0) pagedOrderBy.Append(",");
@@ -606,13 +606,13 @@ namespace Vega
                     int index = 0;
                     foreach (ColumnAttribute pkCol in tableInfo.PkColumnList)
                     {
-                        command.AddInParameter("@p_" + pkCol.Name, pkCol.ColumnDbType, tableInfo.GetKeyId(lastKeyId, pkCol));
+                        cmd.AddInParameter("@p_" + pkCol.Name, pkCol.ColumnDbType, tableInfo.GetKeyId(lastKeyId, pkCol));
                         index++;
                     }
                 }
                 else
                 {
-                    command.AddInParameter("@p_" + tableInfo.PkColumn.Name, tableInfo.PkColumn.ColumnDbType, lastKeyId);
+                    cmd.AddInParameter("@p_" + tableInfo.PkColumn.Name, tableInfo.PkColumn.ColumnDbType, lastKeyId);
                 }
             }
 
@@ -647,15 +647,15 @@ namespace Vega
                 }
             }
 
-            command.CommandType = CommandType.Text;
+            cmd.CommandType = CommandType.Text;
 
             if (this is MsSqlDatabase)
-                command.CommandText = $"SELECT * FROM (SELECT TOP {pageSize} * FROM ({query} {pagedCriteria.ToString()}) AS r1 ORDER BY {pagedOrderBy}) AS r2 ORDER BY {orderBy}";
+                cmd.CommandText = $"SELECT * FROM (SELECT TOP {pageSize} * FROM ({query} {pagedCriteria.ToString()}) AS r1 ORDER BY {pagedOrderBy}) AS r2 ORDER BY {orderBy}";
             else
-                command.CommandText = $"SELECT * FROM ({query} {pagedCriteria.ToString()} ORDER BY {pagedOrderBy} LIMIT {pageSize}) AS r ORDER BY {orderBy}";
+                cmd.CommandText = $"SELECT * FROM ({query} {pagedCriteria.ToString()} ORDER BY {pagedOrderBy} LIMIT {pageSize}) AS r ORDER BY {orderBy}";
 
             if (parameters != null)
-                ParameterCache.GetFromCache(parameters, command).Invoke(parameters, command);
+                ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
         }
 
         #endregion
@@ -672,18 +672,18 @@ namespace Vega
             return result.ToString();
         }
 
-        internal void AppendStatusCriteria(StringBuilder commandText, RecordStatusEnum status = RecordStatusEnum.All)
+        internal void AppendStatusCriteria(StringBuilder cmdText, RecordStatusEnum status = RecordStatusEnum.All)
         {
             if (status == RecordStatusEnum.All) return; //nothing to do
 
             //add missing where clause
-            if (!commandText.ToString().ToLowerInvariant().Contains("where"))
-                commandText.Append(" WHERE ");
+            if (!cmdText.ToString().ToLowerInvariant().Contains("where"))
+                cmdText.Append(" WHERE ");
 
             if (status == RecordStatusEnum.Active)
-                commandText.Append($" {Config.ISACTIVE_COLUMN.Name}={BITTRUEVALUE}");
+                cmdText.Append($" {Config.ISACTIVE_COLUMN.Name}={BITTRUEVALUE}");
             else if (status == RecordStatusEnum.InActive)
-                commandText.Append($" {Config.ISACTIVE_COLUMN.Name}={BITFALSEVALUE}");
+                cmdText.Append($" {Config.ISACTIVE_COLUMN.Name}={BITFALSEVALUE}");
         }
 
 

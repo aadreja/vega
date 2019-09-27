@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Xunit;
 
 namespace Vega.Tests
@@ -127,9 +128,57 @@ namespace Vega.Tests
             var history = auditRepo.ReadAllAuditTrail(id);
 
             Assert.Single(history);
-            Assert.Equal("Rajesh", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "EmployeeName").NewValue.ToString());
-            Assert.Equal("AC", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "Department").NewValue.ToString());
+            Assert.Equal("Rajesh", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "EmployeeName").NewValue);
+            Assert.Equal("AC", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "Department").NewValue);
             Assert.Null(history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "DOB"));
+        }
+
+        [Fact]
+        public void AuditTrailPipeInText()
+        {
+            Fixture.CleanupAuditTable();
+
+            Repository<Employee> empRepo = new Repository<Employee>(Fixture.Connection);
+            Employee emp = new Employee
+            {
+                EmployeeName = "Rajesh",
+                Department = "AC|IT",
+                DOB = new DateTime(1980, 7, 22),
+            };
+
+            //add record
+            var id = empRepo.Add(emp);
+
+            //update record
+            emp.Department = "IT";
+            emp.DOB = new DateTime(1983, 7, 22);
+            empRepo.Update(emp);
+
+            //read history
+            var empHistory = empRepo.ReadHistory(id);
+            Assert.Equal(2, empHistory.Count());
+            Assert.Equal("Rajesh", empHistory.First().EmployeeName);
+            Assert.Equal("AC|IT", empHistory.First().Department);
+            Assert.Equal(new DateTime(1980, 7, 22), empHistory.First().DOB);
+
+            Assert.Equal("IT", empHistory.ElementAt(1).Department);
+            Assert.Equal(new DateTime(1983, 7, 22), empHistory.ElementAt(1).DOB);
+
+            AuditTrailRepository<Employee> auditRepo = new AuditTrailRepository<Employee>(Fixture.Connection);
+            //read audittrail
+            var history = auditRepo.ReadAllAuditTrail(id);
+
+            Assert.Equal(2, history.Count);
+
+            Assert.Equal("Rajesh", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "EmployeeName").NewValue);
+            Assert.Equal("AC|IT", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "Department").NewValue);
+            Assert.Equal(new DateTime(1980, 7, 22), DateTime.Parse(history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "DOB").NewValue));
+
+            Assert.Equal("IT", history.ElementAt(1).lstAuditTrailDetail.Find(p => p.ColumnName == "Department").NewValue);
+            Assert.Equal("AC|IT", history.ElementAt(1).lstAuditTrailDetail.Find(p => p.ColumnName == "Department").OldValue);
+
+            Assert.Equal(new DateTime(1983, 7, 22), DateTime.Parse(history.ElementAt(1).lstAuditTrailDetail.Find(p => p.ColumnName == "DOB").NewValue));
+            Assert.Equal(new DateTime(1980, 7, 22), DateTime.Parse(history.ElementAt(1).lstAuditTrailDetail.Find(p => p.ColumnName == "DOB").OldValue));
         }
 
         [Fact]
@@ -195,8 +244,8 @@ namespace Vega.Tests
             var history = auditRepo.ReadAllAuditTrail(1);
 
             Assert.Equal(2, history.Count);
-            Assert.Equal("Rajesh", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "EmployeeName").NewValue.ToString());
-            Assert.Equal("AC", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "Department").NewValue.ToString());
+            Assert.Equal("Rajesh", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "EmployeeName").NewValue);
+            Assert.Equal("AC", history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "Department").NewValue);
             Assert.Null(history.First().lstAuditTrailDetail.Find(p => p.ColumnName == "DOB"));
         }
     }

@@ -32,11 +32,7 @@ namespace Vega.Tests
                 Connection = new SqlConnection("Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
 #endif
             //Configure Vega
-            Configuration configuration = new Configuration
-            {
-                CreatedUpdatedByColumnType = DbType.Int32,
-            };
-            Config.Configure(configuration);
+            Config.CreatedUpdatedByColumnType = DbType.Int32;
 
             //Create Required Tables
             Repository<Country> countryRepo = new Repository<Country>(Connection);
@@ -68,21 +64,20 @@ namespace Vega.Tests
 
             Repository<Center> centerRepo = new Repository<Center>(Connection);
             centerRepo.CreateTable();
+
+            Repository<EntityWithoutTableInfo> ewaRepo = new Repository<EntityWithoutTableInfo>(Connection);
+            ewaRepo.CreateTable();
+
+            Repository<EntityWithIsActive> ewiaRepo = new Repository<EntityWithIsActive>(Connection);
+            ewiaRepo.CreateTable();
         }
 
         public void SetAuditTrailType(bool isKeyValue)
         {
             if (isKeyValue)
-            {
-                Config.VegaConfig.AuditTrailType = typeof(AuditTrailKeyValue);
-                Config.VegaConfig.AuditTrailRepositoryType = typeof(AuditTrailKeyValueRepository<>);
-            }
+                Config.AuditType = AuditTypeEnum.KeyValue;
             else
-            {
-                Config.VegaConfig.AuditTrailType = typeof(AuditTrail);
-                Config.VegaConfig.AuditTrailRepositoryType = typeof(AuditTrailRepository<>);
-            }
-            Config.Configure(Config.VegaConfig);
+                Config.AuditType = AuditTypeEnum.CSV;
         }
 
         public IDbConnection Connection { get; set; }
@@ -120,6 +115,12 @@ namespace Vega.Tests
             Repository<Center> centerRepo = new Repository<Center>(Connection);
             centerRepo.DropTable();
 
+            Repository<EntityWithoutTableInfo> ewaRepo = new Repository<EntityWithoutTableInfo>(Connection);
+            ewaRepo.DropTable();
+
+            Repository<EntityWithIsActive> ewiaRepo = new Repository<EntityWithIsActive>(Connection);
+            ewiaRepo.DropTable();
+
             Connection?.Dispose();
         }
 
@@ -149,7 +150,7 @@ namespace Vega.Tests
                 Repository<City> cityRepo = new Repository<City>(Connection);
                 cityRepo.ExecuteNonQuery("DELETE FROM audittrail");
 
-                if (Config.VegaConfig.AuditTrailType.Name == "AuditTrailKeyValue")
+                if (Config.AuditTrailType.Name == "AuditTrailKeyValue")
                     cityRepo.ExecuteNonQuery("DELETE FROM audittraildetail");
             }
             catch

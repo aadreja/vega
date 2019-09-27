@@ -67,17 +67,8 @@ namespace Vega
                 cacheLock.ExitReadLock();
             }
 
-            //Ritesh - 18-Sep-19 - AuditTrail will now based on interface IAuditTrail
-            //AuditTrail table attribute is configured based on configuration 
-            //if (entity == typeof(AuditTrail))
-            //{
-            //    result = PrepareAuditTrailTableAttribute();
-            //}
-            //else
-            //{
-                result = PrepareTableAttribute(entity);
-            //}
-
+            result = PrepareTableAttribute(entity);
+            
             try
             {
                 cacheLock.EnterWriteLock();
@@ -101,13 +92,13 @@ namespace Vega
                 result = new TableAttribute
                 {
                     Name = entity.Name, //assuming entity class name is table name
-                    NeedsHistory = Config.VegaConfig.NeedsHistory,
-                    NoCreatedBy = Config.VegaConfig.NoCreatedBy,
-                    NoCreatedOn = Config.VegaConfig.NoCreatedOn,
-                    NoUpdatedBy = Config.VegaConfig.NoUpdatedBy,
-                    NoUpdatedOn = Config.VegaConfig.NoUpdatedOn,
-                    NoVersionNo = Config.VegaConfig.NoVersionNo,
-                    NoIsActive = Config.VegaConfig.NoIsActive
+                    NeedsHistory = Config.NeedsHistory,
+                    NoCreatedBy = Config.NoCreatedBy,
+                    NoCreatedOn = Config.NoCreatedOn,
+                    NoUpdatedBy = Config.NoUpdatedBy,
+                    NoUpdatedOn = Config.NoUpdatedOn,
+                    NoVersionNo = Config.NoVersionNo,
+                    NoIsActive = Config.NoIsActive
                 };
             }
 
@@ -134,27 +125,27 @@ namespace Vega
                 if (string.IsNullOrEmpty(column.Name)) column.Name = property.Name;
 
                 if (property.Name.Equals("CreatedBy", StringComparison.OrdinalIgnoreCase))
-                    column.Name = Config.VegaConfig.CreatedByColumnName;
+                    column.Name = Config.CreatedByColumnName;
                 else if (property.Name.Equals("CreatedByName"))
-                    column.Name = Config.VegaConfig.CreatedByNameColumnName;
+                    column.Name = Config.CreatedByNameColumnName;
                 else if (property.Name.Equals("CreatedOn"))
-                    column.Name = Config.VegaConfig.CreatedOnColumnName;
+                    column.Name = Config.CreatedOnColumnName;
                 else if (property.Name.Equals("UpdatedBy"))
-                    column.Name = Config.VegaConfig.UpdatedByColumnName;
+                    column.Name = Config.UpdatedByColumnName;
                 else if (property.Name.Equals("UpdatedByName"))
-                    column.Name = Config.VegaConfig.UpdatedByNameColumnName;
+                    column.Name = Config.UpdatedByNameColumnName;
                 else if (property.Name.Equals("UpdatedOn"))
-                    column.Name = Config.VegaConfig.UpdatedOnColumnName;
+                    column.Name = Config.UpdatedOnColumnName;
                 else if (property.Name.Equals("VersionNo"))
-                    column.Name = Config.VegaConfig.VersionNoColumnName;
+                    column.Name = Config.VersionNoColumnName;
                 else if (property.Name.Equals("IsActive"))
-                    column.Name = Config.VegaConfig.IsActiveColumnName;
+                    column.Name = Config.IsActiveColumnName;
 
                 if (!column.IsColumnDbTypeDefined)
                 {
-                    if (column.Name.Equals(Config.VegaConfig.CreatedByColumnName, StringComparison.OrdinalIgnoreCase) ||
-                        column.Name.Equals(Config.VegaConfig.UpdatedByColumnName, StringComparison.OrdinalIgnoreCase))
-                        column.ColumnDbType = Config.VegaConfig.CreatedUpdatedByColumnType;
+                    if (column.Name.Equals(Config.CreatedByColumnName, StringComparison.OrdinalIgnoreCase) ||
+                        column.Name.Equals(Config.UpdatedByColumnName, StringComparison.OrdinalIgnoreCase))
+                        column.ColumnDbType = Config.CreatedUpdatedByColumnType;
                     else if (property.PropertyType.IsEnum)
                         column.ColumnDbType = TypeCache.TypeToDbType[property.PropertyType.GetEnumUnderlyingType()];
                     else if (property.PropertyType.IsValueType)
@@ -183,19 +174,19 @@ namespace Vega
                     }
                 }
 
-                if (result.NoCreatedBy && (column.Name.Equals(Config.VegaConfig.CreatedByColumnName, StringComparison.OrdinalIgnoreCase)
-                    || column.Name.Equals(Config.VegaConfig.CreatedByNameColumnName, StringComparison.OrdinalIgnoreCase)))
+                if (result.NoCreatedBy && (column.Name.Equals(Config.CreatedByColumnName, StringComparison.OrdinalIgnoreCase)
+                    || column.Name.Equals(Config.CreatedByNameColumnName, StringComparison.OrdinalIgnoreCase)))
                     continue;
-                else if (result.NoCreatedOn && column.Name.Equals(Config.VegaConfig.CreatedOnColumnName, StringComparison.OrdinalIgnoreCase))
+                else if (result.NoCreatedOn && column.Name.Equals(Config.CreatedOnColumnName, StringComparison.OrdinalIgnoreCase))
                     continue;
-                else if (result.NoUpdatedBy && ((column.Name.Equals(Config.VegaConfig.UpdatedByColumnName, StringComparison.OrdinalIgnoreCase)
-                    || column.Name.Equals(Config.VegaConfig.UpdatedByNameColumnName, StringComparison.OrdinalIgnoreCase))))
+                else if (result.NoUpdatedBy && ((column.Name.Equals(Config.UpdatedByColumnName, StringComparison.OrdinalIgnoreCase)
+                    || column.Name.Equals(Config.UpdatedByNameColumnName, StringComparison.OrdinalIgnoreCase))))
                     continue;
-                else if (result.NoUpdatedOn && column.Name.Equals(Config.VegaConfig.UpdatedOnColumnName, StringComparison.OrdinalIgnoreCase))
+                else if (result.NoUpdatedOn && column.Name.Equals(Config.UpdatedOnColumnName, StringComparison.OrdinalIgnoreCase))
                     continue;
-                else if (result.NoIsActive && column.Name.Equals(Config.VegaConfig.IsActiveColumnName, StringComparison.OrdinalIgnoreCase))
+                else if (result.NoIsActive && column.Name.Equals(Config.IsActiveColumnName, StringComparison.OrdinalIgnoreCase))
                     continue;
-                else if (result.NoVersionNo && column.Name.Equals(Config.VegaConfig.VersionNoColumnName, StringComparison.OrdinalIgnoreCase))
+                else if (result.NoVersionNo && column.Name.Equals(Config.VersionNoColumnName, StringComparison.OrdinalIgnoreCase))
                     continue;
                 else
                 {
@@ -261,16 +252,16 @@ namespace Vega
                 else if (property.Name == "RecordVersionNo")
                     column.Name = "recordversionno";
                 else if (property.Name.Equals("CreatedBy", StringComparison.OrdinalIgnoreCase))
-                    column.Name = Config.VegaConfig.CreatedByColumnName;
+                    column.Name = Config.CreatedByColumnName;
                 else if (property.Name.Equals("CreatedOn"))
-                    column.Name = Config.VegaConfig.CreatedOnColumnName;
+                    column.Name = Config.CreatedOnColumnName;
                 else
                     column.Name = property.Name;
 
                 if (!column.IsColumnDbTypeDefined)
                 {
-                    if (column.Name.Equals(Config.VegaConfig.CreatedByColumnName, StringComparison.OrdinalIgnoreCase))
-                        column.ColumnDbType = Config.VegaConfig.CreatedUpdatedByColumnType;
+                    if (column.Name.Equals(Config.CreatedByColumnName, StringComparison.OrdinalIgnoreCase))
+                        column.ColumnDbType = Config.CreatedUpdatedByColumnType;
                     else if (property.PropertyType.IsEnum)
                         column.ColumnDbType = TypeCache.TypeToDbType[property.PropertyType.GetEnumUnderlyingType()];
                     else if (property.PropertyType.IsValueType)

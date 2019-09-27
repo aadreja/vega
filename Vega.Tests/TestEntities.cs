@@ -42,7 +42,7 @@ namespace Vega.Tests
         public DateTime? DOB { get; set; }
     }
 
-    [Table(NeedsHistory = false)]
+    [Table(NeedsHistory = true)]
     public class Country : EntityBase
     {
         [PrimaryKey(true)]
@@ -152,5 +152,22 @@ namespace Vega.Tests
         public DateTime UpdatedOn { get; set; }
     }
 
-    
+    public class EntityWithoutTableInfo
+    {
+        [PrimaryKey(true)]
+        public int Id { get; set; }
+        public string Attribute1 { get; set; }
+        public string Attribute2 { get; set; }
+    }
+
+    [Table(IsNoDefaultFields = true, NoIsActive = false, NeedsHistory = true)]
+    public class EntityWithIsActive
+    {
+        [PrimaryKey(true)]
+        public int Id { get; set; }
+        public string Attribute1 { get; set; }
+        public string Attribute2 { get; set; }
+        public bool IsActive { get; set; }
+    }
+
 }

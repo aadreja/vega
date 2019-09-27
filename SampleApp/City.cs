@@ -20,9 +20,9 @@ namespace SampleApp
     {
         [PrimaryKey(true)]
         public long Id { get; set; }
-        [Column(ColumnDbType = System.Data.DbType.String, NumericPrecision = 4000)]
+        [Column(ColumnDbType = System.Data.DbType.String, Size = 4000)]
         public string Name { get; set; }
-        [Column(ColumnDbType = System.Data.DbType.String, NumericPrecision = 50)]
+        [Column(ColumnDbType = System.Data.DbType.String, Size = 50)]
         public string State { get; set; }
         public decimal Longitude { get; set; }
         public decimal Latitude { get; set; }

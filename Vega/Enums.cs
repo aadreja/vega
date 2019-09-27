@@ -8,6 +8,25 @@
 namespace Vega
 {
     /// <summary>
+    /// Flag for configiguring AuditTrailType
+    /// </summary>
+    public enum AuditTypeEnum
+    {
+        /// <summary>
+        /// Default, one table with comma seperated updated and old values
+        /// </summary>
+        CSV=1,
+        /// <summary>
+        /// two table with keyvalue detail in child table for updated and old values
+        /// </summary>
+        KeyValue=2,
+        /// <summary>
+        /// custom implementation using IAuditTrail, IAuditTrailRepository Interfaces
+        /// </summary>
+        Custom=3
+    }
+
+    /// <summary>
     /// Flag for Active,InActive or All records
     /// </summary>
     public enum RecordStatusEnum
