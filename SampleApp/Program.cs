@@ -379,7 +379,7 @@ namespace SampleApp
                 WriteLine($"User {usr.Username} added with Id {usr.Id}");
             }
 
-            Country country = countryRepo.ReadOne("Name=@Name", new { Name = "India" });
+            Country country = countryRepo.ReadOneWhere("Name=@Name", new { Name = "India" });
             if (country == null)
             {
                 //Create Country Entity

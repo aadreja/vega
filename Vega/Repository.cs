@@ -649,9 +649,12 @@ namespace Vega
         {
             string criteria = CreateCriteriaFromParameter(parameters);
 
+            if (!string.IsNullOrEmpty(criteria))
+                criteria = " WHERE " + criteria;
+
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandType = CommandType.Text;
-            cmd.CommandText = $"SELECT 1 FROM {TableInfo.FullName} WHERE {criteria}";
+            cmd.CommandText = $"SELECT 1 FROM {TableInfo.FullName} {criteria}";
 
             ParameterCache.AddParameters(parameters, cmd);
 
@@ -681,7 +684,7 @@ namespace Vega
         }
 
         /// <summary>
-        /// Read First record with specific ID
+        /// Read First record with specific Id
         /// </summary>
         /// <param name="id">record id</param>
         /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
@@ -694,23 +697,40 @@ namespace Vega
             IDbCommand cmd = Connection.CreateCommand();
             DB.CreateSelectCommandForReadOne<T>(cmd, id, columns);
 
-            bool isConOpen = IsConnectionOpen();
+            return ExecuteReaderOne(cmd);
+        }
 
-            if (!isConOpen) Connection.Open();
+        
 
-            using (IDataReader rdr = ExecuteReader(cmd))
-            {
-                var func = ReaderCache<T>.GetFromCache(rdr);
+        /// <summary>
+        /// Returns first record with specified parameters
+        /// </summary>
+        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <returns>Entity if record found otherwise null</returns>
+        public T ReadOneWhere(object parameters)
+        {
+            return ReadOneWhere("*", parameters);
+        }
 
-                if (rdr != null && rdr.Read())
-                {
-                    return func(rdr);
-                }
-                rdr.Close();
-                if (!isConOpen) Connection.Close();
-            }
+        /// <summary>
+        /// Returns First Record with specific criteria
+        /// </summary>
+        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <returns>Entity if record found otherwise null</returns>
+        public T ReadOneWhere(string columns, object parameters)
+        {
+            string criteria = CreateCriteriaFromParameter(parameters);
 
-            return default;
+            if (!string.IsNullOrEmpty(criteria))
+                criteria = "WHERE " + criteria;
+
+            //Get columns from Entity attributes loaded in TableInfo
+            if (string.IsNullOrEmpty(columns) || columns == "*") columns = string.Join(",", TableInfo.DefaultReadColumns);
+
+            string query = $"SELECT {columns} FROM {TableInfo.FullName} {criteria}";
+
+            return QueryOne(query, parameters);
         }
 
         /// <summary>
@@ -725,97 +745,6 @@ namespace Vega
             IDbCommand cmd = Connection.CreateCommand();
             DB.CreateSelectCommandForReadOne<T>(cmd, id, column);
             return Query<R>(cmd);
-        }
-
-        /// <summary>
-        /// Returns First Record with specific criteria
-        /// </summary>
-        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
-        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
-        /// <returns>Entity if record found otherwise null</returns>
-        public T ReadOne(string columns, object parameters)
-        {
-            string criteria = CreateCriteriaFromParameter(parameters);
-
-            return ReadOne(columns, criteria, parameters, false);
-        }
-
-        /// <summary>
-        /// Returns First Record with specific criteria
-        /// </summary>
-        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
-        /// <param name="criteria">parameterised criteria e.g. "department=@Department"</param>
-        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
-        /// <param name="validateParameters">Parameter validation required or not</param>
-        /// <returns>Entity if record found otherwise null</returns>
-        public T ReadOne(string columns, string criteria =null, object parameters=null, bool validateParameters=true)
-        {
-            if (validateParameters)
-                ValidateParameters(criteria, parameters);
-
-            bool hasWhere = criteria.ToLowerInvariant().Contains("where");
-
-            //Get columns from Entity attributes loaded in TableInfo
-            if (string.IsNullOrEmpty(columns) || columns == "*") columns = string.Join(",", TableInfo.DefaultReadColumns);
-
-            IDbCommand cmd = Connection.CreateCommand();
-            cmd.CommandType = CommandType.Text;
-            cmd.CommandText = $"SELECT {columns} FROM {TableInfo.FullName} {(!hasWhere ? " WHERE " : "")} {criteria}";
-
-            if (parameters != null)
-                ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
-
-            bool isConOpen = IsConnectionOpen();
-
-            if (!isConOpen) Connection.Open();
-
-            using (IDataReader rdr = ExecuteReader(cmd))
-            {
-                var func = ReaderCache<T>.GetFromCache(rdr);
-
-                if (rdr != null && rdr.Read())
-                {
-                    return func(rdr);
-                }
-                rdr.Close();
-                if (!isConOpen) Connection.Close();
-            }
-
-            return default;
-        }
-
-        /// <summary>
-        /// Read value of for a given query
-        /// </summary>
-        /// <param name="query">query</param>
-        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
-        /// <returns>Value if record found otherwise null or default</returns>
-        public T ReadOneQuery(string query, object parameters = null)
-        {
-            IDbCommand cmd = Connection.CreateCommand();
-            cmd.CommandType = CommandType.Text;
-            cmd.CommandText = query;
-
-            if (parameters != null)
-                ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
-
-            bool isConOpen = IsConnectionOpen();
-
-            if (!isConOpen) Connection.Open();
-
-            using (IDataReader rdr = ExecuteReader(cmd))
-            {
-                var func = ReaderCache<T>.GetFromCache(rdr);
-
-                if (rdr != null && rdr.Read())
-                {
-                    return func(rdr);
-                }
-                rdr.Close();
-                if (!isConOpen) Connection.Close();
-            }
-
-            return default;
         }
 
         /// <summary>
@@ -919,19 +848,7 @@ namespace Vega
             }
             cmd.CommandText = commandText.ToString();
 
-            bool isConOpen = IsConnectionOpen();
-            if (!isConOpen) Connection.Open();
-            using (IDataReader rdr = ExecuteReader(cmd))
-            {
-                var func = ReaderCache<T>.GetFromCache(rdr);
-                if (rdr != null)
-                {
-                    while (rdr.Read()) yield return func(rdr);
-                }
-                rdr.Close();
-                rdr.Dispose();
-                if (!isConOpen) Connection.Close();
-            }
+            return ExecuteReaderIEnumerable(cmd);
         }
 
         #endregion
@@ -1016,19 +933,7 @@ namespace Vega
             cmd.CommandType = commandType;
             cmd.CommandText = DB.CreateSelectCommand(cmd, query, parameters).ToString();
 
-            bool isConOpen = IsConnectionOpen();
-            if (!isConOpen) Connection.Open();
-            using (IDataReader rdr = ExecuteReader(cmd))
-            {
-                var func = ReaderCache<T>.GetFromCache(rdr);
-                if (rdr != null)
-                {
-                    while (rdr.Read()) yield return func(rdr);
-                }
-                rdr.Close();
-                rdr.Dispose();
-                if (!isConOpen) Connection.Close();
-            }
+            return ExecuteReaderIEnumerable(cmd);
         }
 
         #endregion
@@ -1100,20 +1005,8 @@ namespace Vega
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandType = CommandType.Text;
             DB.CreateReadAllPagedCommand(cmd, query, orderBy, pageNo, pageSize, parameters);
-            
-            bool isConOpen = IsConnectionOpen();
-            if (!isConOpen) Connection.Open();
-            using (IDataReader rdr = ExecuteReader(cmd))
-            {
-                var func = ReaderCache<T>.GetFromCache(rdr);
-                if (rdr != null)
-                {
-                    while (rdr.Read()) yield return func(rdr);
-                }
-                rdr.Close();
-                rdr.Dispose();
-                if (!isConOpen) Connection.Close();
-            }
+
+            return ExecuteReaderIEnumerable(cmd);
         }
 
 
@@ -1182,26 +1075,32 @@ namespace Vega
             cmd.CommandType = CommandType.Text;
             DB.CreateReadAllPagedNoOffsetCommand<T>(cmd, query, orderBy, pageSize, navigation, lastOrderByColumnValues, lastKeyId, parameters);
 
-            bool isConOpen = IsConnectionOpen();
-            if (!isConOpen) Connection.Open();
-            using (IDataReader rdr = ExecuteReader(cmd))
-            {
-                var func = ReaderCache<T>.GetFromCache(rdr);
-                if (rdr != null)
-                {
-                    while (rdr.Read()) yield return func(rdr);
-                }
-                rdr.Close();
-                rdr.Dispose();
-                if (!isConOpen) Connection.Close();
-            }
+            return ExecuteReaderIEnumerable(cmd);
         }
 
         #endregion
 
         #endregion
 
-        #region Execute methods
+        #region Query Methods
+
+        /// <summary>
+        /// Return 1st record for a given query
+        /// </summary>
+        /// <param name="query">query</param>
+        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <returns>Value if record found otherwise null or default</returns>
+        public T QueryOne(string query, object parameters = null)
+        {
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandText = query;
+
+            if (parameters != null)
+                ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
+
+            return ExecuteReaderOne(cmd);
+        }
 
         /// <summary>
         /// Performs query with parameters and returns first column of first retrieved row in a given type
@@ -1242,6 +1141,48 @@ namespace Vega
         public R Query<R>(IDbCommand cmd)
         {
             return ExecuteScalar(cmd).Parse<R>();
+        }
+
+        #endregion
+
+        #region Execute methods
+
+        private IEnumerable<T> ExecuteReaderIEnumerable(IDbCommand cmd)
+        {
+            bool isConOpen = IsConnectionOpen();
+            if (!isConOpen) Connection.Open();
+            using (IDataReader rdr = ExecuteReader(cmd))
+            {
+                var func = ReaderCache<T>.GetFromCache(rdr);
+                if (rdr != null)
+                {
+                    while (rdr.Read()) yield return func(rdr);
+                }
+                rdr.Close();
+                rdr.Dispose();
+                if (!isConOpen) Connection.Close();
+            }
+        }
+
+        private T ExecuteReaderOne(IDbCommand cmd)
+        {
+            bool isConOpen = IsConnectionOpen();
+
+            if (!isConOpen) Connection.Open();
+
+            using (IDataReader rdr = ExecuteReader(cmd))
+            {
+                var func = ReaderCache<T>.GetFromCache(rdr);
+
+                if (rdr != null && rdr.Read())
+                {
+                    return func(rdr);
+                }
+                rdr.Close();
+                if (!isConOpen) Connection.Close();
+            }
+
+            return default;
         }
 
 #if NET461

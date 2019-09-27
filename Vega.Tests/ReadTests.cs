@@ -120,7 +120,7 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            City cityReadOne = cityRepo.ReadOne("name", "State=@State", new { State = "RO1" });
+            City cityReadOne = cityRepo.ReadOneWhere("name", new { State = "RO1" });
 
             Assert.Equal(city.Name, cityReadOne.Name);
         }
@@ -141,7 +141,7 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            City cityReadOne = cityRepo.ReadOne("name", new { State = "RONPWC" });
+            City cityReadOne = cityRepo.ReadOneWhere("name", new { State = "RONPWC" });
 
             Assert.Equal(city.Name, cityReadOne.Name);
         }
@@ -162,7 +162,7 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            Assert.Throws<Exception>(() => cityRepo.ReadOne("name", "State=@State", null));
+            Assert.NotNull(cityRepo.ReadOneWhere("name", null));
         }
 
         [Fact]
@@ -181,7 +181,7 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            City result = cityRepo.ReadOne("name", "State=@state and CountryId=@countryid", new { State = "RO3", CountryId = 1 });
+            City result = cityRepo.ReadOneWhere("name", new { State = "RO3", CountryId = 1 });
         }
 
         [Fact]
@@ -200,7 +200,7 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            City result = cityRepo.ReadOne("name",new { State = "RO3", CountryId = 1 });
+            City result = cityRepo.ReadOneWhere("name",new { State = "RO3", CountryId = 1 });
         }
 
         [Fact]
@@ -227,7 +227,7 @@ namespace Vega.Tests
             Assert.Equal(city.Longitude, cityReadOne.Longitude);
             Assert.Equal(city.Latitude, cityReadOne.Latitude);
 
-            cityReadOne = cityRepo.ReadOne("*", new { State = "RO" });
+            cityReadOne = cityRepo.ReadOneWhere("*", new { State = "RO" });
             Assert.Equal("RO", cityReadOne.State);
         }
 
@@ -247,7 +247,7 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            city = cityRepo.ReadOne("*", new { State = "RO" });
+            city = cityRepo.ReadOneWhere("*", new { State = "RO" });
             Assert.Equal("RO", city.State);
         }
 
@@ -476,9 +476,9 @@ namespace Vega.Tests
             city.Id = (long)cityRepo.Add(city);
 
 #if MSSQL
-            City cityResult = cityRepo.ReadOneQuery("SELECT TOP 1 * FROM city WHERE id=" + city.Id);
+            City cityResult = cityRepo.QueryOne("SELECT TOP 1 * FROM city WHERE id=" + city.Id);
 #else
-            City cityResult = cityRepo.ReadOneQuery("SELECT * FROM city WHERE id=" + city.Id + " LIMIT 1");
+            City cityResult = cityRepo.QueryOne("SELECT * FROM city WHERE id=" + city.Id + " LIMIT 1");
 #endif
             Assert.Equal("ReadTests.ReadOneQuery", cityResult.Name);
         }
@@ -503,7 +503,7 @@ namespace Vega.Tests
 
             int? country = null;
 
-            City cityResult = cityRepo.ReadOneQuery("SELECT * from city WHERE countryid=@countryid", new { countryid = country });
+            City cityResult = cityRepo.QueryOne("SELECT * from city WHERE countryid=@countryid", new { countryid = country });
 
             Assert.Null(cityResult);
         }
