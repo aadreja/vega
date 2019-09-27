@@ -475,11 +475,20 @@ namespace Vega.Tests
             //add
             city.Id = (long)cityRepo.Add(city);
 
+            City cityResult;
+            if (DbConnectionFixuture.IsAppVeyor)
+            {
+                //as SQL is use at AppVeyor (CI/CD)
+                cityResult = cityRepo.QueryOne("SELECT TOP 1 * FROM city WHERE id=" + city.Id);
+            }
+            else
+            {
 #if MSSQL
-            City cityResult = cityRepo.QueryOne("SELECT TOP 1 * FROM city WHERE id=" + city.Id);
+                cityResult = cityRepo.QueryOne("SELECT TOP 1 * FROM city WHERE id=" + city.Id);
 #else
-            City cityResult = cityRepo.QueryOne("SELECT * FROM city WHERE id=" + city.Id + " LIMIT 1");
+                cityResult = cityRepo.QueryOne("SELECT * FROM city WHERE id=" + city.Id + " LIMIT 1");
 #endif
+            }
             Assert.Equal("ReadTests.ReadOneQuery", cityResult.Name);
         }
 

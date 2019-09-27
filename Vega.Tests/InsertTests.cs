@@ -398,15 +398,8 @@ namespace Vega.Tests
             //should not update as no changes were made
             Assert.True(contryRepo.Update(cnt));
 
-            try
-            {
-                //try to delete without UpdatedBy column
-                Exception ex = Assert.Throws<MissingFieldException>(() => contryRepo.Delete(id));
-            }
-            catch(Exception ex)
-            {
-
-            }
+            //try to delete without UpdatedBy column
+            Exception ex = Assert.Throws<MissingFieldException>(() => contryRepo.Delete(id));
 
             Assert.True(contryRepo.Delete(id,2));
             cnt.VersionNo++;
