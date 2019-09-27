@@ -7,7 +7,7 @@
 	<PackageTags>orm;fastest;.net;enterprise;</PackageTags>
   <LangVersion>7.1</LangVersion>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	<Version>1.0.8</Version>
+	<Version>1.0.9</Version>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System" />
