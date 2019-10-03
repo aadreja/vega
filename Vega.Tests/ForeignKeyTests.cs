@@ -3,6 +3,7 @@ using Xunit;
 
 namespace Vega.Tests
 {
+    [Collection("DMLTest")]
     public class ForeignKeyTests : IClassFixture<DbConnectionFixuture>
     {
         DbConnectionFixuture Fixture;

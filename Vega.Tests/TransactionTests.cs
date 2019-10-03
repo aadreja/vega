@@ -48,14 +48,14 @@ namespace Vega.Tests
                 cities[1].Id = (long)cityRepo.Add(cities[1]);
 
                 //check before commit
-                Assert.Equal(cities[0].Id, cityRepo.ReadOne<long>(cities[0].Id, "id"));
-                Assert.Equal(cities[1].Id, cityRepo.ReadOne<long>(cities[1].Id, "id"));
+                Assert.Equal(cities[0].Id, cityRepo.ReadOne<long>("id", cities[0].Id));
+                Assert.Equal(cities[1].Id, cityRepo.ReadOne<long>("id", cities[1].Id));
 
                 cityRepo.Commit();
 
                 //check after commit
-                Assert.Equal(cities[0].Id, cityRepo.ReadOne<long>(cities[0].Id, "id"));
-                Assert.Equal(cities[1].Id, cityRepo.ReadOne<long>(cities[1].Id, "id"));
+                Assert.Equal(cities[0].Id, cityRepo.ReadOne<long>("id", cities[0].Id));
+                Assert.Equal(cities[1].Id, cityRepo.ReadOne<long>("id", cities[1].Id));
             }
             catch(Exception ex)
             {
@@ -97,14 +97,14 @@ namespace Vega.Tests
                 city.Id = (long)cityRepo.Add(city);
 
                 //check before commit
-                Assert.Equal(country.Id, cityRepo.ReadOne<long>(country.Id, "id"));
-                Assert.Equal(city.Id, cityRepo.ReadOne<long>(city.Id, "id"));
+                Assert.Equal(country.Id, cityRepo.ReadOne<long>("id", country.Id));
+                Assert.Equal(city.Id, cityRepo.ReadOne<long>("id", city.Id));
 
                 cityRepo.Commit();
 
                 //check after commit
-                Assert.Equal(country.Id, cityRepo.ReadOne<long>(country.Id, "id"));
-                Assert.Equal(city.Id, cityRepo.ReadOne<long>(city.Id, "id"));
+                Assert.Equal(country.Id, cityRepo.ReadOne<long>("id", country.Id));
+                Assert.Equal(city.Id, cityRepo.ReadOne<long>("id", city.Id));
             }
             catch (Exception ex)
             {
@@ -143,13 +143,13 @@ namespace Vega.Tests
 
                 cityRepo.Commit();
 
-                Assert.NotEqual("TransactionTests.Rollback", cityRepo.ReadOne<string>(1, "Name"));
+                Assert.NotEqual("TransactionTests.Rollback", cityRepo.ReadOne<string>( "Name", 1));
             }
             catch (Exception ex)
             {
                 cityRepo.Rollback();
 
-                Assert.NotEqual("TransactionTests.Rollback", cityRepo.ReadOne<string>(1, "Name"));
+                Assert.NotEqual("TransactionTests.Rollback", cityRepo.ReadOne<string>("Name", 1));
 
                 Console.WriteLine(ex.Message);
             }
@@ -188,8 +188,8 @@ namespace Vega.Tests
                 address.Id = (long)addRepo.Add(address);
 
                 //check before commit
-                Assert.Equal(org.CustomerCode, orgRepo.ReadOne<string>(org.CustomerCode, "customercode"));
-                Assert.Equal(address.Id, addRepo.ReadOne<long>( new Address() { Id= address.Id, AddressType = "Home"} , "id"));
+                Assert.Equal(org.CustomerCode, orgRepo.ReadOne<string>("customercode", org.CustomerCode));
+                Assert.Equal(address.Id, addRepo.ReadOne<long>("Id", new Address() { Id= address.Id, AddressType = "Home"}));
 
                 orgRepo.Commit();
 
@@ -197,8 +197,8 @@ namespace Vega.Tests
                 addRepo.Transaction = null; 
 
                 //check after commit
-                Assert.Equal(org.CustomerCode, orgRepo.ReadOne<string>(org.CustomerCode, "customercode"));
-                Assert.Equal(address.Id, addRepo.ReadOne<long>(new Address() { Id = address.Id, AddressType = "Home" }, "id"));
+                Assert.Equal(org.CustomerCode, orgRepo.ReadOne<string>("customercode", org.CustomerCode));
+                Assert.Equal(address.Id, addRepo.ReadOne<long>("Id", new Address() { Id = address.Id, AddressType = "Home" }));
             }
             catch (Exception ex)
             {

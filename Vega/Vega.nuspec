@@ -7,6 +7,7 @@
     <authors>$author$</authors>
     <owners>$author$</owners>
     <licenseUrl>https://github.com/aadreja/vega/blob/master/LICENSE</licenseUrl>
+	  <license type="file">license.txt</license>
     <projectUrl>https://github.com/aadreja/vega</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
@@ -14,4 +15,7 @@
     <copyright>Copyright 2018 Ritesh Sutaria</copyright>
     <tags>orm;fastest;.net;enterprise;</tags>
   </metadata>
+   <files>
+    <file src="licenses\LICENSE.txt" target="" />
+  </files>
 </package>

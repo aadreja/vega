@@ -193,7 +193,11 @@ namespace Vega
                     if (!column.IgnoreInfo.Insert)
                         result.DefaultInsertColumns.Add(column.Name);
 
-                    if (!column.IgnoreInfo.Update)
+                    //isactive,createdon,createdby column shall not be included in default update columns
+                    if (!column.IgnoreInfo.Update
+                        && !column.Name.Equals(Config.IsActiveColumnName, StringComparison.OrdinalIgnoreCase)
+                        && !column.Name.Equals(Config.CreatedByColumnName, StringComparison.OrdinalIgnoreCase)
+                        && !column.Name.Equals(Config.CreatedOnColumnName, StringComparison.OrdinalIgnoreCase))
                         result.DefaultUpdateColumns.Add(column.Name);
 
                     if (!column.IgnoreInfo.Read)
@@ -303,31 +307,42 @@ namespace Vega
         /// <returns>Cloned object</returns>
         internal static T CloneObjectWithIL<T>(T entity)
         {
-            if (!CachedCloneIL.TryGetValue(typeof(T), out Delegate cloneIL))
+            Type mainType = typeof(T);
+
+            if (!CachedCloneIL.TryGetValue(mainType, out Delegate cloneIL))
             {
                 // Create ILGenerator
-                DynamicMethod dymMethod = new DynamicMethod("DoClone", typeof(T), new Type[] { typeof(T) }, true);
-                ConstructorInfo cInfo = entity.GetType().GetConstructor(new Type[] { });
+                DynamicMethod dymMethod = new DynamicMethod("DoClone", mainType, new Type[] { mainType }, true);
+                ConstructorInfo cInfo = mainType.GetConstructor(new Type[] { });
 
                 ILGenerator generator = dymMethod.GetILGenerator();
 
-                LocalBuilder lbf = generator.DeclareLocal(typeof(T));
+                LocalBuilder lbf = generator.DeclareLocal(mainType);
                 //lbf.SetLocalSymInfo("_temp");
 
-                generator.Emit(OpCodes.Newobj, cInfo);
-                generator.Emit(OpCodes.Stloc_0);
-                foreach (FieldInfo field in entity.GetType().GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic))
+                generator.Emit(OpCodes.Newobj, cInfo); //create new instance of object
+                generator.Emit(OpCodes.Stloc_0); //load in memory
+
+                Type type = mainType;
+                while (type != null && type != typeof(object))
                 {
-                    // Load the new object on the eval stack... (currently 1 item on eval stack)
-                    generator.Emit(OpCodes.Ldloc_0);
-                    // Load initial object (parameter)          (currently 2 items on eval stack)
-                    generator.Emit(OpCodes.Ldarg_0);
-                    // Replace value by field value             (still currently 2 items on eval stack)
-                    generator.Emit(OpCodes.Ldfld, field);
-                    // Store the value of the top on the eval stack into the object underneath that value on the value stack.
-                    //  (0 items on eval stack)
-                    generator.Emit(OpCodes.Stfld, field);
+                    foreach (FieldInfo field in type.GetFields(BindingFlags.Instance
+                        | BindingFlags.Public
+                        | BindingFlags.NonPublic))
+                    {
+                        // Load the new object on the eval stack... (currently 1 item on eval stack)
+                        generator.Emit(OpCodes.Ldloc_0);
+                        // Load initial object (parameter)          (currently 2 items on eval stack)
+                        generator.Emit(OpCodes.Ldarg_0);
+                        // Replace value by field value             (still currently 2 items on eval stack)
+                        generator.Emit(OpCodes.Ldfld, field);
+                        // Store the value of the top on the eval stack into the object underneath that value on the value stack.
+                        //  (0 items on eval stack)
+                        generator.Emit(OpCodes.Stfld, field);
+                    }
+                    type = type.BaseType;
                 }
+                
 
                 // Load new constructed obj on eval stack -> 1 item on stack
                 generator.Emit(OpCodes.Ldloc_0);
@@ -335,7 +350,7 @@ namespace Vega
                 generator.Emit(OpCodes.Ret);
 
                 cloneIL = dymMethod.CreateDelegate(typeof(Func<T, T>));
-                CachedCloneIL.Add(typeof(T), cloneIL);
+                CachedCloneIL.Add(mainType, cloneIL);
             }
             return ((Func<T, T>)cloneIL)(entity);
         }

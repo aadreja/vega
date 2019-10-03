@@ -41,7 +41,7 @@ namespace Vega.Tests
         [Fact]
         public void DeleteWithoutVersionNo()
         {
-             Fixture.CleanupAuditTable();
+            Fixture.CleanupAuditTable();
 
             City city = new City
             {

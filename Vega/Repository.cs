@@ -251,6 +251,18 @@ namespace Vega
         /// Performs update on current entity and returns status
         /// </summary>
         /// <param name="entity">entity object for update</param>
+        /// <param name="oldEntity">previous entity object for audit trail. Default null.</param>
+        /// <param name="overrideCreatedUpdatedOn">True in case explicit CreatedUpdatedOn else database datetime</param>
+        /// <returns>True if update successful else false</returns>
+        public bool Update(T entity, T oldEntity, bool overrideCreatedUpdatedOn = false)
+        {
+            return Update(entity, null, oldEntity, overrideCreatedUpdatedOn: overrideCreatedUpdatedOn);
+        }
+
+        /// <summary>
+        /// Performs update on current entity and returns status
+        /// </summary>
+        /// <param name="entity">entity object for update</param>
         /// <param name="columns">specific columns to update, comma seperated</param>
         /// <param name="oldEntity">previous entity object for audit trail. Default null.</param>
         /// <param name="overrideCreatedUpdatedOn">True in case explicit CreatedUpdatedOn else database datetime</param>
@@ -266,7 +278,7 @@ namespace Vega
                 if (TableInfo.NeedsHistory)
                 {
                     audit = (IAuditTrail)Activator.CreateInstance(Config.AuditTrailType);
-                    audit.CreatedBy = !TableInfo.NoCreatedBy ? TableInfo.GetCreatedBy(entity) : default;
+                    audit.CreatedBy = !TableInfo.NoUpdatedBy ? TableInfo.GetUpdatedBy(entity) : default;
                     if (oldEntity == null)
                     {
                         oldEntity = ReadOne(TableInfo.GetKeyId(entity));
@@ -407,7 +419,7 @@ namespace Vega
                 //Get last version no if not passed and supported in table
                 if(!TableInfo.NoVersionNo && (versionNo??0) == 0)
                 {
-                    versionNo = ReadOne<int>(id, Config.VERSIONNO_COLUMN.Name);
+                    versionNo = ReadOne<int>(Config.VERSIONNO_COLUMN.Name, id);
                 }
 
                 IDbCommand cmd = Connection.CreateCommand();
@@ -541,7 +553,7 @@ namespace Vega
                 //Get last version no if not passed and supported in table
                 if (!TableInfo.NoVersionNo && versionNo == 0)
                 {
-                    versionNo = ReadOne<int>(id, Config.VERSIONNO_COLUMN.Name);
+                    versionNo = ReadOne<int>(Config.VERSIONNO_COLUMN.Name, id);
                 }
 
                 IDbCommand cmd = Connection.CreateCommand();
@@ -626,38 +638,24 @@ namespace Vega
 
         #endregion
 
-        #region Read
+        #region Exists
 
         /// <summary>
-        /// To Check record exists for a given Record Id
+        /// To check record exists for a given Record Id or dynamic parameter
         /// </summary>
-        /// <param name="id">Record Id</param>
+        /// <param name="parameters">Record Id or dynamic parameters</param>
         /// <returns>True if Record exists otherwise False</returns>
-        public bool Exists(object id)
+        public bool Exists(object parameters)
         {
             IDbCommand cmd = Connection.CreateCommand();
-            DB.CreateSelectCommandForReadOne<T>(cmd, id, "1");
-            return ExecuteScalar(cmd) != null;
-        }
-
-        /// <summary>
-        /// To check record exists for a given parameters. criteria will be auto parsed
-        /// </summary>
-        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
-        /// <returns>True if Record exists otherwise False</returns>
-        public bool ExistsWhere(object parameters)
-        {
-            string criteria = CreateCriteriaFromParameter(parameters);
-
-            if (!string.IsNullOrEmpty(criteria))
-                criteria = " WHERE " + criteria;
-
-            IDbCommand cmd = Connection.CreateCommand();
-            cmd.CommandType = CommandType.Text;
-            cmd.CommandText = $"SELECT 1 FROM {TableInfo.FullName} {criteria}";
-
-            ParameterCache.AddParameters(parameters, cmd);
-
+            if (parameters != null && !parameters.IsAnonymousType())
+                DB.CreateSelectCommandForReadOne<T>(cmd, parameters, "1");
+            else
+            {
+                string criteria = CreateCriteriaFromParameter(parameters, true);
+                string query = $"SELECT 1 FROM {TableInfo.FullName}";
+                DB.CreateTextCommand(cmd, query, criteria, parameters);
+            }
             return ExecuteScalar(cmd) != null;
         }
 
@@ -670,82 +668,110 @@ namespace Vega
         public bool Exists(string criteria, object parameters)
         {
             ValidateParameters(criteria, parameters);
+            string query = $"SELECT 1 FROM {TableInfo.FullName}";
 
-            bool hasWhere = criteria.ToLowerInvariant().Contains("where");
-            
             IDbCommand cmd = Connection.CreateCommand();
-            cmd.CommandType = CommandType.Text;
-            cmd.CommandText = $"SELECT 1 FROM {TableInfo.FullName} {(!hasWhere ? " WHERE " : "")} {criteria}";
-
-            if (parameters != null)
-                ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
+            DB.CreateTextCommand(cmd, query, criteria, parameters);
 
             return ExecuteScalar(cmd) != null;
         }
 
+        #endregion
+
+        #region ReadOne
+
         /// <summary>
-        /// Read First record with specific Id
+        /// Read First record with specific id or criteria
         /// </summary>
-        /// <param name="id">record id</param>
+        /// <param name="parameters">Record id or dynamic parameter</param>
         /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
         /// <returns>Entity if record found otherwise null</returns>
-        public T ReadOne(object id, string columns = null)
+        public T ReadOne(object parameters, string columns = null)
         {
             //Get columns from Entity attributes loaded in TableInfo
             if (string.IsNullOrEmpty(columns) || columns == "*") columns = string.Join(",", TableInfo.DefaultReadColumns);
 
             IDbCommand cmd = Connection.CreateCommand();
-            DB.CreateSelectCommandForReadOne<T>(cmd, id, columns);
 
+            if (parameters != null && !parameters.IsAnonymousType())
+                DB.CreateSelectCommandForReadOne<T>(cmd, parameters, columns);
+            else
+            {
+                string criteria = CreateCriteriaFromParameter(parameters, true);
+                string query = $"SELECT {columns} FROM {TableInfo.FullName}";
+                DB.CreateTextCommand(cmd, query, criteria, parameters);
+            }
             return ExecuteReaderOne(cmd);
         }
 
-        
-
         /// <summary>
-        /// Returns first record with specified parameters
-        /// </summary>
-        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
-        /// <returns>Entity if record found otherwise null</returns>
-        public T ReadOneWhere(object parameters)
-        {
-            return ReadOneWhere("*", parameters);
-        }
-
-        /// <summary>
-        /// Returns First Record with specific criteria
+        /// Read First record with specific criteria
         /// </summary>
         /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
-        /// <param name="parameters">dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <param name="criteria">Parameterised criteria</param>
+        /// <param name="parameters">dynamic parameter</param>
         /// <returns>Entity if record found otherwise null</returns>
-        public T ReadOneWhere(string columns, object parameters)
+        public T ReadOne(string criteria, object parameters, string columns = null)
         {
-            string criteria = CreateCriteriaFromParameter(parameters);
-
-            if (!string.IsNullOrEmpty(criteria))
-                criteria = "WHERE " + criteria;
+            if (!ValidateParameters(criteria, parameters))
+                return default;
 
             //Get columns from Entity attributes loaded in TableInfo
             if (string.IsNullOrEmpty(columns) || columns == "*") columns = string.Join(",", TableInfo.DefaultReadColumns);
 
-            string query = $"SELECT {columns} FROM {TableInfo.FullName} {criteria}";
-
-            return QueryOne(query, parameters);
+            IDbCommand cmd = Connection.CreateCommand();
+            string query = $"SELECT {columns} FROM {TableInfo.FullName}";
+            DB.CreateTextCommand(cmd, query, criteria, parameters);
+            
+            return ExecuteReaderOne(cmd);
         }
 
         /// <summary>
         /// Read value of one column for a given record
         /// </summary>
         /// <typeparam name="R">Type of value</typeparam>
-        /// <param name="id">record id</param>
+        /// <param name="parameters">Record id or dynamic parameter</param>
         /// <param name="column">column name</param>
         /// <returns>Value if record found otherwise null or default</returns>
-        public R ReadOne<R>(object id, string column)
+        public R ReadOne<R>(string column, object parameters)
         {
             IDbCommand cmd = Connection.CreateCommand();
-            DB.CreateSelectCommandForReadOne<T>(cmd, id, column);
+
+            if(parameters != null && !parameters.IsAnonymousType())
+                DB.CreateSelectCommandForReadOne<T>(cmd, parameters, column);
+            else
+            {
+                string criteria = CreateCriteriaFromParameter(parameters, true);
+                string query = $"SELECT {column} FROM {TableInfo.FullName}";
+                DB.CreateTextCommand(cmd, query, criteria, parameters);
+            }
             return Query<R>(cmd);
         }
+
+        /// <summary>
+        /// Read value of one column for a given record
+        /// </summary>
+        /// <typeparam name="R">Type of value</typeparam>
+        /// <param name="criteria">Parameterised criteria</param>
+        /// <param name="parameters">Dynamic parameters</param>
+        /// <param name="column">column name</param>
+        /// <returns>Value if record found otherwise null or default</returns>
+        public R ReadOne<R>(string column, string criteria, object parameters)
+        {
+            if (!ValidateParameters(criteria, parameters))
+                return default;
+
+            IDbCommand cmd = Connection.CreateCommand();
+
+            string query = $"SELECT {column} FROM {TableInfo.FullName}";
+            DB.CreateTextCommand(cmd, query, criteria, parameters);
+            
+            return Query<R>(cmd);
+        }
+
+        #endregion
+
+        #region ReadAll
 
         /// <summary>
         /// Read all records: fastest
@@ -825,9 +851,13 @@ namespace Vega
         /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
         /// <param name="orderBy">optional order by e.g. "department ASC"</param>
         /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
-        /// <param name="validateParameters">Need to validate parameters. Default: True</param>
         /// <returns>IEnumerable list of entities</returns>
-        public IEnumerable<T> ReadAll(string columns, string criteria = null, object parameters = null, string orderBy = null, RecordStatusEnum status = RecordStatusEnum.All, bool validateParameters=true)
+        public IEnumerable<T> ReadAll(string columns, string criteria = null, object parameters = null, string orderBy = null, RecordStatusEnum status = RecordStatusEnum.All)
+        {
+            return ReadAll(columns, criteria, parameters, orderBy, status, true);
+        }
+
+        IEnumerable<T> ReadAll(string columns, string criteria = null, object parameters = null, string orderBy = null, RecordStatusEnum status = RecordStatusEnum.All, bool validateParameters=true)
         {
             if(validateParameters)
                 ValidateParameters(criteria, parameters);
@@ -843,7 +873,8 @@ namespace Vega
             if (!TableInfo.NoIsActive) DB.AppendStatusCriteria(commandText, status);
             if (orderBy != null)
             {
-                if (!orderBy.ToLowerInvariant().Contains("orderby")) commandText.Append(" ORDER BY ");
+                if (!orderBy.ToLowerInvariant().Contains("orderby"))
+                    commandText.Append(" ORDER BY ");
                 commandText.Append(orderBy);
             }
             cmd.CommandText = commandText.ToString();
@@ -853,7 +884,16 @@ namespace Vega
 
         #endregion
 
-        #region Record count
+        #region Count
+
+        /// <summary>
+        /// Count Number of Records in Table
+        /// </summary>
+        /// <returns>no of records for a given criteria</returns>
+        public long Count()
+        {
+            return Count(null, null, RecordStatusEnum.All);
+        }
 
         /// <summary>
         /// Count Number of Records in Table
@@ -868,20 +908,43 @@ namespace Vega
         /// <summary>
         /// Count Number of records in table with given query or criteria on current entity table
         /// </summary>
+        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
+        /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
+        /// <returns>no of records for a given query or criteria</returns>
+        public long Count(object parameters = null, RecordStatusEnum status = RecordStatusEnum.All)
+        {
+            string criteria = CreateCriteriaFromParameter(parameters, true);
+
+            return Count(criteria, parameters, status);
+        }
+
+        /// <summary>
+        /// Count Number of records in table with given query or criteria on current entity table
+        /// </summary>
         /// <param name="queryorCriteria">optional Custom query or criteria for current entity table. e.g. "SELECT * FROM City" OR "Department=@Department" </param>
         /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
         /// <param name="status">optional get Active, InActive or all Records Default: All records</param>
         /// <returns>no of records for a given query or criteria</returns>
         public long Count(string queryorCriteria = null, object parameters = null, RecordStatusEnum status = RecordStatusEnum.All)
         {
-            bool isQuery = !string.IsNullOrEmpty(queryorCriteria) && queryorCriteria.ToLowerInvariant().Contains("select");
+            bool isQueryEmpty = string.IsNullOrEmpty(queryorCriteria);
+            string casedQuery = queryorCriteria?.ToLowerInvariant();
+
+            bool isQuery = !isQueryEmpty && casedQuery.Contains("select");
 
             StringBuilder query = new StringBuilder();
 
             if (!isQuery)
             {
                 query.Append($"SELECT COUNT(0) FROM {TableInfo.FullName}");
-                if (!string.IsNullOrEmpty(queryorCriteria)) query.Append(" WHERE " + queryorCriteria);
+                if (!isQueryEmpty)
+                {
+                    if (!casedQuery.Contains("where"))
+                        query.Append(" WHERE ");
+
+                    query.Append(queryorCriteria);
+                }
+                    
                 if (!TableInfo.NoIsActive) DB.AppendStatusCriteria(query, status);
             }
             else
@@ -911,7 +974,6 @@ namespace Vega
         /// <returns>List of audit for this record</returns>
         public IEnumerable<T> ReadHistory(object id)
         {
-            //Remove EntityBase 12-Apr
             IAuditTrailRepository<T> auditTrailRepo = (IAuditTrailRepository<T>)Activator.CreateInstance(Config.AuditTrialRepositoryGenericType<T>(), new object[] { Connection });
             return auditTrailRepo.ReadAll(id);
         }
@@ -967,7 +1029,7 @@ namespace Vega
         /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"} </param>
         /// <param name="validateParameters">requires parameter validation or not</param>
         /// <returns></returns>
-        internal IEnumerable<T> ReadAllPaged(string orderBy, int pageNo, int pageSize, string columns = null, string criteria=null, object parameters = null, bool validateParameters=true)
+        IEnumerable<T> ReadAllPaged(string orderBy, int pageNo, int pageSize, string columns = null, string criteria=null, object parameters = null, bool validateParameters=true)
         {
             if(validateParameters)
                 ValidateParameters(criteria, parameters);
@@ -1009,7 +1071,6 @@ namespace Vega
             return ExecuteReaderIEnumerable(cmd);
         }
 
-
         /// <summary>
         /// Fastest Paged ReadAll without query and OFFSET
         /// </summary>
@@ -1025,36 +1086,6 @@ namespace Vega
         {
             string criteria = CreateCriteriaFromParameter(parameters);
             return ReadAllPaged(orderBy, pageSize, navigation, columns, criteria, lastOrderByColumnValues, lastKeyId, parameters, false);
-        }
-
-        /// <summary>
-        /// Fastest Paged ReadAll without query and OFFSET
-        /// </summary>
-        /// <param name="orderBy">Sort Columns. e.g. "department" or "department DESC"</param>
-        /// <param name="pageSize">Page Size. e.g. 50</param>
-        /// <param name="navigation">Navigation Next,Previous,First or Last</param>
-        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
-        /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
-        /// <param name="lastOrderByColumnValues">Required for Next and Previous Navigation only. Next - Last value of all orderby column(s). Previous - First Value of all order by column(s)</param>
-        /// <param name="lastKeyId">Required for Next and Previous Navigation only. Next - Last KeyId Value. Previous - First KeyId value</param>
-        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"}</param>
-        /// <param name="validateParameters">requires parameter validation or not</param>
-        /// <returns></returns>
-        internal IEnumerable<T> ReadAllPaged(string orderBy, int pageSize, PageNavigationEnum navigation, string columns = null, string criteria = null, object[] lastOrderByColumnValues = null, object lastKeyId = null, object parameters = null, bool validateParameters=true)
-        {
-            if(validateParameters)
-                ValidateParameters(criteria, parameters);
-
-            //Get columns from Entity attributes loaded in TableInfo
-            if (string.IsNullOrEmpty(columns) || columns == "*") columns = string.Join(",", TableInfo.DefaultReadColumns);
-
-            IDbCommand cmd = Connection.CreateCommand();
-            cmd.CommandType = CommandType.Text;
-
-            string query = $"SELECT {columns} FROM {TableInfo.FullName} ";
-            StringBuilder commandText = DB.CreateSelectCommand(cmd, query, criteria); //don't pass parameter as it will be added in ReadAllPaged() function
-
-            return ReadAllPaged(commandText.ToString(), orderBy, pageSize, navigation, lastOrderByColumnValues, lastKeyId, parameters);
         }
 
         /// <summary>
@@ -1078,6 +1109,36 @@ namespace Vega
             return ExecuteReaderIEnumerable(cmd);
         }
 
+
+        /// <summary>
+        /// Fastest Paged ReadAll without query and OFFSET
+        /// </summary>
+        /// <param name="orderBy">Sort Columns. e.g. "department" or "department DESC"</param>
+        /// <param name="pageSize">Page Size. e.g. 50</param>
+        /// <param name="navigation">Navigation Next,Previous,First or Last</param>
+        /// <param name="columns">optional specific columns to retrieve. Default: all columns</param>
+        /// <param name="criteria">optional parameterised criteria e.g. "department=@Department"</param>
+        /// <param name="lastOrderByColumnValues">Required for Next and Previous Navigation only. Next - Last value of all orderby column(s). Previous - First Value of all order by column(s)</param>
+        /// <param name="lastKeyId">Required for Next and Previous Navigation only. Next - Last KeyId Value. Previous - First KeyId value</param>
+        /// <param name="parameters">optional dynamic parameter object e.g. new {Department = "IT"}</param>
+        /// <param name="validateParameters">requires parameter validation or not</param>
+        /// <returns></returns>
+        IEnumerable<T> ReadAllPaged(string orderBy, int pageSize, PageNavigationEnum navigation, string columns = null, string criteria = null, object[] lastOrderByColumnValues = null, object lastKeyId = null, object parameters = null, bool validateParameters = true)
+        {
+            if (validateParameters)
+                ValidateParameters(criteria, parameters);
+
+            //Get columns from Entity attributes loaded in TableInfo
+            if (string.IsNullOrEmpty(columns) || columns == "*") columns = string.Join(",", TableInfo.DefaultReadColumns);
+
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandType = CommandType.Text;
+
+            string query = $"SELECT {columns} FROM {TableInfo.FullName} ";
+            StringBuilder commandText = DB.CreateSelectCommand(cmd, query, criteria); //don't pass parameter as it will be added in ReadAllPaged() function
+
+            return ReadAllPaged(commandText.ToString(), orderBy, pageSize, navigation, lastOrderByColumnValues, lastKeyId, parameters);
+        }
         #endregion
 
         #endregion
@@ -1096,8 +1157,7 @@ namespace Vega
             cmd.CommandType = CommandType.Text;
             cmd.CommandText = query;
 
-            if (parameters != null)
-                ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
+            ParameterCache.AddParameters(parameters, cmd);
 
             return ExecuteReaderOne(cmd);
         }
@@ -1115,8 +1175,7 @@ namespace Vega
             cmd.CommandText = query;
             cmd.CommandType = CommandType.Text;
 
-            if (parameters != null)
-                ParameterCache.AddParameters(parameters, cmd);
+            ParameterCache.AddParameters(parameters, cmd);
 
             return ExecuteScalar(cmd).Parse<R>();
         }
@@ -1480,12 +1539,15 @@ namespace Vega
 
         #region Parameters
 
-        private string CreateCriteriaFromParameter(object parameters)
+        private string CreateCriteriaFromParameter(object parameters, bool appendWhere=false)
         {
             if (parameters is null)
                 return string.Empty;
 
             StringBuilder criteria = new StringBuilder();
+
+            if (appendWhere)
+                criteria.Append(" WHERE ");
 
             PropertyInfo[] dynamicProperties = parameters.GetType().GetProperties();
             for (int i = 0; i < dynamicProperties.Count(); i++)
@@ -1505,8 +1567,12 @@ namespace Vega
             //Find parameters in criteria
             if (string.IsNullOrEmpty(criteria))
                 return true;
-            
-            MatchCollection lstCriteria = Regex.Matches(criteria, "(\\@\\w+)");
+
+            List<string> lstCriteria = Regex.Matches(criteria, "(\\@\\w+)")
+                .OfType<Match>()
+                .Select(m => m.Groups[0].Value)
+                .Distinct().ToList();
+
             if (lstCriteria.Count <= 0)
                 return true;
 
@@ -1518,12 +1584,13 @@ namespace Vega
             if (lstCriteria.Count > dynamicProperties.Count())
                 throw new Exception("Required Dyanmic parameter(s) are missing");
    
-            foreach (Match mCriteria in lstCriteria)
+            foreach (string mCriteria in lstCriteria)
             {
-                PropertyInfo prop = dynamicProperties.FirstOrDefault(d => d.Name.Equals(mCriteria.Value.Replace("@", ""), StringComparison.OrdinalIgnoreCase));
+                PropertyInfo prop = dynamicProperties
+                    .FirstOrDefault(d => d.Name.Equals(mCriteria.Replace("@", ""), StringComparison.OrdinalIgnoreCase));
                 if (prop == null)
                 {
-                    throw new Exception(string.Format("Parameter {0} is missing", mCriteria.Value));
+                    throw new Exception(string.Format("Parameter {0} is missing", mCriteria));
                 }
             }
 

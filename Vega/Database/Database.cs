@@ -473,10 +473,27 @@ namespace Vega
                 cmdText.Append(criteria);
             }
 
-            if (parameters != null)
-                ParameterCache.AddParameters(parameters, cmd);
+            ParameterCache.AddParameters(parameters, cmd);
 
             return cmdText;
+        }
+
+        internal virtual void CreateTextCommand(IDbCommand cmd, string query, string criteria = null, object parameters = null)
+        {
+            bool hasWhere = query.ToLowerInvariant().Contains("where");
+
+            if (!string.IsNullOrEmpty(criteria))
+            {
+                //add WHERE statement if not exists in query or criteria
+                if (!hasWhere && !criteria.ToLowerInvariant().Contains("where"))
+                    query = query + " WHERE ";
+            }
+
+            query = query + " " + criteria;
+
+            cmd.CommandText = query;
+            cmd.CommandType = CommandType.Text;
+            ParameterCache.AddParameters(parameters, cmd);
         }
 
         internal virtual void CreateReadAllPagedCommand(IDbCommand cmd, string query, string orderBy, int pageNo, int pageSize, object parameters = null)
@@ -506,9 +523,7 @@ namespace Vega
             }
             cmd.CommandType = CommandType.Text;
             cmd.CommandText = cmdText.ToString();
-
-            if (parameters != null)
-                ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
+            ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
         }
 
         internal virtual void CreateReadAllPagedNoOffsetCommand<T>(IDbCommand cmd, string query, string orderBy, int pageSize, PageNavigationEnum navigation, object[] lastOrderByColumnValues = null, object lastKeyId = null, object parameters = null)
@@ -654,8 +669,7 @@ namespace Vega
             else
                 cmd.CommandText = $"SELECT * FROM ({query} {pagedCriteria.ToString()} ORDER BY {pagedOrderBy} LIMIT {pageSize}) AS r ORDER BY {orderBy}";
 
-            if (parameters != null)
-                ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
+            ParameterCache.AddParameters(parameters, cmd); //ParameterCache.GetFromCache(parameters, cmd).Invoke(parameters, cmd);
         }
 
         #endregion

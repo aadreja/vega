@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Vega.Tests
 {
-
+    [Collection("DMLTest")]
     public class AuditTrailKeyValueTests : IClassFixture<DbConnectionFixuture>
     {
         DbConnectionFixuture Fixture;

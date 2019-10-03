@@ -3,11 +3,12 @@
 	<TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
 	<PackageId>Vega</PackageId>
 	<Title>Vega</Title>
-	<Description>Fastest .net ORM with Enterprise features</Description>
-	<PackageTags>orm;fastest;.net;enterprise;</PackageTags>
+	<Description>Simple &amp; Fast .net ORM with awesome features</Description>
+	<PackageTags>orm;simple;fastest;.net;</PackageTags>
   <LangVersion>7.1</LangVersion>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	<Version>1.0.9</Version>
+	<Version>1.0.10</Version>
+	<PackageLicenseUrl>https://github.com/aadreja/vega/blob/master/LICENSE.txt</PackageLicenseUrl>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System" />
@@ -28,5 +29,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Remove="nuget.exe" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.6.0" />
+    <PackageReference Include="System.Reflection.TypeExtensions" Version="4.6.0" />
   </ItemGroup>
 </Project>

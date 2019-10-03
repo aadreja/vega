@@ -13,6 +13,7 @@ using System.Data;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Vega
@@ -204,6 +205,25 @@ namespace Vega
                     || value is float
                     || value is double
                     || value is decimal;
+        }
+
+        /// <summary>
+        /// Checks whether value is of AnonymousType
+        /// </summary>
+        /// <param name="value">any object</param>
+        /// <returns>true or false</returns>
+        public static bool IsAnonymousType(this object value)
+        {
+            if (value == null)
+                return false;
+
+            Type type = value.GetType();
+
+            return Attribute.IsDefined(type, typeof(CompilerGeneratedAttribute), false)
+               && type.IsGenericType && type.Name.Contains("AnonymousType")
+               && (type.Name.StartsWith("<>", StringComparison.OrdinalIgnoreCase) ||
+                   type.Name.StartsWith("VB$", StringComparison.OrdinalIgnoreCase))
+               && (type.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic;
         }
 
         #endregion

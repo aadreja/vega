@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using Vega;
 using Xunit;
+using System.Linq;
 
 namespace Vega.Tests
 {
@@ -12,6 +14,58 @@ namespace Vega.Tests
         public UpdateTests(DbConnectionFixuture fixture)
         {
             Fixture = fixture;
+        }
+
+        [Fact]
+        public void UpdateFewColumnWithOldEntity()
+        {
+            City city = new City
+            {
+                Name = "Ahmedabad",
+                State = "GU",
+                Latitude = 10.65m,
+                Longitude = 11.50m,
+                CreatedBy = Fixture.CurrentUserId
+            };
+
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            var id = cityRepo.Add(city);
+
+            city = cityRepo.ReadOne(id);
+
+            City cityNew = (City)city.ShallowCopy();
+            cityNew.CountryId = 1;
+
+            cityRepo.Update(cityNew, "countryid", city);
+
+            Assert.Equal(1, cityRepo.ReadOne<long>("CountryId", id));
+        }
+
+        [Fact]
+        public void UpdateWithOldEntity()
+        {
+            City city = new City
+            {
+                Name = "Ahmedabad",
+                State = "GU",
+                Latitude = 10.65m,
+                Longitude = 11.50m,
+                CreatedBy = Fixture.CurrentUserId
+            };
+
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+            var id = cityRepo.Add(city);
+
+            city = cityRepo.ReadOne(id);
+
+            City cityNew = (City)city.ShallowCopy();
+            cityNew.Longitude = 12m;
+            cityNew.Latitude = 13m;
+
+            cityRepo.Update(cityNew, city);
+
+            Assert.Equal(12m, cityRepo.ReadOne<decimal>("Longitude", id));
+            Assert.Equal(13m, cityRepo.ReadOne<decimal>("Latitude", id));
         }
 
         [Fact]
@@ -36,8 +90,8 @@ namespace Vega.Tests
 
             cityRepo.Update(city);
 
-            Assert.Equal(12m, cityRepo.ReadOne<decimal>(id, "Longitude"));
-            Assert.Equal(13m, cityRepo.ReadOne<decimal>(id, "Latitude"));
+            Assert.Equal(12m, cityRepo.ReadOne<decimal>("Longitude", id));
+            Assert.Equal(13m, cityRepo.ReadOne<decimal>("Latitude", id));
         }
 
         [Fact]
@@ -61,7 +115,7 @@ namespace Vega.Tests
 
             cityRepo.Update(city, "countryid");
 
-            Assert.Equal(1, cityRepo.ReadOne<int>(id, "countryid"));
+            Assert.Equal(1, cityRepo.ReadOne<int>("countryid", id));
         }
 
         [Fact]
@@ -84,7 +138,7 @@ namespace Vega.Tests
 
             countryRepo.Update(country, "independence");
 
-            Assert.Null(countryRepo.ReadOne<DateTime?>(id, "independence"));
+            Assert.Null(countryRepo.ReadOne<DateTime?>("independence", id));
         }
 
         [Fact]
@@ -103,7 +157,7 @@ namespace Vega.Tests
             country = countryRepo.ReadOne(id);
             country.Independence = null;
             countryRepo.Update(country, "independence");
-            Assert.Equal(DateTime.Now.ToString("dd-MM-yyyy hh:mm:ss"), countryRepo.ReadOne<DateTime>(id, "UpdatedOn").ToString("dd-MM-yyyy hh:mm:ss"));
+            Assert.Equal(DateTime.Now.ToString("dd-MM-yyyy hh:mm:ss"), countryRepo.ReadOne<DateTime>("UpdatedOn", id).ToString("dd-MM-yyyy hh:mm:ss"));
         }
 
         [Fact]
@@ -127,7 +181,7 @@ namespace Vega.Tests
             country.UpdatedOn = overrideDate;
 
             countryRepo.Update(country, "independence", overrideCreatedUpdatedOn:true);
-            Assert.Equal(overrideDate, countryRepo.ReadOne<DateTime>(id, "UpdatedOn"));
+            Assert.Equal(overrideDate, countryRepo.ReadOne<DateTime>("UpdatedOn", id));
         }
 
         [Fact]
@@ -149,7 +203,7 @@ namespace Vega.Tests
             employee.Department = "IT";
 
             empRepo.Update(employee, "department");
-            Assert.Equal("IT", empRepo.ReadOne<string>(id, "department"));
+            Assert.Equal("IT", empRepo.ReadOne<string>("department", id));
         }
 
         [Fact]
@@ -180,8 +234,8 @@ namespace Vega.Tests
             Assert.True(addRepo.Update(address1));
             Assert.True(addRepo.Update(address2));
 
-            Assert.Equal("Updated Address 1 line 1", addRepo.ReadOne<string>(address1, "AddressLine1"));
-            Assert.Equal("Updated Address 2 line 1", addRepo.ReadOne<string>(address2, "AddressLine1"));
+            Assert.Equal("Updated Address 1 line 1", addRepo.ReadOne<string>("AddressLine1", address1));
+            Assert.Equal("Updated Address 2 line 1", addRepo.ReadOne<string>("AddressLine1", address2));
         }
 
         [Fact]
@@ -222,8 +276,38 @@ namespace Vega.Tests
 
             socRepo.Update(soc);
             Assert.Equal("Updated Attribute1", socRepo.ReadOne(id).Attribute1);
+        }
 
+        [Fact]
+        public void UpdateWithoutPassingIsActive()
+        {
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
+
+            Country country = new Country()
+            {
+                Name = "India",
+                ShortCode = "IN",
+                CreatedBy = Fixture.CurrentUserId
+            };
+            var id = (long)countryRepo.Add(country);
+
+            country = new Country()
+            {
+                Id = id,
+                Name = "India",
+                ShortCode = "IND",
+                UpdatedBy = Fixture.CurrentUserId,
+                VersionNo = 1
+            };
+
+            Assert.True(countryRepo.Update(country));
             
+            Assert.True(countryRepo.ReadOne(id).IsActive);
+
+            List<Country> lstAudit = countryRepo.ReadHistory(id).ToList();
+
+            Assert.Equal(Fixture.CurrentUserId, lstAudit[1].CreatedBy);
+
         }
     }
 }

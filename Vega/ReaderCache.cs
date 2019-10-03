@@ -598,6 +598,9 @@ namespace Vega
 
         internal static void AddParameters(object param, IDbCommand cmd)
         {
+            if (param == null)
+                return;
+
             Type pType = param.GetType();
             foreach (PropertyInfo property in pType.GetProperties())
             {

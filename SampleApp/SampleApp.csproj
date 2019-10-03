@@ -25,9 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="1.60.6" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Vega\Vega.csproj" />
+    <PackageReference Include="Vega" Version="1.0.10" />
   </ItemGroup>
   <!--
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
