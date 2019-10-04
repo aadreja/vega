@@ -1,6 +1,6 @@
 # Vega [![http://badge.fury.io/nu/vega](https://badge.fury.io/nu/vega.png)](http://badge.fury.io/nu/vega)
 
-Vega is fastest .net ORM with concurrency and automatic audittrail. 
+Vega is simple & fast .net ORM with awesome features.
 
 * Inbuilt Row Versioning
 * Powerful Audit Trail to keep track of all changes
