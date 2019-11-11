@@ -329,6 +329,49 @@ namespace Vega
             }
         }
 
+        /// <summary>
+        /// Update single column with new value
+        /// </summary>
+        /// <param name="id">Primary Key Id</param>
+        /// <param name="column">Column name to update</param>
+        /// <param name="newValue">new value of the column</param>
+        /// <param name="updatedBy">optional updated by user</param>
+        /// <returns>true when update success, false when update fails</returns>
+        public bool Update(object id, string column, object newValue, object updatedBy=null)
+        {
+            T newEntity = new T();
+
+            if (TableInfo.NeedsHistory || !TableInfo.NoVersionNo)
+            {
+                T oldEntity = ReadOne(id);
+                newEntity = EntityCache.CloneObjectWithIL(oldEntity);
+
+                if (!TableInfo.NoUpdatedBy)
+                    TableInfo.Columns[Config.UpdatedByColumnName].SetAction(newEntity, updatedBy);
+
+                TableInfo.Columns[column].SetAction(newEntity, newValue);
+
+                return Update(newEntity, column, oldEntity);
+            }
+            else
+            {
+                //simple update
+                if (!TableInfo.NoUpdatedBy)
+                    TableInfo.Columns[Config.UpdatedByColumnName].SetAction(newEntity, updatedBy);
+
+                TableInfo.PkColumn.SetAction(newEntity, id);
+                TableInfo.Columns[column].SetAction(newEntity, newValue);
+
+                IDbCommand cmd = Connection.CreateCommand();
+                DB.CreateUpdateCommand(cmd, newEntity, null, null, column);
+                int result = ExecuteNonQuery(cmd);
+                if (result <= 0)
+                    throw new VersionNotFoundException("Record doesn't exists or modified by another user"); //record not found or concurrency violation
+
+                return true;
+            }
+        }
+
         #endregion
 
         #region Delete

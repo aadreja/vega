@@ -63,25 +63,6 @@ namespace Vega.Tests
         }
 
         [Fact]
-        public void ReadOneWithCriterialNoParameter()
-        {
-            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
-
-            City city = new City()
-            {
-                Name = "ReadTests.ReadOneWithCriterialNoParameter",
-                State = "RO2",
-                CountryId = 1,
-                Longitude = 1m,
-                Latitude = 1m,
-                CreatedBy = Fixture.CurrentUserId
-            };
-            city.Id = (long)cityRepo.Add(city);
-
-            Assert.NotNull(cityRepo.ReadOne(null, "name"));
-        }
-
-        [Fact]
         public void ReadOneMultipleParameter()
         {
             Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
@@ -97,7 +78,7 @@ namespace Vega.Tests
             };
             city.Id = (long)cityRepo.Add(city);
 
-            City result = cityRepo.ReadOne(new { State = "RO3", CountryId = 1 }, "name");
+            City result = cityRepo.ReadOne("state=@state AND countryid=@countryid", new { State = "RO3", CountryId = 1 }, "name");
         }
 
         [Fact]

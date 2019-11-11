@@ -359,11 +359,6 @@ namespace Vega
                 return db.CURRENTDATETIMESQL;
             else
                 return dateTime;
-
-            //if (dateTime != null && default(DateTime).Ticks != dateTime.Ticks && DateTime.Now.Ticks > dateTime.Ticks)
-            //    return dateTime;
-            //else
-            //    return db.CURRENTDATETIMESQL;
         }
 
         #endregion
@@ -485,7 +480,6 @@ namespace Vega
 
         #endregion
 
-        
     }
 
 }

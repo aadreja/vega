@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using Vega;
+using Dapper;
 
 namespace SampleApp
 {
@@ -20,6 +21,8 @@ namespace SampleApp
 
         static void Main(string[] args)
         {
+            DapperTry();
+
             var t = new { Id = 1 };
             Console.WriteLine("Type {0} Hash {1}", t.GetType().Name, t.GetHashCode());
 
@@ -458,5 +461,56 @@ namespace SampleApp
             Console.WriteLine(text);
         }
 
+        static void DapperTry()
+        {
+            string sql = @"
+                    select 
+                        1 as JobId, 
+                        2 as SiteId, 
+                        'Company 1' as CompanyName, 
+                        'Address 1' as Address1, 
+                        'Postcode 1' as Postcode, 
+                        3 as SiteId, 
+                        'Company 2' as CompanyName, 
+                        'Address 2' as Address1, 
+                        'Postcode 2' as PostCode";
+
+            using (var connection = new SqlConnection(Common.MasterConnectionString))
+            {
+                var jb = connection.Query<Job, Site, Address, Site, Address, Job>(sql,
+                             (job, fromSite, fromSiteAddress, toSite, toSiteAddress) =>
+                             {
+                                 job.FromSite = fromSite;
+                                 job.FromSite.Address = fromSiteAddress;
+
+                                 job.ToSite = toSite;
+                                 job.ToSite.Address = toSiteAddress;
+
+                                 return job;
+                             },
+                             splitOn: "JobId,SiteId,Address1,SiteId,Address1");
+            }
+        }
+
+    }
+
+    public class Job
+    {
+        public int JobId { get; set; }
+        public Site FromSite { get; set; }
+        public Site ToSite { get; set; }
+    }
+
+    public class Site
+    {
+
+        public int SiteId { get; set; }
+        public string CompanyName { get; set; }
+        public Address Address { get; set; }
+    }
+    public class Address
+    {
+        public string Address1 { get; set; }
+        public string Postcode { get; set; }
     }
 }
