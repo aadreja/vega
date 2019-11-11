@@ -311,6 +311,58 @@ namespace Vega.Tests
         }
 
         [Fact]
+        public void UpdateOneColumnWithHistory()
+        {
+            Repository<Country> countryRepo = new Repository<Country>(Fixture.Connection);
+
+            Country country = new Country()
+            {
+                Name = "India",
+                ShortCode = "IN",
+                CreatedBy = Fixture.CurrentUserId
+            };
+            var id = (long)countryRepo.Add(country);
+
+            Assert.True(countryRepo.Update(id, "ShortCode", "IND", Fixture.CurrentUserId));
+            Assert.Equal("IND", countryRepo.ReadOne(id).ShortCode);
+
+            List<Country> lstAudit = countryRepo.ReadHistory(id).ToList();
+            Assert.Equal(Fixture.CurrentUserId, lstAudit[1].CreatedBy);
+            Assert.Equal("IND", lstAudit[1].ShortCode);
+        }
+
+        [Fact]
+        public void UpdateOneColumnWithVersionNo()
+        {
+            Repository<User> userRepo = new Repository<User>(Fixture.Connection);
+
+            User user = new User()
+            {
+                Username = "admin",
+                CreatedBy = Fixture.CurrentUserId
+            };
+            var id = (int)userRepo.Add(user);
+
+            Assert.True(userRepo.Update(id, "Username", "super", Fixture.CurrentUserId));
+            Assert.Equal("super", userRepo.ReadOne(id).Username);
+        }
+
+        [Fact]
+        public void UpdateOneColumnWithoutHistoryVersionNo()
+        {
+            Repository<Society> societyRepo = new Repository<Society>(Fixture.Connection);
+
+            Society country = new Society()
+            {
+                Name = "Society 1"
+            };
+            var id = (int)societyRepo.Add(country);
+
+            Assert.True(societyRepo.Update(id, "Name", "Updated society 1", Fixture.CurrentUserId));
+            Assert.Equal("Updated society 1", societyRepo.ReadOne(id).Name);
+        }
+
+        [Fact]
         public void UpdateContactTest()
         {
             Vega.Config.CreatedUpdatedByColumnType = System.Data.DbType.Guid;
@@ -334,7 +386,7 @@ namespace Vega.Tests
                 Name = "Dashrath H",
                 MobileNo = "1212121212",
                 UpdatedBy = new Guid("00000000-0000-0000-0000-000000000002")
-            };            
+            };
 
             var result = repository.Update(contact);
 
