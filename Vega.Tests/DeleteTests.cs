@@ -203,5 +203,30 @@ namespace Vega.Tests
 
             Assert.Equal("Record doesn't exists or modified by another user", ex.Message);
         }
+
+        [Fact]
+        public void DeleteContactTest()
+        {
+            Vega.Config.CreatedUpdatedByColumnType = System.Data.DbType.Guid;
+
+            Repository<Contact> repository = new Repository<Contact>(this.Fixture.Connection);
+
+            Contact contact = new Contact()
+            {
+                Id = Guid.NewGuid(),
+                Name = "Mehul V",
+                MobileNo = "9924323876",
+                CreatedBy = new Guid("00000000-0000-0000-0000-000000000001"),
+                UpdatedBy = new Guid("00000000-0000-0000-0000-000000000001")
+            };
+
+            var objId = repository.Add(contact);
+
+            var result = repository.Delete(objId, "00000000-0000-0000-0000-000000000001");
+
+            Vega.Config.CreatedUpdatedByColumnType = System.Data.DbType.Int32;
+
+            Assert.True(result);
+        }
     }
 }
