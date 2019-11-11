@@ -14,6 +14,7 @@ namespace Vega.Tests
 
         public QueryTests(DbConnectionFixuture fixture)
         {
+
             Fixture = fixture;
         }
     

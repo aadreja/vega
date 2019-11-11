@@ -16,7 +16,7 @@ namespace Vega.Tests
         {
             Fixture = fixture;
         }
-    
+
         [Fact]
         public void ReadOneNullParameter()
         {
@@ -260,6 +260,67 @@ namespace Vega.Tests
             City deletedCity = cityRepo.ReadOne(city.Id, "Name, State");
 
             Assert.Null(deletedCity.IsActive);
+        }
+
+        [Fact]
+        public void ReadOneFieldWithParameter()
+        {
+
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadOneColumnWithParameter",
+                State = "ROFWP",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CityType = EnumCityType.Metro,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            //add
+            city.Id = (long)cityRepo.Add(city);
+
+            //read
+            var result = cityRepo.ReadOne<string>("name", new { state = "ROFWP" });
+            Assert.Equal("ReadOneColumnWithParameter", result);
+        }
+
+        [Fact]
+        public void ReadOneFieldWithCriteriaAndParameter()
+        {
+
+            Repository<City> cityRepo = new Repository<City>(Fixture.Connection);
+
+            City city = new City()
+            {
+                Name = "ReadOneFieldWithCriteriaAndParameter",
+                State = "ROFWCP",
+                CountryId = 1,
+                Longitude = 1m,
+                Latitude = 1m,
+                CityType = EnumCityType.Metro,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            city.Id = (long)cityRepo.Add(city);
+
+            //same state different country
+            City citywithDiffCountry = new City()
+            {
+                Name = "ReadOneFieldWithCriteriaAndParameter_citywithDiffCountry",
+                State = "ROFWCP",
+                CountryId = 2,
+                Longitude = 1m,
+                Latitude = 1m,
+                CityType = EnumCityType.Metro,
+                CreatedBy = Fixture.CurrentUserId
+            };
+            city.Id = (long)cityRepo.Add(citywithDiffCountry);
+
+            //fetch based on criteria
+            var result = cityRepo.ReadOne<string>("name", " (state=@state and countryid =@countryid) or (state=@state and countryid =0)",
+                new { state = "ROFWCP", countryid = 2 });
+            Assert.Equal("ReadOneFieldWithCriteriaAndParameter_citywithDiffCountry", result);
         }
     }
 }
