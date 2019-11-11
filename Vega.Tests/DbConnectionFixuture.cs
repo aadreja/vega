@@ -1,13 +1,9 @@
 ﻿using Npgsql;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Reflection;
-using Vega;
-using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -70,6 +66,11 @@ namespace Vega.Tests
 
             Repository<EntityWithIsActive> ewiaRepo = new Repository<EntityWithIsActive>(Connection);
             ewiaRepo.CreateTable();
+
+            Config.CreatedUpdatedByColumnType = DbType.Guid;
+            Repository<Contact> contactRepo = new Repository<Contact>(Connection);
+            contactRepo.CreateTable();
+            Config.CreatedUpdatedByColumnType = DbType.Int32;
         }
 
         public void SetAuditTrailType(bool isKeyValue)
@@ -120,6 +121,9 @@ namespace Vega.Tests
 
             Repository<EntityWithIsActive> ewiaRepo = new Repository<EntityWithIsActive>(Connection);
             ewiaRepo.DropTable();
+
+            Repository<Contact> contactRepo = new Repository<Contact>(Connection);
+            contactRepo.DropTable();
 
             Connection?.Dispose();
         }

@@ -92,5 +92,18 @@ namespace Vega.Tests
             Assert.Contains("microsoft sql server", repository.DBVersion.ProductName, System.StringComparison.InvariantCultureIgnoreCase);
 #endif
         }
+
+        [Fact]
+        public void CreateContactTableNoIdentityWithGUIDPK()
+        {
+            Vega.Config.CreatedUpdatedByColumnType = System.Data.DbType.Guid;
+            EntityCache.Clear(); //clear entity cache
+            Repository<Contact> repo = new Repository<Contact>(Fixture.Connection);
+            //Drop table if exists
+            repo.DropTable();
+            repo.CreateTable();
+            Vega.Config.CreatedUpdatedByColumnType = System.Data.DbType.Int32;
+            Assert.True(repo.IsTableExists());
+        }
     }
 }

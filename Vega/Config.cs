@@ -116,10 +116,34 @@ namespace Vega
             set { CREATEDBY_COLUMN = ParseColumn("CreatedBy", value, CreatedUpdatedByColumnType, "Created By"); }
         }
 
+        private static DbType _createdUpdatedByColumnType;
+
         /// <summary>
-        /// Default CreatedBy column Type
+        /// Default PrimaryKey column Type
         /// </summary>
-        public static DbType CreatedUpdatedByColumnType { get; set; }
+        public static DbType CreatedUpdatedByColumnType
+        {
+            get
+            {
+                return _createdUpdatedByColumnType;
+            }
+            set
+            {
+                _createdUpdatedByColumnType = value;
+
+
+                //Required to change the CreatedBy and UpdatedBy column type once again on change of 
+                //Config.CreatedUpdatedByColumnType to reflect the changes in the Add, Update and Delete command
+                //
+                //WARNING: 
+                //Kindly, keep in mind that this is required when datatype of PrimaryKey column is the same as that of CreatedBy and UpdatedBy column
+                if (CREATEDBY_COLUMN != null)
+                    CREATEDBY_COLUMN.ColumnDbType = value;
+
+                if (UPDATEDBY_COLUMN != null)
+                    UPDATEDBY_COLUMN.ColumnDbType = value;
+            }
+        }
 
         internal static ColumnAttribute CREATEDBYNAME_COLUMN { get; set; }
 
@@ -137,7 +161,8 @@ namespace Vega
         /// <summary>
         /// Default CreatedOn column name
         /// </summary>
-        public static string CreatedOnColumnName {
+        public static string CreatedOnColumnName
+        {
             get { return CREATEDON_COLUMN.Name; }
             set { CREATEDON_COLUMN = ParseColumn("CreatedOn", value, DbType.DateTime, "Created On"); }
         }
@@ -147,7 +172,8 @@ namespace Vega
         /// <summary>
         /// Default UpdatedBy column name
         /// </summary>
-        public static string UpdatedByColumnName {
+        public static string UpdatedByColumnName
+        {
             get { return UPDATEDBY_COLUMN.Name; }
             set { UPDATEDBY_COLUMN = ParseColumn("UpdatedBy", value, CreatedUpdatedByColumnType, "Updated By"); }
         }
@@ -157,7 +183,8 @@ namespace Vega
         /// <summary>
         /// Default UpdatedByName column name
         /// </summary>
-        public static string UpdatedByNameColumnName {
+        public static string UpdatedByNameColumnName
+        {
             get { return UPDATEDBYNAME_COLUMN.Name; }
             set { UPDATEDBYNAME_COLUMN = ParseColumn("UpdatedByName", value, DbType.String, "Updated By Name"); }
         }
@@ -167,7 +194,8 @@ namespace Vega
         /// <summary>
         /// Default UpdatedOn column name
         /// </summary>
-        public static string UpdatedOnColumnName {
+        public static string UpdatedOnColumnName
+        {
             get { return UPDATEDON_COLUMN.Name; }
             set { UPDATEDON_COLUMN = ParseColumn("UpdatedOn", value, DbType.DateTime, "Updated On"); }
         }
@@ -177,7 +205,8 @@ namespace Vega
         /// <summary>
         /// Default IsActive column name
         /// </summary>
-        public static string IsActiveColumnName {
+        public static string IsActiveColumnName
+        {
             get { return ISACTIVE_COLUMN.Name; }
             set { ISACTIVE_COLUMN = ParseColumn("IsActive", value, DbType.Boolean, "Is Active"); }
         }
@@ -276,7 +305,7 @@ namespace Vega
                 AuditTrailType = typeof(AuditTrail);
                 AuditTrailRepositoryType = typeof(AuditTrailRepository<>);
             }
-            else if(AuditType == AuditTypeEnum.KeyValue)
+            else if (AuditType == AuditTypeEnum.KeyValue)
             {
                 AuditTrailType = typeof(AuditTrailKeyValue);
                 AuditTrailRepositoryType = typeof(AuditTrailKeyValueRepository<>);

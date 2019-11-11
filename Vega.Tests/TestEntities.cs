@@ -16,7 +16,7 @@ namespace Vega.Tests
         Town = 3
     }
 
-    [Table(NoCreatedBy = true, NoCreatedOn = true, NoUpdatedBy =true, NoUpdatedOn =true, NeedsHistory = true)]
+    [Table(NoCreatedBy = true, NoCreatedOn = true, NoUpdatedBy = true, NoUpdatedOn = true, NeedsHistory = true)]
     public class Job : EntityBase
     {
         [PrimaryKey(true)]
@@ -24,7 +24,7 @@ namespace Vega.Tests
         public string JobName { get; set; }
     }
 
-    [Table(NoIsActive =true, NoVersionNo =true, NeedsHistory =true)]
+    [Table(NoIsActive = true, NoVersionNo = true, NeedsHistory = true)]
     public class Department : EntityBase
     {
         [PrimaryKey(true)]
@@ -32,7 +32,7 @@ namespace Vega.Tests
         public string DepartmentName { get; set; }
     }
 
-    [Table(IsNoDefaultFields=true, NeedsHistory =true)]
+    [Table(IsNoDefaultFields = true, NeedsHistory = true)]
     public class Employee
     {
         [PrimaryKey(true)]
@@ -46,7 +46,7 @@ namespace Vega.Tests
     public class Country : EntityBase
     {
         [PrimaryKey(true)]
-        [ForeignKey("city","countryid",true)]
+        [ForeignKey("city", "countryid", true)]
         public long Id { get; set; }
         public string Name { get; set; }
         public string ShortCode { get; set; }
@@ -60,7 +60,7 @@ namespace Vega.Tests
     {
         [PrimaryKey(true)]
         public long Id { get; set; }
-        [Column(ColumnDbType = System.Data.DbType.String, Size =4000)]
+        [Column(ColumnDbType = System.Data.DbType.String, Size = 4000)]
         public string Name { get; set; }
         [Column(ColumnDbType = System.Data.DbType.String, Size = 50)]
         public string State { get; set; }
@@ -102,7 +102,7 @@ namespace Vega.Tests
         public Address Address { get; set; }
     }
 
-    [Table(NeedsHistory = false, NoVersionNo =false, NoIsActive =true, NoCreatedBy =true, NoCreatedOn =true, NoUpdatedBy =true, NoUpdatedOn =true)]
+    [Table(NeedsHistory = false, NoVersionNo = false, NoIsActive = true, NoCreatedBy = true, NoCreatedOn = true, NoUpdatedBy = true, NoUpdatedOn = true)]
     public class Address
     {
         [PrimaryKey(true)]
@@ -170,4 +170,16 @@ namespace Vega.Tests
         public bool IsActive { get; set; }
     }
 
+    [Table(NeedsHistory = false, NoCreatedOn = true, NoUpdatedOn = true, NoIsActive = true, NoVersionNo = true)]
+    public class Contact : EntityBase
+    {
+        [PrimaryKey(false)]
+        public Guid Id { get; set; }
+
+        [Column(ColumnDbType = System.Data.DbType.String, Name = "Name", Size = 50)]
+        public string Name { get; set; }
+
+        [Column(ColumnDbType = System.Data.DbType.String, Name = "MobileNo", Size = 50)]
+        public string MobileNo { get; set; }
+    }
 }
